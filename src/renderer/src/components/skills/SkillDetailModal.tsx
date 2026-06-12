@@ -33,7 +33,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
   const isDeletable = skill.source === 'global' || skill.source === 'github' || skill.source === 'marketplace'
 
   async function handleExport() {
-    const outputPath = prompt('Enter output directory path:', skill.path)
+    const outputPath = prompt('Enter output directory path:', skill!.path)
     if (!outputPath) return
     try {
       await exportSkill(skillId, outputPath)
@@ -44,7 +44,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete skill "${skill.name}"? This cannot be undone.`)) return
+    if (!confirm(`Delete skill "${skill!.name}"? This cannot be undone.`)) return
     setDeleting(true)
     const result = await deleteSkill(skillId)
     if (result) {

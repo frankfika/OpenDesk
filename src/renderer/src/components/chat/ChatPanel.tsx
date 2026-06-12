@@ -24,28 +24,37 @@ interface ChatPanelProps {
   onOpenSettings: () => void
 }
 
+interface QuickActionHandlers {
+  onOpenSettings: () => void
+  handleConnectFiles: () => void
+  fillInput: (text: string) => void
+}
+
 const QUICK_ACTIONS = [
   {
     icon: FolderSymlink,
     title: 'Connect files',
-    desc: 'Attach a folder as workspace'
+    desc: 'Attach a folder as workspace',
+    onClick: (h: QuickActionHandlers) => h.handleConnectFiles
   },
   {
     icon: Plug,
     title: 'Add provider',
-    desc: 'Connect any AI model'
+    desc: 'Connect any AI model',
+    onClick: (h: QuickActionHandlers) => h.onOpenSettings
   },
   {
     icon: TerminalSquare,
     title: 'Run a task',
-    desc: 'Shell, web search, and more'
+    desc: 'Shell, web search, and more',
+    onClick: (h: QuickActionHandlers) => () => h.fillInput('Run a shell command: ')
   }
 ]
 
 const SUGGESTION_CARDS = [
-  { icon: Code2, title: 'Code Review', description: 'Review my code for bugs' },
-  { icon: FileEdit, title: 'Docs Write', description: 'Write documentation' },
-  { icon: Search, title: 'Web Search', description: 'Search the web' }
+  { icon: Code2,    title: 'Code Review', description: 'Review code for bugs',  prompt: 'Please review the following code for bugs and improvements:\n\n```\n\n```' },
+  { icon: FileEdit, title: 'Write Docs',  description: 'Write documentation',   prompt: 'Please write documentation for: ' },
+  { icon: Search,   title: 'Web Search',  description: 'Search the web',        prompt: '/search ' }
 ]
 
 function formatDate(ts: number): string {
@@ -64,7 +73,7 @@ function formatDate(ts: number): string {
 export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   const { messages, streaming, error, threadId, attachments, clearMessages } = useChatStore()
   const { settings, activeProvider } = useSettingsStore()
-  const { workspaces, activeWorkspace, activeThread, threadsByWorkspace, agentsMd } = useWorkspaceStore()
+  const { workspaces, activeWorkspace, activeThread, threadsByWorkspace, agentsMd, addWorkspace, setActiveWorkspace, updateThread } = useWorkspaceStore()
   const { skills } = useSkillsStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { artifacts, panelOpen, setPanelOpen } = useArtifactsStore()
@@ -96,7 +105,16 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [lastContent])
 
-  const { updateThread } = useWorkspaceStore()
+  // Fill input bar with a prompt text
+  function fillInput(text: string) {
+    window.dispatchEvent(new CustomEvent('opendesk:fill-input', { detail: { text } }))
+  }
+
+  // Connect files — open folder picker
+  async function handleConnectFiles() {
+    const ws = await window.api?.workspace?.add()
+    if (ws) toast.success(`Workspace "${ws.name}" added`)
+  }
 
   const handleTitleSubmit = () => {
     if (thread && titleValue.trim() && titleValue !== thread.title) {
@@ -104,8 +122,6 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
     }
     setEditingTitle(false)
   }
-
-  const { setActiveWorkspace } = useWorkspaceStore()
 
   const recentWorkspaces = workspaces.slice(0, 3)
 
@@ -333,6 +349,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
                       title={card.title}
                       description={card.description}
                       index={i}
+                      onClick={() => fillInput(card.prompt)}
                     />
                   ))}
                 </div>
@@ -349,8 +366,8 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
                     return (
                       <motion.button
                         key={action.title}
-                        onClick={action.title === 'Add provider' ? onOpenSettings : undefined}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-[var(--bg-sidebar)]/50 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-all"
+                        onClick={action.onClick({ onOpenSettings, handleConnectFiles, fillInput })}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-all"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.25, delay: 0.35 + i * 0.05 }}

@@ -44,7 +44,7 @@ export default function EmptyState({
     ? {
         initial: { opacity: 0, y: 12 },
         animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] }
+        transition: { duration: 0.35, ease: 'easeOut' as const }
       }
     : {}
 
@@ -62,7 +62,7 @@ export default function EmptyState({
           className="p-4 rounded-2xl bg-[var(--bg-sidebar)] border border-[var(--border)] mb-4"
           initial={animated ? { scale: 0.9, opacity: 0 } : undefined}
           animate={animated ? { scale: 1, opacity: 1 } : undefined}
-          transition={{ duration: 0.3, delay: 0.1, ease: [0.25, 0.1, 0.25, 1.0] }}
+          transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
         >
           <Icon size={iconSize ?? s.icon} className="text-[var(--text-muted)]" strokeWidth={1.5} />
         </motion.div>

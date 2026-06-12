@@ -1,4 +1,4 @@
-import type { AppSettings, ChatSendPayload, Skill, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool } from '@shared/types'
+import type { AppSettings, ChatSendPayload, Skill, SkillLoadLevel, SkillLoadResult, SkillImportResult, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool } from '@shared/types'
 
 interface ChatAPI {
   send: (payload: ChatSendPayload) => void
@@ -9,7 +9,7 @@ interface ChatAPI {
   onToolCall: (cb: (toolCall: { id: string; name: string; arguments: Record<string, unknown> }) => void) => () => void
   onToolResult: (cb: (result: { toolCallId: string; content: string; isError?: boolean }) => void) => () => void
   onDone: (cb: (meta?: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string }) => void) => () => void
-  onError: (cb: (msg: string) => void) => () => void
+  onError: (cb: (error: { message: string; type: string }) => void) => () => void
 }
 
 interface SettingsAPI {
@@ -19,6 +19,11 @@ interface SettingsAPI {
   getApiKey: (providerId: string) => Promise<string | null>
   testProvider: (type: string, model: string, apiKey: string, baseUrl?: string) => Promise<boolean>
   fetchModels: (type: string, apiKey?: string, baseUrl?: string) => Promise<ModelInfo[]>
+}
+
+interface DraftAPI {
+  load: () => Promise<{ text: string; threadId: string | null; timestamp: number } | null>
+  save: (draft: { text: string; threadId: string | null }) => Promise<boolean>
 }
 
 interface MCPAPI {
@@ -32,6 +37,15 @@ interface MCPAPI {
 
 interface SkillsAPI {
   list: () => Promise<Skill[]>
+  scan: () => Promise<Skill[]>
+  load: (skillId: string, level: SkillLoadLevel) => Promise<SkillLoadResult>
+  executeTool: (skillId: string, toolName: string, args: Record<string, unknown>) => Promise<{ success: boolean; output?: string; error?: string }>
+  export: (skillId: string, outputPath: string) => Promise<string>
+  importFromFolder: (sourcePath: string) => Promise<SkillImportResult>
+  importFromGitHub: (repoUrl: string) => Promise<SkillImportResult>
+  delete: (skillId: string) => Promise<boolean>
+  getBuiltins: () => Promise<Skill[]>
+  create: (name: string, description: string, tags: string[]) => Promise<SkillImportResult>
 }
 
 interface WorkspaceAPI {
@@ -67,6 +81,7 @@ declare global {
     api: {
       chat: ChatAPI
       settings: SettingsAPI
+      draft: DraftAPI
       mcp: MCPAPI
       skills: SkillsAPI
       workspace: WorkspaceAPI

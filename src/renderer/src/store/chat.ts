@@ -69,12 +69,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addToolCall: (toolCall) => {
     set(s => {
-      const messages = [...s.messages, {
+      const messages: Message[] = [...s.messages, {
         id: genId(),
-        role: 'assistant',
+        role: 'assistant' as const,
         content: '',
         timestamp: Date.now(),
-        kind: 'tool_call',
+        kind: 'tool_call' as const,
         metadata: { toolName: toolCall.name, params: toolCall.arguments }
       }]
       if (s.threadId) debouncedSave(s.threadId, messages)
@@ -84,12 +84,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addToolResult: (result) => {
     set(s => {
-      const messages = [...s.messages, {
+      const messages: Message[] = [...s.messages, {
         id: genId(),
-        role: 'tool',
+        role: 'tool' as const,
         content: result.content,
         timestamp: Date.now(),
-        kind: 'tool_result',
+        kind: 'tool_result' as const,
         toolCallId: result.toolCallId,
         metadata: { isError: result.isError }
       }]
@@ -210,8 +210,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const newMessages = [...messages.slice(0, index), editedMessage]
     set({ messages: newMessages, streaming: true, error: null, errorType: null })
 
-    if (threadId && window.api?.chat?.editMessage) {
-      window.api.chat.editMessage(threadId, messageId, newContent)
+    if (threadId && window.api?.chat?.send) {
+      // Re-send from the edit point — use send with the truncated messages
+      const settings = useSettingsStore.getState()
+      const provider = settings.activeProvider()
+      if (provider) {
+        window.api.chat.send({ messages: newMessages, providerId: provider.id, threadId })
+      }
     }
   },
 

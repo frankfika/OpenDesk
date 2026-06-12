@@ -291,7 +291,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                     >
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 w-full max-w-md">
                         {PROVIDER_PRESETS.map((preset) => {
-                          const Icon = preset.icon
                           return (
                             <motion.button
                               key={preset.id}

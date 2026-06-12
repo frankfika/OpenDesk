@@ -57,6 +57,17 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const [fetchedModels, setFetchedModels] = useState<string[]>([])
   const [showModelSearch, setShowModelSearch] = useState(false)
 
+  // Listen for fill-input event from suggestion cards / quick actions
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const text = (e as CustomEvent<{ text: string }>).detail.text
+      setText(text)
+      setTimeout(() => textareaRef.current?.focus(), 50)
+    }
+    window.addEventListener('opendesk:fill-input', handler)
+    return () => window.removeEventListener('opendesk:fill-input', handler)
+  }, [])
+
   // Draft auto-save and restore
   useEffect(() => {
     // Load draft on mount
@@ -100,7 +111,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     const offDone = window.api.chat.onDone(() => setStreaming(false))
     const offError = window.api.chat.onError((error) => {
       setStreaming(false)
-      setError(error.message, error.type as ChatState['errorType'])
+      setError(error.message, error.type as 'auth' | 'network' | 'model' | 'provider' | 'workspace' | 'ollama' | 'generic' | null)
     })
     return () => { offToken(); offToolCall(); offToolResult(); offDone(); offError() }
   }, [appendToken, addToolCall, addToolResult, setStreaming, setError])
@@ -609,8 +620,8 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
                       {popoverType === 'command' ? <span className="text-xs">{(item as any).icon}</span> : item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-[var(--text-primary)]">{popoverType === 'command' ? (item as any).label : item.name}</span>
-                      <span className="text-[11px] text-[var(--text-secondary)] ml-2">{popoverType === 'command' ? (item as any).desc : item.subtitle}</span>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">{popoverType === 'command' ? (item as any).label : (item as any).name}</span>
+                      <span className="text-[11px] text-[var(--text-secondary)] ml-2">{popoverType === 'command' ? (item as any).desc : (item as any).subtitle}</span>
                     </div>
                   </button>
                 ))}

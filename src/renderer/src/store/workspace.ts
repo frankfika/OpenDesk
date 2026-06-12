@@ -95,7 +95,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   addWorkspace: async (folderPath, name) => {
-    const payload: WorkspaceCreatePayload = { folderPath, name }
     if (!window.api?.workspace?.add) {
       const mock: Workspace = {
         id: 'mock-' + Date.now(),
@@ -110,7 +109,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       get().setActiveWorkspace(mock.id)
       return mock
     }
-    const workspace = await window.api.workspace.add(payload)
+    // workspace.add() opens a folder picker and returns the new workspace
+    const workspace = await window.api.workspace.add()
+    if (!workspace) throw new Error('No folder selected')
     set(s => ({ workspaces: [workspace, ...s.workspaces] }))
     get().setActiveWorkspace(workspace.id)
     return workspace

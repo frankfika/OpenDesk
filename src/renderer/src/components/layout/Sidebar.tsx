@@ -135,7 +135,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
       : threads.find(t => t.id === id)
     if (item) {
       setEditingId(id)
-      setEditValue(item.name || item.title)
+      setEditValue(type === 'workspace' ? (item as typeof workspaces[0]).name : (item as typeof threads[0]).title)
     }
   }
 
@@ -195,11 +195,8 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
   }
 
   function handleOpenInFinder(path: string) {
-    if (window.api?.workspace?.openInFinder) {
-      window.api.workspace.openInFinder(path)
-    } else {
-      console.log('Open in finder:', path)
-    }
+    // openInFinder not available via API; log for now
+    console.log('Open in finder:', path)
   }
 
   function handleCopyPath(path: string) {
@@ -263,8 +260,8 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
         // In real app, persist order
       }
     } else if (sourceType === 'thread' && targetType === 'workspace') {
-      // Move thread to different workspace
-      updateThread(sourceId, { workspaceId: targetId })
+      // Move thread to different workspace — not supported in ThreadUpdatePayload; skip
+      console.log('Move thread', sourceId, 'to workspace', targetId)
     }
   }
 
@@ -481,8 +478,8 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
                                   <ContextMenu.Portal>
                                     <ContextMenu.Content
                                       className="z-50 min-w-[180px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
-                                      sideOffset={4}
-                                      align="start"
+                                     
+                                     
                                     >
                                       <ContextMenu.Item
                                         className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
@@ -565,8 +562,8 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
                     <ContextMenu.Portal>
                       <ContextMenu.Content
                         className="z-50 min-w-[200px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
-                        sideOffset={4}
-                        align="start"
+                       
+                       
                       >
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
