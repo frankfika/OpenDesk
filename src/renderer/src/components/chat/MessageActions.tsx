@@ -45,7 +45,7 @@ export default function MessageActions({
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="z-50 min-w-[180px] rounded-lg overflow-hidden bg-[var(--bg-content)] backdrop-blur-2xl border border-[var(--border)] shadow-xl py-1"
+          className="z-50 min-w-[180px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
           sideOffset={4}
           align="end"
         >

@@ -57,7 +57,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div className="w-full max-w-2xl max-h-[85vh] bg-[var(--bg-content)] rounded-2xl border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="shrink-0 px-6 py-4 border-b border-[var(--border)] flex items-start justify-between">

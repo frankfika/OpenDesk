@@ -77,9 +77,9 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
   return (
     <Dialog.Root open={open}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} />
+        <Dialog.Overlay className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.5)' }} />
         <Dialog.Content
-          className="fixed z-50 rounded-2xl shadow-2xl overflow-hidden bg-[var(--bg-content)] backdrop-blur-3xl border border-[var(--border-strong)] text-[var(--text-primary)]"
+          className="fixed z-50 rounded-2xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)]"
           style={{
             top: '50%',
             left: '50%',

@@ -43,7 +43,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       exit={{ opacity: 0, x: 40, scale: 0.95 }}
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
       className={cn(
-        'flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-xl',
+        'flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg',
         'min-w-[280px] max-w-[400px]',
         config.bg,
         config.border,

@@ -277,7 +277,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
 
   return (
     <aside
-      className="flex flex-col shrink-0 h-screen bg-[var(--bg-sidebar)] backdrop-blur-2xl"
+      className="flex flex-col shrink-0 h-screen bg-[var(--bg-sidebar)]"
       style={{ width: 'var(--sidebar-width)' }}
     >
       {/* Title bar drag region */}
@@ -480,7 +480,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
 
                                   <ContextMenu.Portal>
                                     <ContextMenu.Content
-                                      className="z-50 min-w-[180px] rounded-lg overflow-hidden bg-[var(--bg-content)] backdrop-blur-2xl border border-[var(--border)] shadow-xl py-1"
+                                      className="z-50 min-w-[180px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
                                       sideOffset={4}
                                       align="start"
                                     >
@@ -564,7 +564,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
 
                     <ContextMenu.Portal>
                       <ContextMenu.Content
-                        className="z-50 min-w-[200px] rounded-lg overflow-hidden bg-[var(--bg-content)] backdrop-blur-2xl border border-[var(--border)] shadow-xl py-1"
+                        className="z-50 min-w-[200px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
                         sideOffset={4}
                         align="start"
                       >
@@ -653,7 +653,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
       </div>
 
       {/* Bottom bar */}
-      <div className="shrink-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-sidebar)]/50 backdrop-blur-md">
+      <div className="shrink-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-sidebar)]/50">
         <div className="flex items-center gap-2">
           <button
             className="no-drag flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
@@ -680,7 +680,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills }: S
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center"
+            className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center"
             onClick={() => setShowIconPicker(null)}
           >
             <motion.div

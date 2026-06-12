@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
 import {
   Copy, Check, Download, ExternalLink, ZoomIn, ZoomOut,
-  FileCode, FileJson, Image, Globe, Sparkles, Type
+  FileCode, FileJson, Image, Globe, Type
 } from 'lucide-react'
 import CodeBlock from '../chat/CodeBlock'
 

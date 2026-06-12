@@ -269,7 +269,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/40"
             onClick={() => onOpenChange(false)}
           />
         </Dialog.Overlay>
@@ -282,7 +282,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
             className="fixed left-1/2 top-[15%] z-50 w-full max-w-2xl -translate-x-1/2"
             onKeyDown={handleKeyDown}
           >
-            <div className="rounded-2xl bg-[var(--bg-content)]/95 backdrop-blur-2xl border border-[var(--border)] shadow-2xl overflow-hidden">
+            <div className="rounded-2xl bg-[var(--bg-content)]/95 border border-[var(--border)] shadow-2xl overflow-hidden">
               {/* Search input */}
               <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
                 <Search size={20} className="text-[var(--text-muted)] shrink-0" />

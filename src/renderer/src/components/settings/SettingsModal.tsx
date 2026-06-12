@@ -17,7 +17,7 @@ import {
   Shield, ShieldCheck, ShieldAlert, Type, Globe, Power,
   Cpu, FileText, ExternalLink, ChevronRight, Plug, Wrench,
   Plus, Server, Zap, Database, Globe2, FileCode, MousePointer,
-  Loader2, Bot, Sparkles
+  Loader2, Bot
 } from 'lucide-react'
 
 interface SettingsModalProps {
@@ -208,7 +208,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         <Dialog.Overlay asChild>
           <motion.div
             className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(0,0,0,0.5)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -217,7 +217,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         </Dialog.Overlay>
         <Dialog.Content asChild>
           <motion.div
-            className="fixed z-50 rounded-xl shadow-2xl overflow-hidden bg-[var(--bg-content)] backdrop-blur-3xl border border-[var(--border-strong)] text-[var(--text-primary)] flex flex-col"
+            className="fixed z-50 rounded-xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)] flex flex-col"
             style={{
               top: '50%',
               left: '50%',

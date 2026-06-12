@@ -64,7 +64,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
   return (
     <motion.div
       ref={panelRef}
-      className={`shrink-0 flex flex-col h-full border-l border-[var(--border)] bg-[var(--bg-content)] backdrop-blur-xl relative ${className}`}
+      className={`shrink-0 flex flex-col h-full border-l border-[var(--border)] bg-[var(--bg-content)] relative ${className}`}
       style={{ width }}
       initial={{ x: '100%', opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}

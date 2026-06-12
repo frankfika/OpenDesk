@@ -40,7 +40,7 @@ export default function CodeBlock({ code, language, onPreview }: CodeBlockProps)
   return (
     <div className="relative group/code my-3">
       {/* Floating header bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-sidebar)]/80 border border-[var(--border)] rounded-t-lg backdrop-blur-sm">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-sidebar)]/80 border border-[var(--border)] rounded-t-lg">
         {/* Language pill */}
         <span className="text-[10px] font-mono font-medium text-[var(--text-muted)] uppercase px-2 py-0.5 rounded-full bg-[var(--bg-content)]/60 border border-[var(--border)]">
           {language || 'text'}

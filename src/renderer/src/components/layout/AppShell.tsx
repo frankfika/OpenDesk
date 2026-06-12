@@ -75,12 +75,13 @@ export default function AppShell() {
     loadWorkspaces()
   }, [settingsLoaded, loadSettings, loadWorkspaces, setTheme])
 
-  // Show onboarding if no workspaces and no providers
+  // Show onboarding only if settings loaded AND no providers configured
+  // Don't block on workspaces — default workspace is created automatically
   useEffect(() => {
-    if (settingsLoaded && workspaces.length === 0 && settings.providers.length === 0) {
+    if (settingsLoaded && settings.providers.length === 0) {
       setOnboardingOpen(true)
     }
-  }, [settingsLoaded, workspaces.length, settings.providers.length])
+  }, [settingsLoaded, settings.providers.length])
 
   function handleNewThread() {
     const ws = activeWorkspace()
@@ -139,7 +140,7 @@ export default function AppShell() {
           onNewThread={handleNewThread}
           onOpenSkills={() => setSkillsPanelOpen(true)}
         />
-        <main className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)] backdrop-blur-3xl">
+        <main className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]">
           <ChatPanel onOpenSettings={() => setSettingsOpen(true)} />
         </main>
 
@@ -147,7 +148,7 @@ export default function AppShell() {
         <AnimatePresence>
           {skillsPanelOpen && (
             <motion.div
-              className="fixed inset-0 z-40 bg-[var(--bg-content)]/95 backdrop-blur-xl"
+              className="fixed inset-0 z-40 bg-[var(--bg-content)]/95"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}

@@ -17,7 +17,7 @@ import {
   FolderSymlink, Plug, TerminalSquare, Library,
   Settings, Sun, Moon, Monitor, CheckCircle2, AlertCircle,
   XCircle, FileText, Cpu, PanelRightOpen, Code2, FileEdit,
-  Search, Sparkles, Zap
+  Search, MessageSquare
 } from 'lucide-react'
 
 interface ChatPanelProps {
@@ -236,7 +236,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
       </div>
 
       {/* Status bar - optimized */}
-      <div className="shrink-0 flex items-center gap-4 px-6 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/30 backdrop-blur-md">
+      <div className="shrink-0 flex items-center gap-4 px-6 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/30">
         {/* Provider health - clickable to switch */}
         <button
           onClick={onOpenSettings}

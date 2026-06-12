@@ -8,7 +8,7 @@ import SkillImportModal from './SkillImportModal'
 import EmptyState from '../ui/EmptyState'
 import {
   Search, Filter, ArrowUpDown, Download, Plus, X,
-  Globe, FolderOpen, Code2, Bot, Store, Box, Sparkles,
+  Globe, FolderOpen, Code2, Bot, Store, Box,
   Wand2, GitBranch, FilePlus, Loader2
 } from 'lucide-react'
 
@@ -172,7 +172,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
       <div className="flex-1 overflow-y-auto p-6">
         {filteredSkills.length === 0 ? (
           <EmptyState
-            icon={Sparkles}
+            icon={Box}
             title="No skills yet"
             description="Skills let you teach OpenDesk specialized tasks. Import from your favorite sources or create your own."
             size="lg"
@@ -232,7 +232,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
       <AnimatePresence>
         {createOpen && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

@@ -24,7 +24,7 @@ export default function SuggestionCard({
       onClick={onClick}
       className={cn(
         'flex flex-col gap-3 p-5 rounded-2xl text-left transition-all duration-300',
-        'bg-[var(--bg-sidebar)]/50 backdrop-blur-xl border border-[var(--border)]',
+        'bg-[var(--bg-sidebar)]/50 border border-[var(--border)]',
         'hover:border-[var(--text-muted)] hover:shadow-lg hover:-translate-y-0.5',
         'w-[180px] group',
         className

@@ -304,7 +304,7 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
 
         <ContextMenu.Portal>
           <ContextMenu.Content
-            className="min-w-[180px] rounded-xl bg-[var(--bg-content)] border border-[var(--border)] shadow-xl backdrop-blur-xl z-50 py-1"
+            className="min-w-[180px] rounded-xl bg-[var(--bg-content)] border border-[var(--border)] shadow-xl z-50 py-1"
             sideOffset={5}
             align="start"
           >

@@ -270,7 +270,7 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
       <Dialog.Portal>
         <Dialog.Overlay asChild>
           <motion.div
-            className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[90] bg-black/40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -285,7 +285,7 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
             exit={{ opacity: 0, y: -10, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1.0] }}
           >
-            <div className="bg-[var(--bg-content)]/95 backdrop-blur-2xl border border-[var(--border-strong)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]">
+            <div className="bg-[var(--bg-content)]/95 border border-[var(--border-strong)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]">
               {/* Search input */}
               <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--border)]">
                 <Search size={18} className="text-[var(--text-muted)] shrink-0" />

@@ -458,7 +458,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   return (
     <div className="shrink-0 px-6 pb-8 pt-2 max-w-3xl w-full mx-auto relative">
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm bg-red-50/80 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm backdrop-blur-md">
+        <div className="mb-4 px-4 py-3 rounded-xl text-sm bg-red-50/80 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm">
           <div className="flex items-start gap-2">
             <ShieldAlert size={16} className="mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -547,7 +547,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       )}
 
       <div
-        className={`rounded-2xl overflow-visible bg-[var(--bg-input)]/80 backdrop-blur-2xl border transition-all duration-300 relative shadow-sm ${
+        className={`rounded-2xl overflow-visible bg-[var(--bg-input)]/80 border transition-all duration-300 relative shadow-sm ${
           isDragging ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/20' : 'border-[var(--border)] focus-within:border-[var(--text-muted)] focus-within:shadow-md'
         }`}
         onDragOver={handleDragOver}
@@ -575,7 +575,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
 
           {/* Popover for @ / # / / */}
           {popoverType && popoverItems.length > 0 && (
-            <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 rounded-xl overflow-hidden z-50 py-2 bg-[var(--bg-content)]/95 backdrop-blur-2xl border border-[var(--border)] shadow-xl max-h-[280px] flex flex-col">
+            <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 rounded-xl overflow-hidden z-50 py-2 bg-[var(--bg-content)]/95 border border-[var(--border)] shadow-xl max-h-[280px] flex flex-col">
               <div className="px-3 pb-2 text-xs font-semibold text-[var(--text-muted)] border-b border-[var(--border)] mb-1">
                 {popoverType === 'mention' ? 'Mention workspace or file' : popoverType === 'thread' ? 'Reference thread' : 'Quick command'}
               </div>
@@ -609,7 +609,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
 
           {/* Legacy skill picker */}
           {showSkillPicker && (
-            <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 rounded-xl overflow-hidden z-50 py-2 bg-[var(--bg-content)]/90 backdrop-blur-2xl border border-[var(--border)] shadow-xl max-h-[300px] flex flex-col">
+            <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 rounded-xl overflow-hidden z-50 py-2 bg-[var(--bg-content)]/90 border border-[var(--border)] shadow-xl max-h-[300px] flex flex-col">
               <div className="px-3 pb-2 text-xs font-semibold text-[var(--text-muted)] border-b border-[var(--border)] mb-1">
                 Select a skill
               </div>
@@ -658,7 +658,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
             </button>
 
             {showModelPicker && (
-              <div className="absolute bottom-full left-0 mb-2 rounded-lg overflow-hidden z-50 py-1 bg-[var(--bg-content)] backdrop-blur-2xl border border-[var(--border)] shadow-lg min-w-[240px]">
+              <div className="absolute bottom-full left-0 mb-2 rounded-lg overflow-hidden z-50 py-1 bg-[var(--bg-content)] border border-[var(--border)] shadow-lg min-w-[240px]">
                 {settings.providers.length === 0 ? (
                   <button
                     onClick={() => { setShowModelPicker(false); onOpenSettings() }}
@@ -741,7 +741,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
             </button>
 
             {showApproval && (
-              <div className="absolute bottom-full left-0 mb-2 rounded-lg overflow-hidden z-50 py-1 bg-[var(--bg-content)] backdrop-blur-2xl border border-[var(--border)] shadow-lg min-w-[220px]">
+              <div className="absolute bottom-full left-0 mb-2 rounded-lg overflow-hidden z-50 py-1 bg-[var(--bg-content)] border border-[var(--border)] shadow-lg min-w-[220px]">
                 {APPROVAL_MODES.map(mode => (
                   <button
                     key={mode.value}

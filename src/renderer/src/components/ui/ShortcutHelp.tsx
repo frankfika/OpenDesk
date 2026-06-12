@@ -96,7 +96,7 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/40"
             onClick={() => onOpenChange(false)}
           />
         </Dialog.Overlay>
@@ -108,7 +108,7 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
             transition={{ duration: 0.2 }}
             className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2"
           >
-            <div className="rounded-2xl bg-[var(--bg-content)]/95 backdrop-blur-2xl border border-[var(--border)] shadow-2xl overflow-hidden">
+            <div className="rounded-2xl bg-[var(--bg-content)]/95 border border-[var(--border)] shadow-2xl overflow-hidden">
               <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
                 <Keyboard size={18} className="text-[var(--text-muted)]" />
                 <h2 className="text-sm font-semibold text-[var(--text-primary)]">Keyboard Shortcuts</h2>

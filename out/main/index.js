@@ -312,7 +312,30 @@ function createWorkspace(payload) {
   return workspace;
 }
 function listWorkspaces() {
-  return loadWorkspaces();
+  const workspaces = loadWorkspaces();
+  if (workspaces.length === 0) {
+    const defaultWorkspace = createDefaultWorkspace();
+    workspaces.push(defaultWorkspace);
+    saveWorkspaces(workspaces);
+  }
+  return workspaces;
+}
+function createDefaultWorkspace() {
+  const now = Date.now();
+  const defaultPath = path.join(electron.app.getPath("userData"), "opendesk", "default-workspace");
+  if (!fs.existsSync(defaultPath)) {
+    fs.mkdirSync(defaultPath, { recursive: true });
+  }
+  return {
+    id: "default-workspace",
+    folderPath: defaultPath,
+    name: "General",
+    createdAt: now,
+    updatedAt: now,
+    tags: [],
+    status: "active",
+    description: "Default workspace for general conversations"
+  };
 }
 function updateWorkspace(id, patch) {
   const workspaces = loadWorkspaces();
