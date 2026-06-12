@@ -36,13 +36,20 @@ const TAB_LIST = [
 ]
 
 const PROVIDER_PRESETS = [
-  { id: 'openai', name: 'OpenAI', icon: Bot, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { id: 'anthropic', name: 'Anthropic', icon: Bot, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { id: 'ollama', name: 'Ollama', icon: Cpu, color: 'text-violet-600', bg: 'bg-violet-50' },
-  { id: 'deepseek', name: 'DeepSeek', icon: Bot, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { id: 'doubao', name: '豆包', icon: Bot, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-  { id: 'glm', name: 'GLM', icon: Bot, color: 'text-purple-600', bg: 'bg-purple-50' },
-  { id: 'kimi', name: 'Kimi', icon: Bot, color: 'text-rose-600', bg: 'bg-rose-50' }
+  { id: 'openai',     name: 'OpenAI',          icon: Bot, color: 'text-emerald-600', bg: 'bg-emerald-50',  baseUrl: 'https://api.openai.com/v1',               model: 'gpt-4o' },
+  { id: 'anthropic',  name: 'Anthropic',        icon: Bot, color: 'text-orange-600',  bg: 'bg-orange-50',   baseUrl: 'https://api.anthropic.com/v1',             model: 'claude-sonnet-4-5' },
+  { id: 'gemini',     name: 'Google Gemini',    icon: Bot, color: 'text-blue-600',    bg: 'bg-blue-50',     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
+  { id: 'deepseek',   name: 'DeepSeek',         icon: Bot, color: 'text-sky-600',     bg: 'bg-sky-50',      baseUrl: 'https://api.deepseek.com/v1',              model: 'deepseek-chat' },
+  { id: 'ollama',     name: 'Ollama',           icon: Cpu, color: 'text-violet-600',  bg: 'bg-violet-50',   baseUrl: 'http://localhost:11434/v1',                 model: 'llama3' },
+  { id: 'groq',       name: 'Groq',             icon: Bot, color: 'text-yellow-600',  bg: 'bg-yellow-50',   baseUrl: 'https://api.groq.com/openai/v1',           model: 'llama-3.3-70b-versatile' },
+  { id: 'grok',       name: 'xAI Grok',         icon: Bot, color: 'text-neutral-600', bg: 'bg-neutral-50',  baseUrl: 'https://api.x.ai/v1',                      model: 'grok-3' },
+  { id: 'mistral',    name: 'Mistral',          icon: Bot, color: 'text-indigo-600',  bg: 'bg-indigo-50',   baseUrl: 'https://api.mistral.ai/v1',                model: 'mistral-large-latest' },
+  { id: 'doubao',     name: '豆包 (ByteDance)', icon: Bot, color: 'text-cyan-600',    bg: 'bg-cyan-50',     baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', model: 'doubao-pro-32k' },
+  { id: 'kimi',       name: 'Kimi (Moonshot)',  icon: Bot, color: 'text-rose-600',    bg: 'bg-rose-50',     baseUrl: 'https://api.moonshot.cn/v1',               model: 'moonshot-v1-8k' },
+  { id: 'glm',        name: 'GLM (智谱)',       icon: Bot, color: 'text-purple-600',  bg: 'bg-purple-50',   baseUrl: 'https://open.bigmodel.cn/api/paas/v4',     model: 'glm-4-flash' },
+  { id: 'qwen',       name: 'Qwen (阿里)',      icon: Bot, color: 'text-amber-600',   bg: 'bg-amber-50',    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
+  { id: 'openrouter', name: 'OpenRouter',       icon: Bot, color: 'text-teal-600',    bg: 'bg-teal-50',     baseUrl: 'https://openrouter.ai/api/v1',             model: 'openai/gpt-4o' },
+  { id: 'custom',     name: 'Custom / Other',   icon: Bot, color: 'text-gray-600',    bg: 'bg-gray-50',     baseUrl: '',                                         model: '' },
 ]
 
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
@@ -51,6 +58,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { theme, setTheme } = useThemeStore()
   const toast = useToast()
   const [showAddForm, setShowAddForm] = useState(false)
+  const [addFormPreset, setAddFormPreset] = useState<{ name: string; baseUrl: string; model: string } | null>(null)
   const [editingProvider, setEditingProvider] = useState<string | null>(null)
   const [editApiKey, setEditApiKey] = useState('')
   const [doctorReport, setDoctorReport] = useState<DoctorReport | null>(null)
@@ -207,30 +215,31 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       <Dialog.Portal>
         <Dialog.Overlay asChild>
           <motion.div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 flex items-center justify-center"
             style={{ background: 'rgba(0,0,0,0.5)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-          />
+          >
+          </motion.div>
         </Dialog.Overlay>
         <Dialog.Content asChild>
           <motion.div
-            className="fixed z-50 rounded-xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)] flex flex-col"
-            style={{
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%,-50%)',
-              width: 640,
-              maxHeight: '85vh',
-              height: 'auto'
-            }}
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.97 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
+            <motion.div
+              className="rounded-xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)] flex flex-col pointer-events-auto"
+              style={{ width: 640, maxHeight: '85vh' }}
+              initial={{ y: 30, scale: 0.97 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
               <Dialog.Title className="text-sm font-semibold">Settings</Dialog.Title>
@@ -272,7 +281,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <ProviderForm onSave={handleAddProvider} />
+                      <ProviderForm onSave={handleAddProvider} initialValues={addFormPreset ?? undefined} />
                     </motion.div>
                   )}
 
@@ -289,7 +298,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                           return (
                             <motion.button
                               key={preset.id}
-                              onClick={() => setShowAddForm(true)}
+                              onClick={() => {
+                                setAddFormPreset({ name: preset.name, baseUrl: preset.baseUrl, model: preset.model })
+                                setShowAddForm(true)
+                              }}
                               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium border transition-all ${preset.bg} border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-sm`}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
@@ -932,6 +944,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Tabs.Content>
               </div>
             </Tabs.Root>
+          </motion.div>
           </motion.div>
         </Dialog.Content>
       </Dialog.Portal>

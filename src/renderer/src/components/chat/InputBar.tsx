@@ -437,19 +437,30 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   // Screenshot handler
   const handleScreenshot = useCallback(async () => {
     try {
-      const result = await window.api?.desktop?.capture()
-      if (result) {
-        const attachment: FileAttachment = {
-          id: genId(),
-          name: 'screenshot.png',
-          path: result,
-          size: 0,
-          mimeType: 'image/png'
-        }
-        addAttachment(attachment)
+      const base64 = await window.api?.desktop?.capture()
+      if (!base64) return
+      // base64 is PNG data — convert to blob URL for preview and attach
+      const byteChars = atob(base64)
+      const byteArr = new Uint8Array(byteChars.length)
+      for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
+      const blob = new Blob([byteArr], { type: 'image/png' })
+      const url = URL.createObjectURL(blob)
+      const attachment: FileAttachment = {
+        id: genId(),
+        name: `screenshot-${Date.now()}.png`,
+        path: url,
+        size: byteArr.length,
+        mimeType: 'image/png',
+        content: base64
       }
+      addAttachment(attachment)
     } catch (e) {
       console.error('Screenshot failed:', e)
+      // Show user-friendly error if permission denied
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('Failed to get sources') || msg.includes('permission')) {
+        alert('Screenshot permission denied.\n\nPlease go to System Settings → Privacy & Security → Screen Recording and allow OpenDesk.')
+      }
     }
   }, [addAttachment])
 

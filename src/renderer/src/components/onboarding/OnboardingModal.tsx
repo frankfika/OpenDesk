@@ -77,17 +77,11 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
   return (
     <Dialog.Root open={open}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.5)' }} />
-        <Dialog.Content
-          className="fixed z-50 rounded-2xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)]"
-          style={{
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%,-50%)',
-            width: 480,
-            maxHeight: '80vh'
-          }}
-        >
+        <Dialog.Overlay className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <Dialog.Content
+            className="rounded-2xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)]"
+            style={{ width: 480, maxHeight: '80vh' }}
+          >
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 pt-6 pb-2">
             {STEPS.map((s, i) => (
@@ -275,6 +269,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
             )}
           </div>
         </Dialog.Content>
+        </Dialog.Overlay>
       </Dialog.Portal>
     </Dialog.Root>
   )

@@ -5,6 +5,7 @@ import { RefreshCw, Check, X } from 'lucide-react'
 
 interface ProviderFormProps {
   onSave: (config: ProviderConfig, apiKey: string) => void
+  initialValues?: { name?: string; baseUrl?: string; model?: string }
 }
 
 type ProviderType = ProviderConfig['type']
@@ -52,12 +53,12 @@ function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-export default function ProviderForm({ onSave }: ProviderFormProps) {
-  const [type, setType] = useState<ProviderType>('anthropic')
-  const [name, setName] = useState('')
-  const [model, setModel] = useState(TYPE_PRESETS.anthropic.defaultModel)
+export default function ProviderForm({ onSave, initialValues }: ProviderFormProps) {
+  const [type, setType] = useState<ProviderType>('openai-compatible')
+  const [name, setName] = useState(initialValues?.name ?? '')
+  const [model, setModel] = useState(initialValues?.model ?? '')
   const [apiKey, setApiKey] = useState('')
-  const [baseUrl, setBaseUrl] = useState('')
+  const [baseUrl, setBaseUrl] = useState(initialValues?.baseUrl ?? '')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
   const [fetchingModels, setFetchingModels] = useState(false)
@@ -231,25 +232,13 @@ export default function ProviderForm({ onSave }: ProviderFormProps) {
       <div>
         <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">
           Base URL
-          {type !== 'openai-compatible' && type !== 'generic' && (
-            <span className="ml-2 text-[10px] text-[var(--text-muted)] font-normal">(auto-filled)</span>
-          )}
         </label>
         <input
           type="text"
-          className={`w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none selectable font-mono border transition-all duration-200 ${
-            type !== 'openai-compatible' && type !== 'generic'
-              ? 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-muted)] cursor-default'
-              : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--text-muted)] focus:bg-[var(--bg-content)] focus:shadow-sm'
-          }`}
-          placeholder={type === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.example.com/v1'}
+          className="w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none selectable font-mono border transition-all duration-200 bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--text-muted)] focus:bg-[var(--bg-content)] focus:shadow-sm"
+          placeholder="https://api.example.com/v1"
           value={baseUrl}
-          onChange={(e) => {
-            if (type === 'openai-compatible' || type === 'generic') {
-              setBaseUrl(e.target.value)
-            }
-          }}
-          readOnly={type !== 'openai-compatible' && type !== 'generic'}
+          onChange={(e) => setBaseUrl(e.target.value)}
         />
       </div>
 
