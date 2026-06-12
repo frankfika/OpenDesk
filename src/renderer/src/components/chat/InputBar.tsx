@@ -41,6 +41,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const [skillFilter, setSkillFilter] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
+  const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { messages, streaming, error, errorType, addMessage, appendToken, addToolCall, addToolResult, setStreaming, setError, attachments, addAttachment, removeAttachment, clearAttachments } = useChatStore()
   const { settings, activeProvider, update, fetchModels, updateProvider } = useSettingsStore()
@@ -67,6 +68,18 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     window.addEventListener('opendesk:fill-input', handler)
     return () => window.removeEventListener('opendesk:fill-input', handler)
   }, [])
+
+  // Listen for file reference from FilePanel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ path: string; name: string }>).detail
+      const prefix = text.trim() ? text.trim() + '\n\n' : ''
+      setText(prefix + `@file:${detail.name}`)
+      setTimeout(() => textareaRef.current?.focus(), 50)
+    }
+    window.addEventListener('opendesk:reference-file', handler)
+    return () => window.removeEventListener('opendesk:reference-file', handler)
+  }, [text])
 
   // Draft auto-save and restore
   useEffect(() => {
@@ -100,19 +113,18 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   }, [text])
 
   useEffect(() => {
-    if (!window.api?.chat) return
-    const offToken = window.api.chat.onToken((token) => appendToken(token))
-    const offToolCall = window.api.chat.onToolCall((toolCall) => {
-      addToolCall(toolCall)
-    })
-    const offToolResult = window.api.chat.onToolResult((result) => {
-      addToolResult(result)
-    })
-    const offDone = window.api.chat.onDone(() => setStreaming(false))
-    const offError = window.api.chat.onError((error) => {
-      setStreaming(false)
-      setError(error.message, error.type as 'auth' | 'network' | 'model' | 'provider' | 'workspace' | 'ollama' | 'generic' | null)
-    })
+    const chat = window.api?.chat
+    if (!chat) return
+    const offToken = typeof chat.onToken === 'function' ? chat.onToken((token) => appendToken(token)) : () => {}
+    const offToolCall = typeof chat.onToolCall === 'function' ? chat.onToolCall((toolCall) => addToolCall(toolCall)) : () => {}
+    const offToolResult = typeof chat.onToolResult === 'function' ? chat.onToolResult((result) => addToolResult(result)) : () => {}
+    const offDone = typeof chat.onDone === 'function' ? chat.onDone(() => setStreaming(false)) : () => {}
+    const offError = typeof chat.onError === 'function'
+      ? chat.onError((error) => {
+          setStreaming(false)
+          setError(error.message, error.type as 'auth' | 'network' | 'model' | 'provider' | 'workspace' | 'ollama' | 'generic' | null)
+        })
+      : () => {}
     return () => { offToken(); offToolCall(); offToolResult(); offDone(); offError() }
   }, [appendToken, addToolCall, addToolResult, setStreaming, setError])
 
@@ -256,15 +268,14 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
         items.push({ type: 'workspace', id: ws.id, name, subtitle: ws.folderPath, icon: <Folder size={14} /> })
       }
     })
-    // Files (mock - in real app would list workspace files)
+    // Real workspace files
     if (workspace) {
-      const mockFiles = ['README.md', 'src/main.ts', 'package.json', 'tsconfig.json']
-      mockFiles.filter(f => f.toLowerCase().includes(q)).forEach(f => {
+      workspaceFiles.filter(f => f.toLowerCase().includes(q)).slice(0, 6).forEach(f => {
         items.push({ type: 'file', id: f, name: f, subtitle: workspace.folderPath, icon: <FileText size={14} /> })
       })
     }
     return items.slice(0, 8)
-  }, [popoverQuery, workspaces, workspace])
+  }, [popoverQuery, workspaces, workspace, workspaceFiles])
 
   // Thread items
   const threadItems = useMemo(() => {
@@ -320,9 +331,10 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       }
     }
 
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       send()
+      return
     }
     if (e.key === 'Escape' && streaming) {
       abort()
@@ -334,18 +346,43 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     if (!content || streaming) return
     if (!provider) { onOpenSettings(); return }
 
-    // Parse mentions
+    // Resolve @file references to actual content
     let processedContent = content
-    const mentionRegex = /@workspace:([^\s]+)|@file:([^\s]+)|#thread:([^\s]+)/g
+    const fileRefs: { name: string; path: string; content: string }[] = []
+    const fileRegex = /@file:([^\s]+)/g
+    let fileMatch
+    while ((fileMatch = fileRegex.exec(content)) !== null) {
+      const fileName = fileMatch[1]
+      const filePath = workspace ? `${workspace.folderPath}/${fileName}` : fileName
+      try {
+        if (window.api?.tools?.readFile) {
+          const result = await window.api.tools.readFile(filePath)
+          if (result.success && result.content !== undefined) {
+            fileRefs.push({ name: fileName, path: filePath, content: result.content })
+          }
+        }
+      } catch (e) {
+        console.error('Failed to read referenced file:', filePath, e)
+      }
+    }
+
+    if (fileRefs.length > 0) {
+      const fileContext = fileRefs.map(f =>
+        `File: ${f.name}\n\`\`\`\n${f.content}\n\`\`\``
+      ).join('\n\n')
+      processedContent = content.replace(fileRegex, '') + '\n\n' + fileContext
+    }
+
+    // Legacy mention handling for workspace/thread
+    const mentionRegex = /@workspace:([^\s]+)|#thread:([^\s]+)/g
     const mentions: string[] = []
     let match
     while ((match = mentionRegex.exec(content)) !== null) {
       if (match[1]) mentions.push(`Workspace: ${match[1]}`)
-      if (match[2]) mentions.push(`File: ${match[2]}`)
-      if (match[3]) mentions.push(`Thread: ${match[3]}`)
+      if (match[2]) mentions.push(`Thread: ${match[2]}`)
     }
     if (mentions.length > 0) {
-      processedContent = content.replace(mentionRegex, '') + '\n\n[Context: ' + mentions.join(', ') + ']'
+      processedContent = processedContent + '\n\n[Context: ' + mentions.join(', ') + ']'
     }
 
     // Ensure we have an active thread
@@ -475,6 +512,37 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     }
   }, [addAttachment])
 
+  // Load workspace file list for @file mentions
+  useEffect(() => {
+    if (!workspace?.folderPath || !window.api?.tools?.listDirectory) {
+      setWorkspaceFiles([])
+      return
+    }
+    let cancelled = false
+    const loadFiles = async (dir: string, prefix = ''): Promise<string[]> => {
+      try {
+        const result = await window.api.tools.listDirectory(dir)
+        if (!result.success || !result.entries) return []
+        const files: string[] = []
+        for (const entry of result.entries.slice(0, 200)) {
+          if (entry.isDirectory) {
+            if (!entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== '.git') {
+              const sub = await loadFiles(entry.path, prefix + entry.name + '/')
+              files.push(...sub)
+            }
+          } else {
+            files.push(prefix + entry.name)
+          }
+        }
+        return files
+      } catch { return [] }
+    }
+    loadFiles(workspace.folderPath).then(files => {
+      if (!cancelled) setWorkspaceFiles(files.slice(0, 300))
+    })
+    return () => { cancelled = true }
+  }, [workspace?.folderPath])
+
   const filteredModels = fetchedModels.filter((m) => m.toLowerCase().includes(modelSearch.toLowerCase()))
 
   return (
@@ -587,7 +655,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
             ref={textareaRef}
             className="w-full bg-transparent resize-none outline-none text-[15px] leading-relaxed selectable text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-[height] duration-150 ease-out"
             style={{ minHeight: 28, maxHeight: 300 }}
-            placeholder={provider ? 'Message OpenDesk… (⌘↵ to send, ⇧↵ for new line, / for skills)' : 'Configure a provider to start…'}
+            placeholder={provider ? 'Message OpenDesk… (↵ to send, ⇧↵ for new line, / for skills)' : 'Configure a provider to start…'}
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}

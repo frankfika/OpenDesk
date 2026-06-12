@@ -2591,37 +2591,27 @@ function saveMessages(threadId, messages) {
 }
 async function fetchModels(type, baseUrl, apiKey) {
   try {
-    let url;
-    let headers = {};
-    if (type === "ollama") {
-      url = (baseUrl || "http://localhost:11434") + "/api/tags";
-    } else if (type === "openai-compatible" || type === "openai") {
-      url = (baseUrl || "https://api.openai.com") + "/v1/models";
-      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-    } else if (type === "anthropic") {
+    if (type === "anthropic") {
       return [
-        { id: "claude-3-5-sonnet-20241022", displayName: "Claude 3.5 Sonnet", contextWindow: 2e5, supportsVision: true, supportsTools: true },
-        { id: "claude-3-5-haiku-20241022", displayName: "Claude 3.5 Haiku", contextWindow: 2e5, supportsVision: false, supportsTools: true },
-        { id: "claude-3-opus-20240229", displayName: "Claude 3 Opus", contextWindow: 2e5, supportsVision: true, supportsTools: true }
+        { id: "claude-opus-4-5", displayName: "Claude Opus 4.5", contextWindow: 2e5, supportsVision: true, supportsTools: true },
+        { id: "claude-sonnet-4-5", displayName: "Claude Sonnet 4.5", contextWindow: 2e5, supportsVision: true, supportsTools: true },
+        { id: "claude-haiku-4-5", displayName: "Claude Haiku 4.5", contextWindow: 2e5, supportsVision: true, supportsTools: true }
       ];
-    } else {
-      return [];
     }
-    const res = await fetch(url, { headers });
+    if (type === "ollama") {
+      const base = (baseUrl || "http://localhost:11434").replace(/\/v1$/, "");
+      const res2 = await fetch(`${base}/api/tags`);
+      if (!res2.ok) return [];
+      const data2 = await res2.json();
+      return (data2.models || []).map((m) => ({ id: m.name, displayName: m.name }));
+    }
+    const url = (baseUrl || "https://api.openai.com/v1").replace(/\/$/, "") + "/models";
+    const headers = {};
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(8e3) });
     if (!res.ok) return [];
     const data = await res.json();
-    if (type === "ollama") {
-      const models2 = data.models || [];
-      return models2.map((m) => ({
-        id: m.name || m.model,
-        displayName: m.name || m.model
-      }));
-    }
-    const models = data.data || [];
-    return models.map((m) => ({
-      id: m.id,
-      displayName: m.id
-    }));
+    return (data.data || []).map((m) => ({ id: m.id, displayName: m.id }));
   } catch {
     return [];
   }
@@ -2684,12 +2674,18 @@ function registerIpcHandlers(win) {
   });
   electron.ipcMain.handle("settings:testProvider", async (_e, type, model, apiKey, baseUrl) => {
     let provider = null;
-    if (type === "anthropic") provider = new AnthropicProvider(apiKey, model);
-    else if (type === "openai") provider = new OpenAIProvider(apiKey, model);
-    else if (type === "openai-compatible") provider = new OpenAIProvider(apiKey, model, baseUrl);
-    else if (type === "ollama") provider = new OpenAIProvider(apiKey || "ollama", model, baseUrl || "http://localhost:11434/v1");
-    if (!provider) return false;
-    return provider.test();
+    if (type === "anthropic") {
+      provider = new AnthropicProvider(apiKey, model);
+    } else {
+      const url = baseUrl || (type === "ollama" ? "http://localhost:11434/v1" : "https://api.openai.com/v1");
+      const key = apiKey || (type === "ollama" ? "ollama" : "");
+      provider = new OpenAIProvider(key, model, url);
+    }
+    try {
+      return await provider.test();
+    } catch {
+      return false;
+    }
   });
   electron.ipcMain.handle("draft:load", () => loadDraft());
   electron.ipcMain.handle("draft:save", (_e, draft) => {
@@ -2896,6 +2892,10 @@ ${l1.content}`;
     if (skillSystemContent) {
       combinedSystemPrompt += (combinedSystemPrompt ? "\n\n" : "") + skillSystemContent;
     }
+    const workspacePath = getWorkspacePath(workspaceId);
+    if (workspacePath) {
+      combinedSystemPrompt += (combinedSystemPrompt ? "\n\n" : "") + `You are working inside the workspace: ${workspacePath}. You can read, write, list, and patch files within this workspace using the available tools. Always use absolute paths when calling file tools.`;
+    }
     if (combinedSystemPrompt) {
       finalMessages = [
         { id: "system", role: "system", content: combinedSystemPrompt, timestamp: Date.now() },
@@ -2996,6 +2996,14 @@ ${l1.content}`;
   electron.ipcMain.on("chat:editMessage", async (_e, payload) => {
     const { editIndex, ...chatPayload } = payload;
     await doChatStream(chatPayload, false, editIndex);
+  });
+  electron.ipcMain.handle("desktop:openPath", async (_e, filePath) => {
+    try {
+      const result = await electron.shell.openPath(filePath);
+      return { success: result === "", error: result || void 0 };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
   });
   electron.ipcMain.handle("desktop:capture", async () => {
     const base64 = await captureScreenshot();

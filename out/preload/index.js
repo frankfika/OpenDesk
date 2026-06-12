@@ -81,12 +81,19 @@ electron.contextBridge.exposeInMainWorld("api", {
     }
   },
   desktop: {
+    openPath: (path) => electron.ipcRenderer.invoke("desktop:openPath", path),
     capture: () => electron.ipcRenderer.invoke("desktop:capture"),
     emergencyStop: () => electron.ipcRenderer.invoke("desktop:emergencyStop"),
     getWindows: () => electron.ipcRenderer.invoke("desktop:getWindows")
   },
   doctor: {
     run: () => electron.ipcRenderer.invoke("doctor:run")
+  },
+  tools: {
+    readFile: (path) => electron.ipcRenderer.invoke("tools:readFile", path),
+    writeFile: (path, content) => electron.ipcRenderer.invoke("tools:writeFile", path, content),
+    listDirectory: (path) => electron.ipcRenderer.invoke("tools:listDirectory", path),
+    applyPatch: (path, patch) => electron.ipcRenderer.invoke("tools:applyPatch", path, patch)
   },
   app: {
     onNewChat: (cb) => {

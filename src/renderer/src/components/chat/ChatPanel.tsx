@@ -15,13 +15,14 @@ import SuggestionCard from '../ui/SuggestionCard'
 import { SkeletonMessage } from '../ui/Skeleton'
 import {
   FolderSymlink, Plug, TerminalSquare, Library,
-  Settings, Sun, Moon, Monitor, CheckCircle2, AlertCircle,
+  Settings, Sun, Moon, CheckCircle2, AlertCircle,
   XCircle, FileText, Cpu, PanelRightOpen, Code2, FileEdit,
-  Search, MessageSquare
+  Search, MessageSquare, FolderOpen, ChevronDown
 } from 'lucide-react'
 
 interface ChatPanelProps {
   onOpenSettings: () => void
+  onOpenFiles?: () => void
 }
 
 interface QuickActionHandlers {
@@ -70,7 +71,7 @@ function formatDate(ts: number): string {
   return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
-export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
+export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProps) {
   const { messages, streaming, error, threadId, attachments, clearMessages } = useChatStore()
   const { settings, activeProvider } = useSettingsStore()
   const { workspaces, activeWorkspace, activeThread, threadsByWorkspace, agentsMd, addWorkspace, setActiveWorkspace, updateThread } = useWorkspaceStore()
@@ -81,10 +82,20 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
+  const [showWorkspacePicker, setShowWorkspacePicker] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const provider = activeProvider()
   const workspace = activeWorkspace()
   const thread = activeThread()
   const activeSkill = thread?.skillId ? skills.find(s => s.id === thread?.skillId) : null
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true)
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline) }
+  }, [])
 
   // Provider health indicator
   const providerHealth = provider?.lastTestResult
@@ -157,17 +168,46 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         style={{ height: 'var(--titlebar-height)' }}
       >
         {/* Left: Workspace name */}
-        <div className="no-drag flex items-center gap-2 flex-1">
+        <div className="no-drag flex items-center gap-2 flex-1 relative">
           {workspace ? (
-            <button
-              onClick={() => {
-                // Could open workspace switcher
-              }}
-              className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
-            >
-              <FolderSymlink size={12} />
-              {workspace.name || workspace.folderPath.split('/').pop()}
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowWorkspacePicker(v => !v)}
+                className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
+              >
+                <FolderSymlink size={12} />
+                {workspace.name || workspace.folderPath.split('/').pop()}
+                <ChevronDown size={10} className="opacity-60" />
+              </button>
+              {showWorkspacePicker && (
+                <div
+                  className="absolute top-full left-0 mt-1.5 min-w-[220px] rounded-xl bg-[var(--bg-content)] border border-[var(--border)] shadow-xl z-50 py-1 overflow-hidden"
+                  onMouseLeave={() => setShowWorkspacePicker(false)}
+                >
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border)] mb-1">
+                    Switch Workspace
+                  </div>
+                  {workspaces.map(ws => (
+                    <button
+                      key={ws.id}
+                      onClick={() => { setActiveWorkspace(ws.id); setShowWorkspacePicker(false) }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${
+                        ws.id === workspace.id
+                          ? 'bg-[var(--bg-sidebar)] text-[var(--text-primary)]'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)]'
+                      }`}
+                    >
+                      <FolderSymlink size={13} className="shrink-0 text-[var(--text-muted)]" />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-medium">{ws.name || ws.folderPath.split('/').pop()}</div>
+                        <div className="truncate text-[11px] text-[var(--text-muted)]">{ws.folderPath}</div>
+                      </div>
+                      {ws.id === workspace.id && <CheckCircle2 size={12} className="text-[var(--accent)] shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <span className="text-xs text-[var(--text-muted)]">No workspace</span>
           )}
@@ -235,6 +275,14 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
             </button>
           )}
           <button
+            onClick={onOpenFiles}
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors mt-1 bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-muted)]"
+            title="Browse workspace files"
+          >
+            <FolderOpen size={12} />
+            <span>Files</span>
+          </button>
+          <button
             onClick={toggleTheme}
             className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mt-1"
             title="Toggle theme"
@@ -301,10 +349,10 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
           </div>
         )}
 
-        {/* Network status placeholder */}
+        {/* Network status */}
         <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          <span>Online</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span>{isOnline ? 'Online' : 'Offline'}</span>
         </div>
       </div>
 
@@ -313,7 +361,22 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         {/* Message list */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto scroll-smooth">
-            {messages.length === 0 ? (
+            {messages.length === 0 && !provider && (
+              <div className="flex flex-col items-center justify-center h-full px-8">
+                <EmptyState
+                  icon={Plug}
+                  title="Connect an AI model"
+                  description="Add a provider to start chatting with OpenDesk"
+                  actions={[
+                    { label: 'Add provider', onClick: onOpenSettings, variant: 'primary', icon: Plug }
+                  ]}
+                  size="lg"
+                  className="max-w-sm"
+                />
+              </div>
+            )}
+
+            {messages.length === 0 && provider && (
               <div className="flex flex-col items-center justify-center h-full gap-8 px-8">
                 {/* Animated empty state */}
                 <motion.div
@@ -334,9 +397,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
                     What can I help with?
                   </h1>
                   <p className="text-[15px] text-[var(--text-secondary)]">
-                    {provider
-                      ? `Using ${provider.name} · ${provider.model}`
-                      : 'Add a provider in Settings to get started'}
+                    {`Using ${provider.name} · ${provider.model}`}
                   </p>
                 </motion.div>
 
@@ -420,7 +481,9 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
                   )}
                 </AnimatePresence>
               </div>
-            ) : (
+            )}
+
+            {messages.length > 0 && (
               <div className="py-6 max-w-3xl mx-auto w-full px-6">
                 <AnimatePresence mode="popLayout">
                   {messageGroups.map((group, groupIdx) => (
