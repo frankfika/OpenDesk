@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-sidebar: rgba(249, 249, 251, 0.72);
-  --bg-content: rgba(255, 255, 255, 0.78);
-  --bg-input: rgba(255, 255, 255, 0.7);
+  --bg-sidebar: #F9F9FB;
+  --bg-content: #FFFFFF;
+  --bg-input: #FFFFFF;
   --text-primary: #111827;
   --text-secondary: #52525B;
   --text-muted: #A1A1AA;
   --accent: #0F172A;
   --accent-hover: #334155;
-  --border: rgba(228, 228, 231, 0.5);
-  --border-strong: rgba(212, 212, 216, 0.7);
+  --border: #E4E4E7;
+  --border-strong: #D4D4D8;
   --radius: 8px;
   --sidebar-width: 260px;
   --titlebar-height: 44px;
@@ -20,30 +20,30 @@
 
 [data-theme="dark"] :root,
 .dark :root {
-  --bg-sidebar: rgba(24, 24, 27, 0.72);
-  --bg-content: rgba(9, 9, 11, 0.78);
-  --bg-input: rgba(39, 39, 42, 0.7);
+  --bg-sidebar: #18181B;
+  --bg-content: #09090B;
+  --bg-input: #27272A;
   --text-primary: #FAFAFA;
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
   --accent: #FAFAFA;
   --accent-hover: #E4E4E7;
-  --border: rgba(39, 39, 42, 0.5);
-  --border-strong: rgba(63, 63, 70, 0.7);
+  --border: #27272A;
+  --border-strong: #3F3F46;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-sidebar: rgba(24, 24, 27, 0.72);
-    --bg-content: rgba(9, 9, 11, 0.78);
-    --bg-input: rgba(39, 39, 42, 0.7);
+    --bg-sidebar: #18181B;
+    --bg-content: #09090B;
+    --bg-input: #27272A;
     --text-primary: #FAFAFA;
     --text-secondary: #A1A1AA;
     --text-muted: #71717A;
     --accent: #FAFAFA;
     --accent-hover: #E4E4E7;
-    --border: rgba(39, 39, 42, 0.5);
-    --border-strong: rgba(63, 63, 70, 0.7);
+    --border: #27272A;
+    --border-strong: #3F3F46;
   }
 }
 
