@@ -26,13 +26,10 @@ interface SettingsModalProps {
 }
 
 const TAB_LIST = [
-  { id: 'providers', label: 'Providers & Models' },
-  { id: 'mcp', label: 'MCP Servers' },
-  { id: 'workspaces', label: 'Workspaces' },
-  { id: 'desktop', label: 'Desktop & Computer Use' },
-  { id: 'general', label: 'General' },
-  { id: 'doctor', label: 'Doctor' },
-  { id: 'about', label: 'About' }
+  { id: 'providers', label: 'Providers' },
+  { id: 'workspace', label: 'Workspace & MCP' },
+  { id: 'general',   label: 'General' },
+  { id: 'about',     label: 'About' }
 ]
 
 const PROVIDER_PRESETS = [
@@ -49,7 +46,7 @@ const PROVIDER_PRESETS = [
   { id: 'glm',        name: 'GLM',              color: 'text-purple-600',  baseUrl: 'https://open.bigmodel.cn/api/paas/v4',     model: 'glm-4-flash' },
   { id: 'qwen',       name: 'Qwen',             color: 'text-amber-600',   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
   { id: 'openrouter', name: 'OpenRouter',       color: 'text-teal-600',    baseUrl: 'https://openrouter.ai/api/v1',             model: 'openai/gpt-4o' },
-  { id: 'bitai',      name: 'Bit.ai (孙宇晨)', color: 'text-orange-500',  baseUrl: 'https://api.bitai.com/v1',                 model: 'bit-ai-pro' },
+  { id: 'bitai',      name: 'b.ai',             color: 'text-orange-500',  baseUrl: 'https://api.b.ai/v1',                      model: 'b-pro' },
   { id: 'custom',     name: 'Custom',           color: 'text-[var(--text-muted)]', baseUrl: '',                               model: '' },
 ]
 
@@ -447,303 +444,206 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Tabs.Content>
 
                 {/* MCP Servers */}
-                <Tabs.Content value="mcp" className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-medium text-[var(--text-secondary)]">MCP Servers</span>
-                    <button
-                      onClick={() => { setShowAddMCP((v) => !v); setViewingTools(null) }}
-                      className="text-xs px-3.5 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--accent)] text-white hover:opacity-90 shadow-sm hover:shadow"
-                    >
-                      {showAddMCP ? 'Cancel' : '+ Add Server'}
-                    </button>
+                {/* Workspace & MCP */}
+                <Tabs.Content value="workspace" className="flex flex-col gap-5">
+                  {/* Workspaces */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[13px] font-medium">Workspaces</span>
+                      <button
+                        onClick={async () => {
+                          const ws = await window.api?.workspace?.add()
+                          if (ws) loadWorkspaces()
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+                      >
+                        + Add Folder
+                      </button>
+                    </div>
+                    {workspaces.length === 0 ? (
+                      <div className="text-[12px] text-[var(--text-muted)] py-2">No workspaces yet. Add a folder to get started.</div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {workspaces.map((ws) => (
+                          <div key={ws.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <FolderOpen size={15} className="text-[var(--text-muted)] shrink-0" />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium truncate">{ws.name || ws.folderPath.split('/').pop()}</div>
+                                <div className="text-[11px] text-[var(--text-muted)] truncate">{ws.folderPath}</div>
+                              </div>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                                ws.status === 'active' ? 'bg-green-100 text-green-700' :
+                                ws.status === 'missing' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-[var(--border)] text-[var(--text-muted)]'
+                              }`}>{ws.status}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={async () => {
+                                  const newWs = await window.api?.workspace?.relink(ws.id)
+                                  if (newWs) loadWorkspaces()
+                                }}
+                                className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
+                                title="Relink folder"
+                              >
+                                <FolderInput size={14} />
+                              </button>
+                              <button
+                                onClick={() => removeWorkspace(ws.id)}
+                                className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Remove"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Presets */}
-                  {!showAddMCP && (
-                    <div className="flex flex-wrap gap-2">
-                      {([
-                        { id: 'filesystem', label: 'Filesystem', icon: FolderOpen },
-                        { id: 'github', label: 'GitHub', icon: Globe2 },
-                        { id: 'sqlite', label: 'SQLite', icon: Database },
-                        { id: 'fetch', label: 'Fetch', icon: Zap },
-                        { id: 'puppeteer', label: 'Puppeteer', icon: MousePointer }
-                      ] as const).map((preset) => {
-                        const Icon = preset.icon
+                  <div className="border-t border-[var(--border)] pt-4">
+                    {/* MCP Servers */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[13px] font-medium">MCP Servers</span>
+                      <button
+                        onClick={() => { setShowAddMCP((v) => !v); setViewingTools(null) }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+                      >
+                        {showAddMCP ? 'Cancel' : '+ Add Server'}
+                      </button>
+                    </div>
+
+                    {!showAddMCP && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {([
+                          { id: 'filesystem', label: 'Filesystem', icon: FolderOpen },
+                          { id: 'github', label: 'GitHub', icon: Globe2 },
+                          { id: 'sqlite', label: 'SQLite', icon: Database },
+                          { id: 'fetch', label: 'Fetch', icon: Zap },
+                          { id: 'puppeteer', label: 'Puppeteer', icon: MousePointer }
+                        ] as const).map((p) => {
+                          const Icon = p.icon
+                          return (
+                            <button key={p.id} onClick={() => addPresetMCP(p.id)}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all">
+                              <Icon size={11} />{p.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {showAddMCP && (
+                      <form onSubmit={handleAddMCP} className="mb-3 p-4 rounded-xl bg-[var(--bg-content)] border border-[var(--border-strong)] flex flex-col gap-3">
+                        <div className="flex gap-3">
+                          <div className="flex-1 flex flex-col gap-1">
+                            <label className="text-[11px] text-[var(--text-muted)]">Name</label>
+                            <input type="text" value={mcpName} onChange={(e) => setMcpName(e.target.value)} placeholder="e.g. filesystem"
+                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]" required />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] text-[var(--text-muted)]">Command</label>
+                            <select value={mcpCommand} onChange={(e) => setMcpCommand(e.target.value)}
+                              className="px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none">
+                              <option value="npx">npx</option>
+                              <option value="python">python</option>
+                              <option value="node">node</option>
+                              <option value="custom">custom…</option>
+                            </select>
+                          </div>
+                        </div>
+                        {mcpCommand === 'custom' && (
+                          <input type="text" value={mcpCustomCommand} onChange={(e) => setMcpCustomCommand(e.target.value)} placeholder="full command"
+                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]" required />
+                        )}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] text-[var(--text-muted)]">Args (comma-separated)</label>
+                          <input type="text" value={mcpArgs} onChange={(e) => setMcpArgs(e.target.value)}
+                            placeholder="-y, @modelcontextprotocol/server-filesystem, /path"
+                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] text-[var(--text-muted)]">Env vars (KEY=VALUE, one per line)</label>
+                          <textarea value={mcpEnv} onChange={(e) => setMcpEnv(e.target.value)}
+                            placeholder="GITHUB_PERSONAL_ACCESS_TOKEN=xxx" rows={2}
+                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)] resize-none" />
+                        </div>
+                        <button type="submit" className="text-xs px-3 py-2 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 self-end">
+                          Add Server
+                        </button>
+                      </form>
+                    )}
+
+                    {settings.mcpServers.length === 0 && !showAddMCP && (
+                      <div className="text-[12px] text-[var(--text-muted)] py-2">No MCP servers. Add one above or use a preset.</div>
+                    )}
+                    <div className="flex flex-col gap-2">
+                      {settings.mcpServers.map((s) => {
+                        const status = s.status || 'disconnected'
+                        const isConnected = status === 'connected'
+                        const isError = status === 'error'
                         return (
-                          <button
-                            key={preset.id}
-                            onClick={() => addPresetMCP(preset.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all"
-                          >
-                            <Icon size={12} />
-                            {preset.label}
-                          </button>
+                          <div key={s.name} className="flex flex-col gap-2 px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Server size={13} className={isConnected ? 'text-green-500' : isError ? 'text-red-500' : 'text-[var(--text-muted)]'} />
+                                <div>
+                                  <div className="text-sm font-medium">{s.name}</div>
+                                  <div className="text-[11px] text-[var(--text-muted)] font-mono">{s.command} {s.args.slice(0,3).join(' ')}{s.args.length > 3 ? '…' : ''}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                  isConnected ? 'bg-green-100 text-green-700' : isError ? 'bg-red-100 text-red-700' : 'bg-[var(--border)] text-[var(--text-muted)]'
+                                }`}>{status}</span>
+                                <button onClick={() => toggleMCPServer(s.name)}
+                                  className={`text-[11px] px-2 py-1 rounded-md border transition-colors ${s.enabled ? 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]' : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-muted)]'}`}>
+                                  {s.enabled ? 'On' : 'Off'}
+                                </button>
+                                <button onClick={() => { setViewingTools(viewingTools === s.name ? null : s.name); refreshMCPTools() }}
+                                  className="text-[11px] px-2 py-1 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                                  <Wrench size={10} className="inline mr-1" />Tools
+                                </button>
+                                <button onClick={() => removeMCPServer(s.name)}
+                                  className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors">
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                            {viewingTools === s.name && (
+                              <div className="pt-2 border-t border-[var(--border)]">
+                                {mcpTools.filter((t) => t.serverName === s.name).length === 0 ? (
+                                  <div className="text-[11px] text-[var(--text-muted)]">No tools (server may be disconnected)</div>
+                                ) : (
+                                  <div className="flex flex-col gap-1">
+                                    {mcpTools.filter((t) => t.serverName === s.name).map((tool) => (
+                                      <div key={tool.name} className="flex items-start gap-2 px-2 py-1.5 rounded-md bg-[var(--bg-sidebar)] text-[11px]">
+                                        <Wrench size={10} className="text-[var(--text-muted)] mt-0.5 shrink-0" />
+                                        <div>
+                                          <span className="font-medium text-[var(--text-primary)]">{tool.name}</span>
+                                          {tool.description && <span className="text-[var(--text-muted)] ml-2">{tool.description}</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
-                  )}
-
-                  {showAddMCP && (
-                    <form onSubmit={handleAddMCP} className="mb-4 p-5 rounded-2xl bg-[var(--bg-content)] border border-[var(--border-strong)] shadow-sm flex flex-col gap-3">
-                      <div className="text-sm font-medium">Add MCP Server</div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] text-[var(--text-muted)]">Name</label>
-                        <input
-                          type="text"
-                          value={mcpName}
-                          onChange={(e) => setMcpName(e.target.value)}
-                          placeholder="e.g. filesystem"
-                          className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-                          required
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] text-[var(--text-muted)]">Command</label>
-                        <div className="flex gap-2">
-                          <select
-                            value={mcpCommand}
-                            onChange={(e) => setMcpCommand(e.target.value)}
-                            className="px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none"
-                          >
-                            <option value="npx">npx</option>
-                            <option value="python">python</option>
-                            <option value="node">node</option>
-                            <option value="custom">custom</option>
-                          </select>
-                          {mcpCommand === 'custom' && (
-                            <input
-                              type="text"
-                              value={mcpCustomCommand}
-                              onChange={(e) => setMcpCustomCommand(e.target.value)}
-                              placeholder="command"
-                              className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-                              required
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] text-[var(--text-muted)]">Args (comma separated)</label>
-                        <input
-                          type="text"
-                          value={mcpArgs}
-                          onChange={(e) => setMcpArgs(e.target.value)}
-                          placeholder="-y, @modelcontextprotocol/server-filesystem, /path"
-                          className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] text-[var(--text-muted)]">Env (optional, KEY=VALUE per line)</label>
-                        <textarea
-                          value={mcpEnv}
-                          onChange={(e) => setMcpEnv(e.target.value)}
-                          placeholder="GITHUB_PERSONAL_ACCESS_TOKEN=xxx"
-                          rows={2}
-                          className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)] resize-none"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        className="text-xs px-3 py-2 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
-                      >
-                        Add Server
-                      </button>
-                    </form>
-                  )}
-
-                  {settings.mcpServers.length === 0 && !showAddMCP && (
-                    <EmptyState
-                      icon={Server}
-                      title="No MCP servers yet"
-                      description="Add an MCP server to extend AI capabilities with tools like filesystem access, web search, and more"
-                      size="md"
-                    />
-                  )}
-
-                  <div className="flex flex-col gap-2">
-                    {settings.mcpServers.map((s) => {
-                      const status = s.status || 'disconnected'
-                      const isConnected = status === 'connected'
-                      const isError = status === 'error'
-                      const isConnecting = status === 'connecting'
-                      return (
-                        <div
-                          key={s.name}
-                          className="flex flex-col gap-2 px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Server size={14} className={isConnected ? 'text-green-500' : isError ? 'text-red-500' : 'text-[var(--text-muted)]'} />
-                              <div>
-                                <div className="text-sm font-medium">{s.name}</div>
-                                <div className="text-[11px] text-[var(--text-muted)]">{s.command} {s.args.join(' ')}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                isConnected ? 'bg-green-100 text-green-700' :
-                                isConnecting ? 'bg-yellow-100 text-yellow-700' :
-                                isError ? 'bg-red-100 text-red-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {isConnecting ? 'connecting' : status}
-                              </span>
-                              <button
-                                onClick={() => toggleMCPServer(s.name)}
-                                className={`text-[11px] px-2 py-1 rounded-md border transition-colors ${
-                                  s.enabled
-                                    ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]'
-                                    : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-muted)]'
-                                }`}
-                              >
-                                {s.enabled ? 'On' : 'Off'}
-                              </button>
-                              <button
-                                onClick={() => { setViewingTools(viewingTools === s.name ? null : s.name); refreshMCPTools() }}
-                                className="text-[11px] px-2 py-1 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                              >
-                                <Wrench size={10} className="inline mr-1" />
-                                Tools
-                              </button>
-                              <button
-                                onClick={() => removeMCPServer(s.name)}
-                                className="flex items-center justify-center rounded-lg transition-colors hover:bg-red-50 hover:text-red-600 text-[var(--text-muted)]"
-                                style={{ width: 28, height: 28 }}
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {viewingTools === s.name && (
-                            <div className="pt-2 border-t border-[var(--border)]">
-                              <div className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Available Tools</div>
-                              <div className="flex flex-col gap-1">
-                                {mcpTools.filter((t) => t.serverName === s.name).map((tool) => (
-                                  <div key={tool.name} className="flex items-center gap-2 px-2 py-1 rounded-md bg-[var(--bg-sidebar)] text-[11px]">
-                                    <Wrench size={10} className="text-[var(--text-muted)]" />
-                                    <span className="font-medium text-[var(--text-primary)]">{tool.name}</span>
-                                    <span className="text-[var(--text-muted)]">{tool.description}</span>
-                                  </div>
-                                ))}
-                                {mcpTools.filter((t) => t.serverName === s.name).length === 0 && (
-                                  <div className="text-[11px] text-[var(--text-muted)]">No tools available (server may be disconnected)</div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
                   </div>
                 </Tabs.Content>
 
-                {/* Workspaces */}
-                <Tabs.Content value="workspaces" className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-medium text-[var(--text-secondary)]">Registered Workspaces</span>
-                  </div>
-                  {workspaces.length === 0 ? (
-                    <EmptyState
-                      icon={FolderOpen}
-                      title="No workspaces yet"
-                      description="Open a folder to create a workspace and start chatting with context"
-                      size="md"
-                      actions={[
-                        { label: 'Open Folder', onClick: async () => {
-                          if (window.api?.workspace?.add) {
-                            const ws = await window.api.workspace.add({ folderPath: '' })
-                            if (ws) loadWorkspaces()
-                          }
-                        }, icon: FolderOpen, variant: 'primary' }
-                      ]}
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {workspaces.map((ws) => (
-                        <div key={ws.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <FolderOpen size={16} className="text-[var(--text-muted)] shrink-0" />
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">{ws.name || ws.folderPath.split('/').pop()}</div>
-                              <div className="text-[11px] text-[var(--text-muted)] truncate">{ws.folderPath}</div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                  ws.status === 'active' ? 'bg-green-100 text-green-700' :
-                                  ws.status === 'missing' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {ws.status}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => {
-                                const path = prompt('Enter new folder path:', ws.folderPath)
-                                if (path) {
-                                  updateWorkspace(ws.id, { folderPath: path, status: 'active' })
-                                }
-                              }}
-                              className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
-                              title="Relink"
-                            >
-                              <FolderInput size={14} />
-                            </button>
-                            <button
-                              onClick={() => removeWorkspace(ws.id)}
-                              className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
-                              title="Remove"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Tabs.Content>
-
-                {/* Desktop & Computer Use */}
-                <Tabs.Content value="desktop" className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                    <div className="flex items-center gap-3">
-                      {settings.desktopEnabled ? <ShieldCheck size={18} className="text-green-500" /> : <Shield size={18} className="text-[var(--text-muted)]" />}
-                      <div>
-                        <div className="text-sm font-medium">Desktop Control</div>
-                        <div className="text-[11px] text-[var(--text-muted)]">Allow AI to control your desktop</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => update({ desktopEnabled: !settings.desktopEnabled })}
-                      className={`relative w-10 h-6 rounded-full transition-colors ${settings.desktopEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
-                    >
-                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.desktopEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                    </button>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                    <div className="text-sm font-medium mb-2">Screen Recording Permission</div>
-                    <div className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)]">
-                      <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-                      <span>macOS requires Screen Recording permission for desktop capture.<br />
-                        Go to <strong>System Settings → Privacy & Security → Screen Recording</strong> and enable OpenDesk.
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                    <Cpu size={12} />
-                    <span>Emergency stop: ⌘. (Ctrl+.) to abort any running task</span>
-                  </div>
-                </Tabs.Content>
-
-                {/* General */}
+                {/* General — Theme + Appearance + Desktop + Diagnostics */}
                 <Tabs.Content value="general" className="flex flex-col gap-5">
-                  {/* Theme */}
+                  {/* Appearance */}
                   <div>
-                    <label className="block text-[13px] font-medium mb-2 text-[var(--text-primary)]">Theme</label>
+                    <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-3">Appearance</div>
+                    <label className="block text-[13px] font-medium mb-2">Theme</label>
                     <div className="flex gap-2">
                       {([
                         { value: 'light', icon: Sun, label: 'Light' },
@@ -751,158 +651,106 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                         { value: 'system', icon: Monitor, label: 'System' }
                       ] as const).map((t) => {
                         const Icon = t.icon
-                        const isActive = settings.theme === t.value
                         return (
-                          <button
-                            key={t.value}
-                            onClick={() => {
-                              update({ theme: t.value })
-                              setTheme(t.value)
-                            }}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 border ${
-                              isActive
+                          <button key={t.value}
+                            onClick={() => { update({ theme: t.value }); setTheme(t.value) }}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+                              settings.theme === t.value
                                 ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30 text-[var(--text-primary)] shadow-sm'
                                 : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text-primary)]'
-                            }`}
-                          >
-                            <Icon size={14} />
-                            {t.label}
+                            }`}>
+                            <Icon size={14} />{t.label}
                           </button>
                         )
                       })}
                     </div>
-                  </div>
-
-                  {/* Language */}
-                  <div>
-                    <label className="block text-[13px] font-medium mb-2 text-[var(--text-primary)]">Language</label>
-                    <select
-                      value={settings.language || 'en'}
-                      onChange={(e) => update({ language: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl text-[13px] bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-                    >
-                      <option value="en">English</option>
-                      <option value="zh">中文</option>
-                      <option value="ja">日本語</option>
-                      <option value="es">Español</option>
-                    </select>
-                  </div>
-
-                  {/* Startup behavior */}
-                  <div>
-                    <label className="block text-[13px] font-medium mb-2 text-[var(--text-primary)]">Startup Behavior</label>
-                    <div className="flex gap-2">
-                      {([
-                        { value: 'restore', label: 'Restore' },
-                        { value: 'new', label: 'New' },
-                        { value: 'tray', label: 'Tray' }
-                      ] as const).map((b) => (
-                        <button
-                          key={b.value}
-                          onClick={() => update({ startupBehavior: b.value })}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 border ${
-                            settings.startupBehavior === b.value
-                              ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30 text-[var(--text-primary)] shadow-sm'
-                              : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text-primary)]'
-                          }`}
-                        >
-                          {b.label}
-                        </button>
-                      ))}
+                    <div className="mt-4">
+                      <label className="block text-[13px] font-medium mb-2 flex items-center gap-2">
+                        <Type size={13} /> Font Size <span className="font-normal text-[var(--text-muted)]">{fontSize}px</span>
+                      </label>
+                      <input type="range" min={12} max={20} value={fontSize}
+                        onChange={(e) => { const v = Number(e.target.value); setFontSize(v); document.documentElement.style.fontSize = `${v}px` }}
+                        className="w-full accent-[var(--accent)]" />
                     </div>
                   </div>
 
-                  {/* Font size */}
-                  <div>
-                    <label className="block text-[13px] font-medium mb-2 text-[var(--text-primary)] flex items-center gap-2">
-                      <Type size={14} />
-                      Font Size <span className="font-normal text-[var(--text-muted)]">{fontSize}px</span>
-                    </label>
-                    <input
-                      type="range"
-                      min={12}
-                      max={20}
-                      value={fontSize}
-                      onChange={(e) => {
-                        const v = Number(e.target.value)
-                        setFontSize(v)
-                        document.documentElement.style.fontSize = `${v}px`
-                      }}
-                      className="w-full accent-[var(--accent)]"
-                    />
-                  </div>
-                </Tabs.Content>
-
-                {/* Doctor */}
-                <Tabs.Content value="doctor" className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-medium text-[var(--text-secondary)]">System Diagnostics</span>
-                    <button
-                      onClick={handleRunDoctor}
-                      disabled={runningDoctor}
-                      className={`text-xs px-3.5 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm ${
-                        runningDoctor
-                          ? 'bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed'
-                          : 'bg-[var(--accent)] text-white hover:opacity-90'
-                      }`}
-                    >
-                      {runningDoctor ? (
-                        <span className="flex items-center gap-1.5">
-                          <Loader2 size={12} className="animate-spin" />
-                          Running…
-                        </span>
-                      ) : (
-                        'Run Diagnostics'
-                      )}
-                    </button>
-                  </div>
-
-                  {doctorReport && (
-                    <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                      <div className="flex items-center gap-2 mb-3">
-                        {statusIcon(doctorReport.overall)}
-                        <span className="text-sm font-medium">
-                          Overall: {doctorReport.overall.toUpperCase()}
-                        </span>
-                        <span className="text-[11px] text-[var(--text-muted)] ml-auto">
-                          {new Date(doctorReport.timestamp).toLocaleString()}
-                        </span>
+                  <div className="border-t border-[var(--border)] pt-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-3">Behavior</div>
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <label className="block text-[13px] font-medium mb-2">Language</label>
+                        <select value={settings.language || 'en'} onChange={(e) => update({ language: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl text-[13px] bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]">
+                          <option value="en">English</option>
+                          <option value="zh">中文</option>
+                          <option value="ja">日本語</option>
+                          <option value="es">Español</option>
+                        </select>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        {doctorReport.checks.map((check, i) => (
-                          <div key={i} className="flex items-start gap-2 text-[12px]">
-                            {statusIcon(check.status)}
-                            <div className="flex-1">
-                              <div className="font-medium text-[var(--text-primary)]">{check.name}</div>
-                              <div className="text-[var(--text-secondary)]">{check.message}</div>
-                              {check.detail && (
-                                <div className="text-[var(--text-muted)] mt-0.5">{check.detail}</div>
-                              )}
+                      <div>
+                        <label className="block text-[13px] font-medium mb-2">Startup</label>
+                        <div className="flex gap-2">
+                          {([{ value: 'restore', label: 'Restore last' }, { value: 'new', label: 'New chat' }, { value: 'tray', label: 'Start in tray' }] as const).map((b) => (
+                            <button key={b.value} onClick={() => update({ startupBehavior: b.value })}
+                              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+                                settings.startupBehavior === b.value
+                                  ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30 text-[var(--text-primary)] shadow-sm'
+                                  : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
+                              }`}>{b.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[var(--border)] pt-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-3">Desktop Control</div>
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
+                      <div className="flex items-center gap-3">
+                        {settings.desktopEnabled ? <ShieldCheck size={16} className="text-green-500" /> : <Shield size={16} className="text-[var(--text-muted)]" />}
+                        <div>
+                          <div className="text-sm font-medium">Allow AI to control desktop</div>
+                          <div className="text-[11px] text-[var(--text-muted)]">Screenshot, mouse, keyboard. Requires Screen Recording permission on macOS.</div>
+                        </div>
+                      </div>
+                      <button onClick={() => update({ desktopEnabled: !settings.desktopEnabled })}
+                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${settings.desktopEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}>
+                        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.desktopEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[var(--border)] pt-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-3">Diagnostics</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[13px] font-medium">System Check</span>
+                      <button onClick={handleRunDoctor} disabled={runningDoctor}
+                        className={`text-xs px-3.5 py-2 rounded-lg font-medium transition-all ${runningDoctor ? 'bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}>
+                        {runningDoctor ? <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" />Running…</span> : 'Run Diagnostics'}
+                      </button>
+                    </div>
+                    {doctorReport && (
+                      <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
+                        <div className="flex items-center gap-2 mb-3">
+                          {statusIcon(doctorReport.overall)}
+                          <span className="text-sm font-medium">Overall: {doctorReport.overall.toUpperCase()}</span>
+                          <span className="text-[11px] text-[var(--text-muted)] ml-auto">{new Date(doctorReport.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {doctorReport.checks.map((check, i) => (
+                            <div key={i} className="flex items-start gap-2 text-[12px]">
+                              {statusIcon(check.status)}
+                              <div>
+                                <span className="font-medium text-[var(--text-primary)]">{check.name}</span>
+                                <span className="text-[var(--text-secondary)] ml-2">{check.message}</span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {doctorHistory.length > 0 && (
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-2">History</div>
-                      <div className="flex flex-col gap-1">
-                        {doctorHistory.slice(0, 5).map((report, i) => (
-                          <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border)] text-[12px]">
-                            {statusIcon(report.overall)}
-                            <span className="text-[var(--text-secondary)]">
-                              {new Date(report.timestamp).toLocaleString()}
-                            </span>
-                            <span className="ml-auto text-[var(--text-muted)]">
-                              {report.checks.length} checks
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </Tabs.Content>
 
                 {/* About */}

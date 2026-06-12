@@ -334,43 +334,32 @@ function saveMessages(threadId: string, messages: Message[]): void {
 
 async function fetchModels(type: string, baseUrl?: string, apiKey?: string): Promise<ModelInfo[]> {
   try {
-    let url: string
-    let headers: Record<string, string> = {}
-
-    if (type === 'ollama') {
-      url = (baseUrl || 'http://localhost:11434') + '/api/tags'
-    } else if (type === 'openai-compatible' || type === 'openai') {
-      url = (baseUrl || 'https://api.openai.com') + '/v1/models'
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
-    } else if (type === 'anthropic') {
-      // Anthropic does not expose a public models endpoint; return hardcoded list
+    // Anthropic — no public models endpoint, return hardcoded list
+    if (type === 'anthropic') {
       return [
-        { id: 'claude-3-5-sonnet-20241022', displayName: 'Claude 3.5 Sonnet', contextWindow: 200000, supportsVision: true, supportsTools: true },
-        { id: 'claude-3-5-haiku-20241022', displayName: 'Claude 3.5 Haiku', contextWindow: 200000, supportsVision: false, supportsTools: true },
-        { id: 'claude-3-opus-20240229', displayName: 'Claude 3 Opus', contextWindow: 200000, supportsVision: true, supportsTools: true }
+        { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', contextWindow: 200000, supportsVision: true, supportsTools: true },
+        { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', contextWindow: 200000, supportsVision: true, supportsTools: true },
+        { id: 'claude-haiku-4-5', displayName: 'Claude Haiku 4.5', contextWindow: 200000, supportsVision: true, supportsTools: true },
       ]
-    } else {
-      return []
     }
 
-    const res = await fetch(url, { headers })
-    if (!res.ok) return []
-
-    const data = await res.json()
-
+    // Ollama — uses /api/tags
     if (type === 'ollama') {
-      const models = data.models || []
-      return models.map((m: { name: string; model?: string }) => ({
-        id: m.name || m.model,
-        displayName: m.name || m.model
-      }))
+      const base = (baseUrl || 'http://localhost:11434').replace(/\/v1$/, '')
+      const res = await fetch(`${base}/api/tags`)
+      if (!res.ok) return []
+      const data = await res.json() as { models?: Array<{ name: string }> }
+      return (data.models || []).map((m) => ({ id: m.name, displayName: m.name }))
     }
 
-    const models = data.data || []
-    return models.map((m: { id: string }) => ({
-      id: m.id,
-      displayName: m.id
-    }))
+    // All other types: OpenAI-compatible /v1/models
+    const url = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '') + '/models'
+    const headers: Record<string, string> = {}
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return []
+    const data = await res.json() as { data?: Array<{ id: string }> }
+    return (data.data || []).map((m) => ({ id: m.id, displayName: m.id }))
   } catch {
     return []
   }
@@ -450,12 +439,19 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
   ipcMain.handle('settings:testProvider', async (_e, type: string, model: string, apiKey: string, baseUrl?: string) => {
     let provider: Provider | null = null
-    if (type === 'anthropic') provider = new AnthropicProvider(apiKey, model)
-    else if (type === 'openai') provider = new OpenAIProvider(apiKey, model)
-    else if (type === 'openai-compatible') provider = new OpenAIProvider(apiKey, model, baseUrl)
-    else if (type === 'ollama') provider = new OpenAIProvider(apiKey || 'ollama', model, baseUrl || 'http://localhost:11434/v1')
-    if (!provider) return false
-    return provider.test()
+    if (type === 'anthropic') {
+      provider = new AnthropicProvider(apiKey, model)
+    } else {
+      // All other types are OpenAI-compatible (openai, ollama, deepseek, groq, gemini, etc.)
+      const url = baseUrl || (type === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1')
+      const key = apiKey || (type === 'ollama' ? 'ollama' : '')
+      provider = new OpenAIProvider(key, model, url)
+    }
+    try {
+      return await provider.test()
+    } catch {
+      return false
+    }
   })
 
   /* ===== Draft ===== */

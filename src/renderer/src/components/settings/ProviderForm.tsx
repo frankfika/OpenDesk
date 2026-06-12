@@ -54,7 +54,15 @@ function genId() {
 }
 
 export default function ProviderForm({ onSave, initialValues }: ProviderFormProps) {
-  const [type, setType] = useState<ProviderType>('openai-compatible')
+  // Infer type from baseUrl: anthropic → 'anthropic', localhost → 'ollama', else 'openai-compatible'
+  function inferType(baseUrl?: string): ProviderType {
+    if (!baseUrl) return 'openai-compatible'
+    if (baseUrl.includes('anthropic.com')) return 'anthropic'
+    if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) return 'ollama'
+    return 'openai-compatible'
+  }
+
+  const [type, setType] = useState<ProviderType>(() => inferType(initialValues?.baseUrl))
   const [name, setName] = useState(initialValues?.name ?? '')
   const [model, setModel] = useState(initialValues?.model ?? '')
   const [apiKey, setApiKey] = useState('')

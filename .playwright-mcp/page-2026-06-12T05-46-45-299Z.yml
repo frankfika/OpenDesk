@@ -1,0 +1,112 @@
+- generic [ref=e1]:
+  - generic [ref=e8]:
+    - complementary [ref=e9]:
+      - generic [ref=e10]:
+        - img [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+        - generic [ref=e17]:
+          - link "BAI" [ref=e19] [cursor=pointer]:
+            - /url: https://b.ai/
+            - img "BAI" [ref=e20]
+          - generic [ref=e23]:
+            - button "New Chat" [ref=e24] [cursor=pointer]:
+              - img "chat" [ref=e25]
+              - generic [ref=e26]: New Chat
+            - link "Usage" [ref=e27] [cursor=pointer]:
+              - /url: /usage
+              - img "token-usage" [ref=e28]
+              - generic [ref=e29]: Usage
+            - link "API" [ref=e30] [cursor=pointer]:
+              - /url: /key
+              - img "api" [ref=e31]
+              - generic [ref=e32]: API
+            - link "Top up" [ref=e33] [cursor=pointer]:
+              - /url: /purchase
+              - img "purchase" [ref=e34]
+              - generic [ref=e35]: Top up
+            - link "Subscription" [ref=e36] [cursor=pointer]:
+              - /url: /subscription
+              - img "subscription" [ref=e37]
+              - generic [ref=e38]: Subscription
+            - link "Memory" [ref=e39] [cursor=pointer]:
+              - /url: /memory
+              - img "memory" [ref=e40]
+              - generic [ref=e41]: Memory
+            - link "Leaderboard" [ref=e42] [cursor=pointer]:
+              - /url: /leaderboard
+              - img "leaderboard" [ref=e43]
+              - generic [ref=e44]: Leaderboard
+          - paragraph [ref=e49] [cursor=pointer]: en
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - generic [ref=e57] [cursor=pointer]:
+          - generic "Minimax" [ref=e58]:
+            - img "Minimax" [ref=e59]
+          - generic [ref=e61]: MiniMax-M3
+          - img [ref=e62]
+        - button "Log in" [ref=e65] [cursor=pointer]
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e73]:
+            - generic [ref=e76] [cursor=pointer]: "Limited: Top up to get extra credits, up to $100 in rewards!"
+            - paragraph [ref=e77]:
+              - text: Welcome to
+              - img "BAI" [ref=e78]
+              - text: ", how can I help?"
+          - generic [ref=e82]:
+            - textbox "Ask me anything" [ref=e84]
+            - generic [ref=e85]:
+              - generic [ref=e86]:
+                - button [ref=e88] [cursor=pointer]:
+                  - img:
+                    - img
+                - button [ref=e89]:
+                  - img:
+                    - img "Search"
+                - button [ref=e90]:
+                  - img:
+                    - img "Unbound Mode"
+                - button [ref=e91]:
+                  - img:
+                    - img "Memory"
+              - img [ref=e94]
+        - complementary:
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - generic [ref=e103]: Portal View
+              - button [ref=e105] [cursor=pointer]:
+                - img:
+                  - img
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - heading "Files" [level=5] [ref=e109]
+                - generic [ref=e112]:
+                  - heading [level=3] [ref=e113]
+                  - list [ref=e114]:
+                    - listitem [ref=e115]
+                    - listitem [ref=e116]
+                    - listitem [ref=e117]
+                    - listitem [ref=e118]
+                    - listitem [ref=e119]
+                    - listitem [ref=e120]
+                    - listitem [ref=e121]
+                    - listitem [ref=e122]
+              - heading "Plugins" [level=5] [ref=e124]
+  - alert [ref=e7]
+  - generic [ref=e144]:
+    - dialog:
+      - generic [ref=e147]:
+        - button "Close" [ref=e148] [cursor=pointer]:
+          - img "close" [ref=e149]
+        - generic [ref=e150]:
+          - generic [ref=e151]: Log in to BAI
+          - button "Google Continue with Google" [ref=e154] [cursor=pointer]:
+            - generic [ref=e156]:
+              - img "Google" [ref=e157]
+              - text: Continue with Google
+          - generic [ref=e162]: OR
+          - button "Other login methods" [ref=e163] [cursor=pointer]:
+            - generic [ref=e168]: "+6"
+            - generic [ref=e169]: Other login methods
+            - img [ref=e170]
+        - paragraph [ref=e173] [cursor=pointer]: en
