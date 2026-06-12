@@ -1,0 +1,4 @@
+- generic [ref=e3]:
+  - heading "Something went wrong" [level=2] [ref=e4]
+  - generic [ref=e5]: window.api.chat.onToolCall is not a function
+  - button "Reload App" [ref=e6] [cursor=pointer]

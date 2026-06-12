@@ -36,20 +36,21 @@ const TAB_LIST = [
 ]
 
 const PROVIDER_PRESETS = [
-  { id: 'openai',     name: 'OpenAI',          icon: Bot, color: 'text-emerald-600', bg: 'bg-emerald-50',  baseUrl: 'https://api.openai.com/v1',               model: 'gpt-4o' },
-  { id: 'anthropic',  name: 'Anthropic',        icon: Bot, color: 'text-orange-600',  bg: 'bg-orange-50',   baseUrl: 'https://api.anthropic.com/v1',             model: 'claude-sonnet-4-5' },
-  { id: 'gemini',     name: 'Google Gemini',    icon: Bot, color: 'text-blue-600',    bg: 'bg-blue-50',     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
-  { id: 'deepseek',   name: 'DeepSeek',         icon: Bot, color: 'text-sky-600',     bg: 'bg-sky-50',      baseUrl: 'https://api.deepseek.com/v1',              model: 'deepseek-chat' },
-  { id: 'ollama',     name: 'Ollama',           icon: Cpu, color: 'text-violet-600',  bg: 'bg-violet-50',   baseUrl: 'http://localhost:11434/v1',                 model: 'llama3' },
-  { id: 'groq',       name: 'Groq',             icon: Bot, color: 'text-yellow-600',  bg: 'bg-yellow-50',   baseUrl: 'https://api.groq.com/openai/v1',           model: 'llama-3.3-70b-versatile' },
-  { id: 'grok',       name: 'xAI Grok',         icon: Bot, color: 'text-neutral-600', bg: 'bg-neutral-50',  baseUrl: 'https://api.x.ai/v1',                      model: 'grok-3' },
-  { id: 'mistral',    name: 'Mistral',          icon: Bot, color: 'text-indigo-600',  bg: 'bg-indigo-50',   baseUrl: 'https://api.mistral.ai/v1',                model: 'mistral-large-latest' },
-  { id: 'doubao',     name: '豆包 (ByteDance)', icon: Bot, color: 'text-cyan-600',    bg: 'bg-cyan-50',     baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', model: 'doubao-pro-32k' },
-  { id: 'kimi',       name: 'Kimi (Moonshot)',  icon: Bot, color: 'text-rose-600',    bg: 'bg-rose-50',     baseUrl: 'https://api.moonshot.cn/v1',               model: 'moonshot-v1-8k' },
-  { id: 'glm',        name: 'GLM (智谱)',       icon: Bot, color: 'text-purple-600',  bg: 'bg-purple-50',   baseUrl: 'https://open.bigmodel.cn/api/paas/v4',     model: 'glm-4-flash' },
-  { id: 'qwen',       name: 'Qwen (阿里)',      icon: Bot, color: 'text-amber-600',   bg: 'bg-amber-50',    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
-  { id: 'openrouter', name: 'OpenRouter',       icon: Bot, color: 'text-teal-600',    bg: 'bg-teal-50',     baseUrl: 'https://openrouter.ai/api/v1',             model: 'openai/gpt-4o' },
-  { id: 'custom',     name: 'Custom / Other',   icon: Bot, color: 'text-gray-600',    bg: 'bg-gray-50',     baseUrl: '',                                         model: '' },
+  { id: 'openai',     name: 'OpenAI',          color: 'text-emerald-600', baseUrl: 'https://api.openai.com/v1',               model: 'gpt-4o' },
+  { id: 'anthropic',  name: 'Anthropic',        color: 'text-orange-600',  baseUrl: 'https://api.anthropic.com/v1',             model: 'claude-sonnet-4-5' },
+  { id: 'gemini',     name: 'Google Gemini',    color: 'text-blue-600',    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
+  { id: 'deepseek',   name: 'DeepSeek',         color: 'text-sky-600',     baseUrl: 'https://api.deepseek.com/v1',              model: 'deepseek-chat' },
+  { id: 'ollama',     name: 'Ollama',           color: 'text-violet-600',  baseUrl: 'http://localhost:11434/v1',                 model: 'llama3' },
+  { id: 'groq',       name: 'Groq',             color: 'text-yellow-600',  baseUrl: 'https://api.groq.com/openai/v1',           model: 'llama-3.3-70b-versatile' },
+  { id: 'grok',       name: 'xAI Grok',         color: 'text-neutral-500', baseUrl: 'https://api.x.ai/v1',                      model: 'grok-3' },
+  { id: 'mistral',    name: 'Mistral',          color: 'text-indigo-600',  baseUrl: 'https://api.mistral.ai/v1',                model: 'mistral-large-latest' },
+  { id: 'doubao',     name: '豆包',             color: 'text-cyan-600',    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', model: 'doubao-pro-32k' },
+  { id: 'kimi',       name: 'Kimi',             color: 'text-rose-600',    baseUrl: 'https://api.moonshot.cn/v1',               model: 'moonshot-v1-8k' },
+  { id: 'glm',        name: 'GLM',              color: 'text-purple-600',  baseUrl: 'https://open.bigmodel.cn/api/paas/v4',     model: 'glm-4-flash' },
+  { id: 'qwen',       name: 'Qwen',             color: 'text-amber-600',   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
+  { id: 'openrouter', name: 'OpenRouter',       color: 'text-teal-600',    baseUrl: 'https://openrouter.ai/api/v1',             model: 'openai/gpt-4o' },
+  { id: 'bitai',      name: 'Bit.ai (孙宇晨)', color: 'text-orange-500',  baseUrl: 'https://api.bitai.com/v1',                 model: 'bit-ai-pro' },
+  { id: 'custom',     name: 'Custom',           color: 'text-[var(--text-muted)]', baseUrl: '',                               model: '' },
 ]
 
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
@@ -215,14 +216,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       <Dialog.Portal>
         <Dialog.Overlay asChild>
           <motion.div
-            className="fixed inset-0 z-40 flex items-center justify-center"
+            className="fixed inset-0 z-40"
             style={{ background: 'rgba(0,0,0,0.5)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-          >
-          </motion.div>
+          />
         </Dialog.Overlay>
         <Dialog.Content asChild>
           <motion.div
@@ -302,11 +302,11 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                                 setAddFormPreset({ name: preset.name, baseUrl: preset.baseUrl, model: preset.model })
                                 setShowAddForm(true)
                               }}
-                              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium border transition-all ${preset.bg} border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-sm`}
+                              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium border border-[var(--border)] bg-[var(--bg-sidebar)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-content)] transition-all"
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                             >
-                              <Icon size={14} className={preset.color} />
+                              <Bot size={14} className={preset.color} />
                               <span className="text-[var(--text-primary)]">{preset.name}</span>
                             </motion.button>
                           )
@@ -650,7 +650,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       description="Open a folder to create a workspace and start chatting with context"
                       size="md"
                       actions={[
-                        { label: 'Open Folder', onClick: () => { /* handled by workspace API */ }, icon: FolderOpen, variant: 'primary' }
+                        { label: 'Open Folder', onClick: async () => {
+                          if (window.api?.workspace?.add) {
+                            const ws = await window.api.workspace.add({ folderPath: '' })
+                            if (ws) loadWorkspaces()
+                          }
+                        }, icon: FolderOpen, variant: 'primary' }
                       ]}
                     />
                   ) : (
@@ -719,25 +724,18 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </div>
 
                   <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                    <div className="text-sm font-medium mb-2">Permission Status</div>
-                    <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-                      <ShieldAlert size={14} />
-                      <span>Screen recording permission required for desktop capture</span>
+                    <div className="text-sm font-medium mb-2">Screen Recording Permission</div>
+                    <div className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)]">
+                      <ShieldAlert size={14} className="mt-0.5 shrink-0" />
+                      <span>macOS requires Screen Recording permission for desktop capture.<br />
+                        Go to <strong>System Settings → Privacy & Security → Screen Recording</strong> and enable OpenDesk.
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
-                    <div className="text-sm font-medium mb-2">Whitelist / Blacklist</div>
-                    <textarea
-                      className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)] resize-none"
-                      rows={3}
-                      placeholder="Enter paths (one per line)..."
-                    />
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
                     <Cpu size={12} />
-                    <span>Emergency stop: Press Esc during streaming to abort</span>
+                    <span>Emergency stop: ⌘. (Ctrl+.) to abort any running task</span>
                   </div>
                 </Tabs.Content>
 
@@ -818,17 +816,20 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <div>
                     <label className="block text-[13px] font-medium mb-2 text-[var(--text-primary)] flex items-center gap-2">
                       <Type size={14} />
-                      Font Size
+                      Font Size <span className="font-normal text-[var(--text-muted)]">{fontSize}px</span>
                     </label>
                     <input
                       type="range"
                       min={12}
                       max={20}
                       value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      onChange={(e) => {
+                        const v = Number(e.target.value)
+                        setFontSize(v)
+                        document.documentElement.style.fontSize = `${v}px`
+                      }}
                       className="w-full accent-[var(--accent)]"
                     />
-                    <div className="text-[11px] text-[var(--text-muted)] mt-1">{fontSize}px</div>
                   </div>
                 </Tabs.Content>
 
@@ -912,9 +913,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </div>
 
                   <button
-                    onClick={() => {
-                      alert('Update check not implemented yet')
-                    }}
+                    onClick={() => toast.info('You are on the latest version (v0.1.0)')}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
                   >
                     <RefreshCw size={14} />
