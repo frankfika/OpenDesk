@@ -1,0 +1,81 @@
+[     101ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:21550
+[     137ms] TypeError: Cannot read properties of undefined (reading 'chat')
+    at http://localhost:5173/src/components/chat/InputBar.tsx:37:33
+    at commitHookEffectListMount (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:16915:34)
+    at commitPassiveMountOnFiber (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18156:19)
+    at commitPassiveMountEffects_complete (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18129:17)
+    at commitPassiveMountEffects_begin (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18119:15)
+    at commitPassiveMountEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18109:11)
+    at flushPassiveEffectsImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19490:11)
+    at flushPassiveEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19447:22)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18868:11)
+    at flushSyncCallbacks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:9119:30)
+[     138ms] TypeError: Cannot read properties of undefined (reading 'chat')
+    at http://localhost:5173/src/components/chat/InputBar.tsx:37:33
+    at commitHookEffectListMount (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:16915:34)
+    at invokePassiveEffectMountInDEV (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18324:19)
+    at invokeEffectsInDev (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19701:19)
+    at commitDoubleInvokeEffectsInDEV (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19686:15)
+    at flushPassiveEffectsImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19503:13)
+    at flushPassiveEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19447:22)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18868:11)
+    at flushSyncCallbacks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:9119:30)
+    at commitRootImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19432:11)
+[     138ms] [ERROR] The above error occurred in the <InputBar> component:
+
+    at InputBar (http://localhost:5173/src/components/chat/InputBar.tsx:26:27)
+    at div
+    at ChatPanel (http://localhost:5173/src/components/chat/ChatPanel.tsx:24:35)
+    at main
+    at div
+    at AppShell (http://localhost:5173/src/components/layout/AppShell.tsx:24:43)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14031
+[     138ms] [ERROR] The above error occurred in the <InputBar> component:
+
+    at InputBar (http://localhost:5173/src/components/chat/InputBar.tsx:26:27)
+    at div
+    at ChatPanel (http://localhost:5173/src/components/chat/ChatPanel.tsx:24:35)
+    at main
+    at div
+    at AppShell (http://localhost:5173/src/components/layout/AppShell.tsx:24:43)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14031
+[     142ms] TypeError: Cannot read properties of undefined (reading 'chat')
+    at http://localhost:5173/src/components/chat/InputBar.tsx:37:33
+    at commitHookEffectListMount (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:16915:34)
+    at commitPassiveMountOnFiber (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18156:19)
+    at commitPassiveMountEffects_complete (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18129:17)
+    at commitPassiveMountEffects_begin (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18119:15)
+    at commitPassiveMountEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18109:11)
+    at flushPassiveEffectsImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19490:11)
+    at flushPassiveEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19447:22)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18868:11)
+    at flushSyncCallbacks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:9119:30)
+[     147ms] TypeError: Cannot read properties of undefined (reading 'settings')
+    at load (http://localhost:5173/src/store/settings.ts:11:32)
+    at http://localhost:5173/src/components/layout/Sidebar.tsx:31:18
+    at commitHookEffectListMount (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:16915:34)
+    at commitPassiveMountOnFiber (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18156:19)
+    at commitPassiveMountEffects_complete (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18129:17)
+    at commitPassiveMountEffects_begin (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18119:15)
+    at commitPassiveMountEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18109:11)
+    at flushPassiveEffectsImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19490:11)
+    at flushPassiveEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19447:22)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18868:11)
+[     148ms] TypeError: Cannot read properties of undefined (reading 'settings')
+    at load (http://localhost:5173/src/store/settings.ts:11:32)
+    at http://localhost:5173/src/components/layout/Sidebar.tsx:31:18
+    at commitHookEffectListMount (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:16915:34)
+    at invokePassiveEffectMountInDEV (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18324:19)
+    at invokeEffectsInDev (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19701:19)
+    at commitDoubleInvokeEffectsInDEV (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19686:15)
+    at flushPassiveEffectsImpl (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19503:13)
+    at flushPassiveEffects (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19447:22)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18868:11)
+    at flushSyncCallbacks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:9119:30)
+[     152ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0

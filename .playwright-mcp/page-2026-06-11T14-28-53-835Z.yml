@@ -1,0 +1,24 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - text: OpenDesk
+      - button "New conversation" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+    - generic [ref=e14]: No conversations yet
+    - button "Settings" [ref=e16] [cursor=pointer]:
+      - img [ref=e17]
+      - text: Settings
+  - main [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e28]: Start a conversation
+        - generic [ref=e29]: Ask anything — OpenDesk connects to any AI model and can help with your work.
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - textbox "Configure a provider in Settings to start…" [disabled] [ref=e32]
+          - button "Send (⌘↵)" [disabled] [ref=e34]:
+            - img [ref=e35]
+        - generic [ref=e37]: No provider — open Settings

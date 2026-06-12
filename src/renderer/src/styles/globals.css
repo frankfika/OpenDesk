@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-sidebar: rgba(249, 249, 251, 0.72);
+  --bg-content: rgba(255, 255, 255, 0.78);
+  --bg-input: rgba(255, 255, 255, 0.7);
+  --text-primary: #111827;
+  --text-secondary: #52525B;
+  --text-muted: #A1A1AA;
+  --accent: #0F172A;
+  --accent-hover: #334155;
+  --border: rgba(228, 228, 231, 0.5);
+  --border-strong: rgba(212, 212, 216, 0.7);
+  --radius: 8px;
+  --sidebar-width: 260px;
+  --titlebar-height: 44px;
+}
+
+[data-theme="dark"] :root,
+.dark :root {
+  --bg-sidebar: rgba(24, 24, 27, 0.72);
+  --bg-content: rgba(9, 9, 11, 0.78);
+  --bg-input: rgba(39, 39, 42, 0.7);
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+  --accent: #FAFAFA;
+  --accent-hover: #E4E4E7;
+  --border: rgba(39, 39, 42, 0.5);
+  --border-strong: rgba(63, 63, 70, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-sidebar: rgba(24, 24, 27, 0.72);
+    --bg-content: rgba(9, 9, 11, 0.78);
+    --bg-input: rgba(39, 39, 42, 0.7);
+    --text-primary: #FAFAFA;
+    --text-secondary: #A1A1AA;
+    --text-muted: #71717A;
+    --accent: #FAFAFA;
+    --accent-hover: #E4E4E7;
+    --border: rgba(39, 39, 42, 0.5);
+    --border-strong: rgba(63, 63, 70, 0.7);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+  user-select: none;
+  background: var(--bg-content);
+}
+
+/* Subtle mesh gradient background for glassmorphism */
+body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(240, 244, 255, 0.8) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(245, 235, 255, 0.8) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(235, 245, 255, 0.8) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(235, 250, 250, 0.8) 0px, transparent 50%);
+  background-color: var(--bg-content);
+  background-attachment: fixed;
+}
+
+[data-theme="dark"] body, .dark body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(30, 40, 60, 0.5) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(40, 30, 60, 0.5) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(30, 40, 50, 0.5) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(20, 40, 50, 0.5) 0px, transparent 50%);
+  background-color: var(--bg-content);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(30, 40, 60, 0.5) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(40, 30, 60, 0.5) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(30, 40, 50, 0.5) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(20, 40, 50, 0.5) 0px, transparent 50%);
+    background-color: var(--bg-content);
+  }
+}
+
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+/* Modern scrollbar - thinner, auto-hide */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+:hover::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Shimmer animation for skeletons */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-sidebar) 25%, var(--border) 50%, var(--bg-sidebar) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Subtle multi-layer shadow utility */
+.shadow-subtle {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.04);
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s ease-out;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 0.9s step-end infinite;
+}
+
+pre {
+  background: var(--bg-sidebar) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+code:not(pre code) {
+  background: var(--bg-sidebar);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+}
+
+.prose-od p { margin: 0 0 0.6em; }
+.prose-od p:last-child { margin-bottom: 0; }
+.prose-od h1, .prose-od h2, .prose-od h3 {
+  font-weight: 600;
+  margin: 1em 0 0.4em;
+  color: var(--text-primary);
+}
+.prose-od h1 { font-size: 1.15em; }
+.prose-od h2 { font-size: 1.05em; }
+.prose-od h3 { font-size: 0.98em; }
+.prose-od ul, .prose-od ol {
+  margin: 0.4em 0 0.6em 1.4em;
+  padding: 0;
+}
+.prose-od li { margin: 0.2em 0; }
+.prose-od blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 0.8em;
+  margin: 0.5em 0;
+  color: var(--text-secondary);
+}
+.prose-od a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.prose-od a:hover { text-decoration: underline; }
+.prose-od table {
+  border-collapse: collapse;
+  font-size: 0.88em;
+  margin: 0.6em 0;
+  width: 100%;
+}
+.prose-od th, .prose-od td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+.prose-od th { background: var(--bg-sidebar); font-weight: 600; }
+.prose-od hr { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
+
+[data-state="active"][role="tab"] {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--accent) !important;
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}

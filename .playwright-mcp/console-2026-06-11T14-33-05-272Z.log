@@ -1,0 +1,43 @@
+[     133ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:21550
+[  115850ms] ReferenceError: handleNewThread is not defined
+    at Sidebar (http://localhost:5173/src/components/layout/Sidebar.tsx?t=1781188501068:177:22)
+    at renderWithHooks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:11548:26)
+    at mountIndeterminateComponent (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14926:21)
+    at beginWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3733:39)
+    at beginWork$1 (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19765:15)
+    at performUnitOfWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19198:20)
+    at workLoopSync (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19137:13)
+[  115850ms] ReferenceError: handleNewThread is not defined
+    at Sidebar (http://localhost:5173/src/components/layout/Sidebar.tsx?t=1781188501068:177:22)
+    at renderWithHooks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:11548:26)
+    at mountIndeterminateComponent (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14926:21)
+    at beginWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:3733:39)
+    at beginWork$1 (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19765:15)
+    at performUnitOfWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19198:20)
+    at workLoopSync (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19137:13)
+[  115851ms] [ERROR] The above error occurred in the <Sidebar> component:
+
+    at Sidebar (http://localhost:5173/src/components/layout/Sidebar.tsx?t=1781188501068:99:35)
+    at div
+    at AppShell (http://localhost:5173/src/components/layout/AppShell.tsx?t=1781188444708:29:43)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14031
+[  115851ms] ReferenceError: handleNewThread is not defined
+    at Sidebar (http://localhost:5173/src/components/layout/Sidebar.tsx?t=1781188501068:177:22)
+    at renderWithHooks (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:11548:26)
+    at mountIndeterminateComponent (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:14926:21)
+    at beginWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:15914:22)
+    at beginWork$1 (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19753:22)
+    at performUnitOfWork (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19198:20)
+    at workLoopSync (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19137:13)
+    at renderRootSync (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:19116:15)
+    at recoverFromConcurrentError (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18736:28)
+    at performSyncWorkOnRoot (http://localhost:5173/@fs/Users/fangchen/Baidu/GitHub/OpenDesk/node_modules/.vite/deps/chunk-NUMECXU6.js?v=44674c46:18879:28)
