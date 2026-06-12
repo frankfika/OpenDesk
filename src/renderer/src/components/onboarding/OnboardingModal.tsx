@@ -29,6 +29,11 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
   const { addWorkspace } = useWorkspaceStore()
   const { addProvider } = useSettingsStore()
 
+  // Skip onboarding and start with guest mode
+  function handleSkip() {
+    onComplete()
+  }
+
   async function handleOpenFolder() {
     try {
       const workspace = await addWorkspace('')
@@ -112,25 +117,35 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                   <h2 className="text-xl font-semibold mb-2">Welcome to OpenDesk</h2>
                   <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
                     Your AI desktop assistant that can use any AI model.<br />
-                    Let's get you set up in a few quick steps.
+                    You can start chatting right away or set up a provider first.
                   </p>
                 </div>
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  Get Started
-                  <ArrowRight size={16} />
-                </button>
+                <div className="flex flex-col gap-3 w-full">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity shadow-sm"
+                  >
+                    Quick Setup
+                    <ArrowRight size={16} />
+                  </button>
+                  <button
+                    onClick={handleSkip}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
+                  >
+                    <SkipForward size={16} />
+                    Start Without Setup
+                  </button>
+                </div>
               </div>
             )}
 
             {step === 1 && (
               <div className="flex flex-col gap-5">
                 <div className="text-center">
-                  <h2 className="text-lg font-semibold mb-1">Create Your First Workspace</h2>
+                  <h2 className="text-lg font-semibold mb-1">Workspace (Optional)</h2>
                   <p className="text-[13px] text-[var(--text-secondary)]">
-                    Open a folder to organize your AI conversations
+                    Open a project folder to organize your AI conversations,<br />
+                    or skip to use the default workspace.
                   </p>
                 </div>
 
@@ -147,22 +162,31 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                   </div>
                 </button>
 
-                <button
-                  onClick={() => setStep(2)}
-                  className="flex items-center justify-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  <SkipForward size={14} />
-                  Skip for now
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStep(0)}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setStep(2)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
+                  >
+                    <SkipForward size={14} />
+                    Skip
+                  </button>
+                </div>
               </div>
             )}
 
             {step === 2 && (
               <div className="flex flex-col gap-5">
                 <div className="text-center">
-                  <h2 className="text-lg font-semibold mb-1">Add Your First Provider</h2>
+                  <h2 className="text-lg font-semibold mb-1">AI Provider (Optional)</h2>
                   <p className="text-[13px] text-[var(--text-secondary)]">
-                    Connect an AI model to start chatting
+                    Connect an AI model to start chatting,<br />
+                    or add it later in Settings.
                   </p>
                 </div>
 
@@ -214,27 +238,39 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                   >
                     Back
                   </button>
-                  <button
-                    onClick={handleAddProvider}
-                    disabled={adding || (!!selectedProvider && selectedProvider !== 'ollama' && !apiKey)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
-                      adding || (!!selectedProvider && selectedProvider !== 'ollama' && !apiKey)
-                        ? 'bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed'
-                        : 'bg-[var(--accent)] text-white hover:opacity-90'
-                    }`}
-                  >
-                    {adding ? 'Adding…' : 'Complete Setup'}
-                    {!adding && <ArrowRight size={16} />}
-                  </button>
+                  {selectedProvider && (selectedProvider === 'ollama' || apiKey) ? (
+                    <button
+                      onClick={handleAddProvider}
+                      disabled={adding}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
+                        adding
+                          ? 'bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed'
+                          : 'bg-[var(--accent)] text-white hover:opacity-90'
+                      }`}
+                    >
+                      {adding ? 'Adding…' : 'Complete Setup'}
+                      {!adding && <ArrowRight size={16} />}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSkip}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
+                    >
+                      <SkipForward size={14} />
+                      Skip & Start
+                    </button>
+                  )}
                 </div>
 
-                <button
-                  onClick={onComplete}
-                  className="flex items-center justify-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  <SkipForward size={14} />
-                  Skip for now
-                </button>
+                {selectedProvider && (selectedProvider === 'ollama' || apiKey) && (
+                  <button
+                    onClick={handleSkip}
+                    className="flex items-center justify-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  >
+                    <SkipForward size={14} />
+                    Skip and configure later
+                  </button>
+                )}
               </div>
             )}
           </div>

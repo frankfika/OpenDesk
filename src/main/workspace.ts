@@ -54,7 +54,37 @@ export function createWorkspace(payload: WorkspaceCreatePayload): Workspace {
 }
 
 export function listWorkspaces(): Workspace[] {
-  return loadWorkspaces()
+  const workspaces = loadWorkspaces()
+
+  // Ensure there's always at least a default workspace
+  if (workspaces.length === 0) {
+    const defaultWorkspace = createDefaultWorkspace()
+    workspaces.push(defaultWorkspace)
+    saveWorkspaces(workspaces)
+  }
+
+  return workspaces
+}
+
+function createDefaultWorkspace(): Workspace {
+  const now = Date.now()
+  const defaultPath = join(app.getPath('userData'), 'opendesk', 'default-workspace')
+
+  // Create the directory if it doesn't exist
+  if (!existsSync(defaultPath)) {
+    mkdirSync(defaultPath, { recursive: true })
+  }
+
+  return {
+    id: 'default-workspace',
+    folderPath: defaultPath,
+    name: 'General',
+    createdAt: now,
+    updatedAt: now,
+    tags: [],
+    status: 'active',
+    description: 'Default workspace for general conversations'
+  }
 }
 
 export function updateWorkspace(id: string, patch: WorkspaceUpdatePayload): Workspace | null {
