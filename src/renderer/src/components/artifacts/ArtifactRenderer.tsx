@@ -389,7 +389,7 @@ export default function ArtifactRenderer({ type, content, title }: ArtifactRende
 export function ArtifactTypeIcon({ type, size = 14 }: { type: ArtifactType; size?: number }) {
   switch (type) {
     case 'html': return <Globe size={size} />
-    case 'react': return <Sparkles size={size} />
+    case 'react': return <FileCode size={size} />
     case 'mermaid': return <Image size={size} />
     case 'svg': return <Image size={size} />
     case 'code': return <FileCode size={size} />

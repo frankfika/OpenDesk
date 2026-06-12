@@ -37,12 +37,12 @@ const TAB_LIST = [
 
 const PROVIDER_PRESETS = [
   { id: 'openai', name: 'OpenAI', icon: Bot, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { id: 'anthropic', name: 'Anthropic', icon: Sparkles, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { id: 'anthropic', name: 'Anthropic', icon: Bot, color: 'text-orange-600', bg: 'bg-orange-50' },
   { id: 'ollama', name: 'Ollama', icon: Cpu, color: 'text-violet-600', bg: 'bg-violet-50' },
-  { id: 'deepseek', name: 'DeepSeek', icon: Zap, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'deepseek', name: 'DeepSeek', icon: Bot, color: 'text-blue-600', bg: 'bg-blue-50' },
   { id: 'doubao', name: '豆包', icon: Bot, color: 'text-cyan-600', bg: 'bg-cyan-50' },
   { id: 'glm', name: 'GLM', icon: Bot, color: 'text-purple-600', bg: 'bg-purple-50' },
-  { id: 'kimi', name: 'Kimi', icon: Sparkles, color: 'text-rose-600', bg: 'bg-rose-50' }
+  { id: 'kimi', name: 'Kimi', icon: Bot, color: 'text-rose-600', bg: 'bg-rose-50' }
 ]
 
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {

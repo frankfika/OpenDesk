@@ -41,7 +41,7 @@ function getProviderColor(providerType?: string): string {
     case 'openai': return 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
     case 'anthropic': return 'bg-orange-500/10 text-orange-600 border-orange-200'
     case 'ollama': return 'bg-violet-500/10 text-violet-600 border-violet-200'
-    default: return 'bg-gradient-to-b from-[var(--accent)] to-[var(--accent-hover)] text-white'
+    default: return 'bg-[var(--accent)] text-white'
   }
 }
 
