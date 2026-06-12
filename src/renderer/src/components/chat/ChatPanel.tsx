@@ -10,6 +10,7 @@ import { useToast } from '../../store/toast'
 import MessageRow from './Message'
 import InputBar from './InputBar'
 import ArtifactPanel from '../artifacts/ArtifactPanel'
+import AgentActivityBar from './AgentActivityBar'
 import EmptyState from '../ui/EmptyState'
 import SuggestionCard from '../ui/SuggestionCard'
 import { SkeletonMessage } from '../ui/Skeleton'
@@ -542,12 +543,14 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
             )}
           </div>
 
+          <AnimatePresence>
+            <AgentActivityBar />
+          </AnimatePresence>
+
           <InputBar
             onOpenSettings={onOpenSettings}
             onClearChat={clearMessages}
-            onScreenshot={() => {
-              // Triggered from input bar
-            }}
+            onScreenshot={() => {}}
             onWebSearch={(query) => {
               toast.info(`Web search: ${query}`)
             }}

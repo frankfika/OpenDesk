@@ -84,6 +84,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addToolResult: (result) => {
     set(s => {
+      // Find the matching tool_call to get the toolName
+      const matchingCall = [...s.messages].reverse().find(
+        m => m.kind === 'tool_call' && (m.metadata?.toolCallId === result.toolCallId || !result.toolCallId)
+      )
+      const toolName = (matchingCall?.metadata?.toolName as string) || (result as any).toolName || 'tool'
       const messages: Message[] = [...s.messages, {
         id: genId(),
         role: 'tool' as const,
@@ -91,7 +96,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         timestamp: Date.now(),
         kind: 'tool_result' as const,
         toolCallId: result.toolCallId,
-        metadata: { isError: result.isError }
+        metadata: { isError: result.isError, toolName }
       }]
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
