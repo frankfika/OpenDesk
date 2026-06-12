@@ -272,7 +272,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         {/* Skill active status */}
         {activeSkill && (
           <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-            <Sparkles size={12} className="text-indigo-500" />
+            <Library size={12} className="text-indigo-500" />
             <span>{activeSkill.name}</span>
           </div>
         )}
@@ -307,14 +307,14 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
                   transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1.0] }}
                 >
                   <motion.div
-                    className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--bg-sidebar)] border border-[var(--border)] shadow-subtle"
+                    className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--bg-sidebar)] border border-[var(--border)]"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.35, delay: 0.1 }}
                   >
-                    <Sparkles size={28} className="text-[var(--text-muted)]" />
+                    <MessageSquare size={28} className="text-[var(--text-muted)]" />
                   </motion.div>
-                  <h1 className="text-3xl font-semibold mb-3 text-transparent bg-clip-text bg-gradient-to-br from-[var(--text-primary)] to-[var(--text-secondary)] tracking-tight">
+                  <h1 className="text-3xl font-semibold mb-3 text-[var(--text-primary)]">
                     What can I help with?
                   </h1>
                   <p className="text-[15px] text-[var(--text-secondary)]">
