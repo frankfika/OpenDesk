@@ -16,7 +16,8 @@ import type {
   DoctorReport,
   ModelInfo,
   MCPServerConfig,
-  MCPTool
+  MCPTool,
+  ArbitrationResult
 } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
@@ -98,7 +99,7 @@ contextBridge.exposeInMainWorld('api', {
 
   chat: {
     send: (payload: ChatSendPayload): void => ipcRenderer.send('chat:send', payload),
-    abort: (providerId: string): void => ipcRenderer.send('chat:abort', providerId),
+    abort: (sessionId: string): void => ipcRenderer.send('chat:abort', sessionId),
     regenerate: (payload: ChatSendPayload): void => ipcRenderer.send('chat:regenerate', payload),
     editMessage: (payload: ChatSendPayload & { editIndex: number }): void =>
       ipcRenderer.send('chat:editMessage', payload),
@@ -126,10 +127,52 @@ contextBridge.exposeInMainWorld('api', {
       const listener = (_e: Electron.IpcRendererEvent, result: unknown): void => cb(result as { toolCallId: string; content: string; isError?: boolean })
       ipcRenderer.on('chat:tool_result', listener)
       return () => ipcRenderer.removeListener('chat:tool_result', listener)
+    },
+    onAgentToken: (cb: (payload: { runId: string; agentId: string; providerId: string; token: string }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; agentId: string; providerId: string; token: string })
+      ipcRenderer.on('chat:agent:token', listener)
+      return () => ipcRenderer.removeListener('chat:agent:token', listener)
+    },
+    onAgentDone: (cb: (payload: { runId: string; agentId: string; providerId: string; latencyMs?: number; inputTokens?: number; outputTokens?: number }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; agentId: string; providerId: string; latencyMs?: number; inputTokens?: number; outputTokens?: number })
+      ipcRenderer.on('chat:agent:done', listener)
+      return () => ipcRenderer.removeListener('chat:agent:done', listener)
+    },
+    onAgentError: (cb: (payload: { runId: string; agentId: string; providerId: string; error: string }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; agentId: string; providerId: string; error: string })
+      ipcRenderer.on('chat:agent:error', listener)
+      return () => ipcRenderer.removeListener('chat:agent:error', listener)
+    },
+    onAgentToolCall: (cb: (payload: { runId: string; agentId: string; providerId: string; toolCall: { id: string; name: string; arguments: Record<string, unknown> } }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; agentId: string; providerId: string; toolCall: { id: string; name: string; arguments: Record<string, unknown> } })
+      ipcRenderer.on('chat:agent:tool_call', listener)
+      return () => ipcRenderer.removeListener('chat:agent:tool_call', listener)
+    },
+    onAgentToolResult: (cb: (payload: { runId: string; agentId: string; providerId: string; toolResult: { toolCallId: string; name: string; content: string; isError?: boolean } }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; agentId: string; providerId: string; toolResult: { toolCallId: string; name: string; content: string; isError?: boolean } })
+      ipcRenderer.on('chat:agent:tool_result', listener)
+      return () => ipcRenderer.removeListener('chat:agent:tool_result', listener)
+    },
+    onArbitrationToken: (cb: (payload: { runId: string; token: string }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; token: string })
+      ipcRenderer.on('chat:arbitration:token', listener)
+      return () => ipcRenderer.removeListener('chat:arbitration:token', listener)
+    },
+    onArbitrationDone: (cb: (payload: { runId: string; result: ArbitrationResult }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; result: ArbitrationResult })
+      ipcRenderer.on('chat:arbitration:done', listener)
+      return () => ipcRenderer.removeListener('chat:arbitration:done', listener)
+    },
+    onEnsembleDone: (cb: (payload: { runId: string; threadId?: string; workspaceId?: string }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { runId: string; threadId?: string; workspaceId?: string })
+      ipcRenderer.on('chat:ensemble:done', listener)
+      return () => ipcRenderer.removeListener('chat:ensemble:done', listener)
     }
   },
 
   desktop: {
+    openPath: (path: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('desktop:openPath', path),
     capture: (): Promise<string> => ipcRenderer.invoke('desktop:capture'),
     emergencyStop: (): Promise<boolean> => ipcRenderer.invoke('desktop:emergencyStop'),
     getWindows: (): Promise<{ id: string; name: string; appIcon?: string }[]> =>
@@ -138,6 +181,17 @@ contextBridge.exposeInMainWorld('api', {
 
   doctor: {
     run: (): Promise<DoctorReport> => ipcRenderer.invoke('doctor:run')
+  },
+
+  tools: {
+    readFile: (path: string): Promise<{ success: boolean; content?: string; error?: string }> =>
+      ipcRenderer.invoke('tools:readFile', path),
+    writeFile: (path: string, content: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('tools:writeFile', path, content),
+    listDirectory: (path: string): Promise<{ success: boolean; entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>; error?: string }> =>
+      ipcRenderer.invoke('tools:listDirectory', path),
+    applyPatch: (path: string, patch: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('tools:applyPatch', path, patch)
   },
 
   app: {

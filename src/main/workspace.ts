@@ -7,7 +7,7 @@ import type {
   WorkspaceCreatePayload,
   WorkspaceUpdatePayload,
   AgentsMdInfo
-} from '../../shared/types'
+} from '../shared/types'
 import { scanAgentsMd } from './agents-md'
 
 const WORKSPACES_FILE = 'workspaces.json'

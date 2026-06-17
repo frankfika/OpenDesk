@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
 import ChatPanel from '../chat/ChatPanel'
 import SkillsPanel from '../skills/SkillsPanel'
+import FilePanel from '../files/FilePanel'
 import SettingsModal from '../settings/SettingsModal'
 import OnboardingModal from '../onboarding/OnboardingModal'
 import CommandPalette from '../ui/CommandPalette'
@@ -55,6 +56,7 @@ export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [skillsPanelOpen, setSkillsPanelOpen] = useState(false)
+  const [filePanelOpen, setFilePanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const { newThread } = useChatStore()
@@ -139,9 +141,10 @@ export default function AppShell() {
           onOpenSettings={() => setSettingsOpen(true)}
           onNewThread={handleNewThread}
           onOpenSkills={() => setSkillsPanelOpen(true)}
+          onOpenFiles={() => setFilePanelOpen(true)}
         />
         <main className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]">
-          <ChatPanel onOpenSettings={() => setSettingsOpen(true)} />
+          <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
         </main>
 
         {/* SkillsPanel with slide-in animation */}
@@ -156,6 +159,13 @@ export default function AppShell() {
             >
               <SkillsPanel onClose={() => setSkillsPanelOpen(false)} />
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* FilePanel with slide-in animation */}
+        <AnimatePresence>
+          {filePanelOpen && (
+            <FilePanel onClose={() => setFilePanelOpen(false)} />
           )}
         </AnimatePresence>
 

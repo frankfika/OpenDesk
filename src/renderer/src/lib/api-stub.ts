@@ -22,10 +22,10 @@ if (typeof window !== 'undefined' && !window.api) {
     },
     workspace: {
       list: async () => [],
-      add: async (payload: any) => ({
+      add: async () => ({
         id: 'mock-ws-' + Date.now(),
-        folderPath: payload.folderPath,
-        name: payload.name ?? 'Mock Workspace',
+        folderPath: '/Users/demo/project',
+        name: 'Mock Workspace',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         tags: [],
@@ -62,16 +62,51 @@ if (typeof window !== 'undefined' && !window.api) {
       regenerate: () => {},
       editMessage: () => {},
       onToken: noop,
+      onToolCall: noop,
+      onToolResult: noop,
       onDone: noop,
-      onError: noop
+      onError: noop,
+      onAgentToken: noop,
+      onAgentDone: noop,
+      onAgentError: noop,
+      onAgentToolCall: noop,
+      onAgentToolResult: noop,
+      onArbitrationToken: noop,
+      onArbitrationDone: noop,
+      onEnsembleDone: noop
+    },
+    draft: {
+      load: async () => null,
+      save: async () => true
+    },
+    mcp: {
+      listServers: async () => [],
+      addServer: async () => false,
+      removeServer: async () => false,
+      toggleServer: async () => false,
+      listTools: async () => [],
+      callTool: async () => ''
+    },
+    app: {
+      onNewChat: noop,
+      onOpenSettings: noop,
+      onFocusInput: noop,
+      onEmergencyStop: noop
     },
     desktop: {
+      openPath: async () => ({ success: false, error: 'Not available in browser mode' }),
       capture: async () => '',
       emergencyStop: async () => true,
       getWindows: async () => []
     },
     doctor: {
       run: async () => ({ timestamp: Date.now(), checks: [], overall: 'pass' })
+    },
+    tools: {
+      readFile: async () => ({ success: false, error: 'Not available in browser mode' }),
+      writeFile: async () => ({ success: false, error: 'Not available in browser mode' }),
+      listDirectory: async () => ({ success: false, error: 'Not available in browser mode' }),
+      applyPatch: async () => ({ success: false, error: 'Not available in browser mode' })
     },
     skills: {
       list: async () => [],

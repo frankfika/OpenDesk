@@ -4,7 +4,7 @@ import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useSkillsStore } from '../../store/skills'
 import type { Message, FileAttachment } from '@shared/types'
-import { Send, Square, ChevronDown, Check, ShieldAlert, Cpu, Camera, Paperclip, X, Search, FileText, Folder, MessageSquare } from 'lucide-react'
+import { Send, Square, ChevronDown, Check, ShieldAlert, Cpu, Camera, Paperclip, X, Search, FileText, Folder, MessageSquare, Users } from 'lucide-react'
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -32,6 +32,20 @@ interface InputBarProps {
   onWebSearch?: (query: string) => void
 }
 
+function isComplexTask(content: string): boolean {
+  if (content.includes('```')) return true
+  if (content.includes('@file:')) return true
+  if (content.length > 300) return true
+  const complexKeywords = [
+    'review', 'refactor', 'debug', 'analyze', 'analyse', 'implement',
+    'write', 'create', 'fix', 'optimize', 'compare', 'explain in detail',
+    'check for', 'find bugs', 'code review', '重构', '调试', '分析',
+    '实现', '优化', '修复', '检查', '审查'
+  ]
+  const lower = content.toLowerCase()
+  return complexKeywords.some(k => lower.includes(k.toLowerCase()))
+}
+
 export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, onWebSearch }: InputBarProps) {
   const [text, setText] = useState('')
   const [approvalMode, setApprovalMode] = useState('suggest')
@@ -43,9 +57,10 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const [modelSearch, setModelSearch] = useState('')
   const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { messages, streaming, error, errorType, addMessage, appendToken, addToolCall, addToolResult, setStreaming, setError, attachments, addAttachment, removeAttachment, clearAttachments } = useChatStore()
-  const { settings, activeProvider, update, fetchModels, updateProvider } = useSettingsStore()
+  const { messages, streaming, error, errorType, addMessage, appendToken, addToolCall, addToolResult, setStreaming, setError, attachments, addAttachment, removeAttachment, clearAttachments, ensembleMode, setEnsembleMode, startEnsembleRun, appendAgentToken, setAgentRunStatus, setAgentMetrics, addAgentToolCall, addAgentToolResult, startArbitration, appendArbitrationToken, finalizeArbitration, completeEnsembleRun } = useChatStore()
+  const { settings, activeProvider, ensembleProviders, arbitratorProvider, update, fetchModels, updateProvider } = useSettingsStore()
   const { activeThreadId, activeWorkspace, createThread, updateThread, workspaces, threads } = useWorkspaceStore()
+  const activeThread = threads.find(t => t.id === activeThreadId)
   const { skills } = useSkillsStore()
 
   // Mention / reference / command popover state
@@ -80,6 +95,10 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     window.addEventListener('opendesk:reference-file', handler)
     return () => window.removeEventListener('opendesk:reference-file', handler)
   }, [text])
+
+  useEffect(() => {
+    setEnsembleMode(settings.ensembleModeDefault ?? false)
+  }, [settings.ensembleModeDefault, setEnsembleMode])
 
   // Draft auto-save and restore
   useEffect(() => {
@@ -125,8 +144,82 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
           setError(error.message, error.type as 'auth' | 'network' | 'model' | 'provider' | 'workspace' | 'ollama' | 'generic' | null)
         })
       : () => {}
-    return () => { offToken(); offToolCall(); offToolResult(); offDone(); offError() }
-  }, [appendToken, addToolCall, addToolResult, setStreaming, setError])
+
+    // Ensemble event listeners
+    const offAgentToken = typeof chat.onAgentToken === 'function'
+      ? chat.onAgentToken(({ runId, agentId, providerId, token }) => {
+          appendAgentToken(runId, agentId, providerId, token)
+        })
+      : () => {}
+    const offAgentDone = typeof chat.onAgentDone === 'function'
+      ? chat.onAgentDone(({ runId, agentId, providerId, latencyMs, inputTokens, outputTokens }) => {
+          setAgentRunStatus(runId, agentId, 'done')
+          if (latencyMs !== undefined || inputTokens !== undefined || outputTokens !== undefined) {
+            setAgentMetrics(runId, agentId, { latencyMs, inputTokens, outputTokens })
+          }
+        })
+      : () => {}
+    const offAgentError = typeof chat.onAgentError === 'function'
+      ? chat.onAgentError(({ runId, agentId, providerId, error }) => {
+          setAgentRunStatus(runId, agentId, 'error', error)
+        })
+      : () => {}
+    const offAgentToolCall = typeof chat.onAgentToolCall === 'function'
+      ? chat.onAgentToolCall(({ runId, agentId, toolCall }) => {
+          addAgentToolCall(runId, agentId, toolCall)
+        })
+      : () => {}
+    const offAgentToolResult = typeof chat.onAgentToolResult === 'function'
+      ? chat.onAgentToolResult(({ runId, agentId, toolResult }) => {
+          addAgentToolResult(runId, agentId, toolResult)
+        })
+      : () => {}
+    const offArbitrationToken = typeof chat.onArbitrationToken === 'function'
+      ? chat.onArbitrationToken(({ runId, token }) => {
+          const run = useChatStore.getState().ensembleRuns[runId]
+          if (!run?.arbitrationMessageId) {
+            startArbitration(runId)
+          }
+          appendArbitrationToken(runId, token)
+        })
+      : () => {}
+    const offArbitrationDone = typeof chat.onArbitrationDone === 'function'
+      ? chat.onArbitrationDone(({ runId, result }) => {
+          const run = useChatStore.getState().ensembleRuns[runId]
+          if (!run?.arbitrationMessageId) {
+            startArbitration(runId)
+          }
+          finalizeArbitration(runId, result)
+        })
+      : () => {}
+    const offEnsembleDone = typeof chat.onEnsembleDone === 'function'
+      ? chat.onEnsembleDone(({ runId }) => {
+          completeEnsembleRun(runId)
+          // Persist agent answers to thread for future reference
+          const { ensembleRuns, threadId: currentThreadId } = useChatStore.getState()
+          const run = ensembleRuns[runId]
+          if (run && currentThreadId) {
+            const agentAnswers = Object.values(run.agents)
+              .filter(a => a.messages.length > 0)
+              .map(a => ({
+                agentId: a.agentId,
+                providerId: a.providerId,
+                model: settings.providers.find(p => p.id === a.providerId)?.model,
+                content: a.messages[a.messages.length - 1].content,
+                timestamp: Date.now()
+              }))
+            if (agentAnswers.length > 0) {
+              updateThread(currentThreadId, { agentAnswers })
+            }
+          }
+        })
+      : () => {}
+
+    return () => {
+      offToken(); offToolCall(); offToolResult(); offDone(); offError()
+      offAgentToken(); offAgentDone(); offAgentError(); offAgentToolCall(); offAgentToolResult(); offArbitrationToken(); offArbitrationDone(); offEnsembleDone()
+    }
+  }, [appendToken, addToolCall, addToolResult, setStreaming, setError, appendAgentToken, setAgentRunStatus, setAgentMetrics, addAgentToolCall, addAgentToolResult, startArbitration, appendArbitrationToken, finalizeArbitration, completeEnsembleRun])
 
   useEffect(() => {
     function handler() { setShowApproval(false); setShowModelPicker(false); setShowSkillPicker(false); setShowModelSearch(false); setPopoverType(null) }
@@ -344,7 +437,23 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   async function send() {
     const content = text.trim()
     if (!content || streaming) return
-    if (!provider) { onOpenSettings(); return }
+
+    const autoEnsemble = settings.autoEnsembleForComplexTasks && isComplexTask(content) && ensembleProviders().length > 0
+    const isEnsemble = ensembleMode || autoEnsemble
+    const ensProviders = isEnsemble
+      ? (activeThread?.ensembleProviderIds?.length
+          ? activeThread.ensembleProviderIds
+              .map(id => settings.providers.find(p => p.id === id))
+              .filter((p): p is NonNullable<typeof p> => Boolean(p))
+          : ensembleProviders())
+      : []
+    const arbProvider = isEnsemble
+      ? (activeThread?.arbitratorProviderId
+          ? settings.providers.find(p => p.id === activeThread.arbitratorProviderId)
+          : arbitratorProvider())
+      : null
+
+    if (!provider && ensProviders.length === 0) { onOpenSettings(); return }
 
     // Resolve @file references to actual content
     let processedContent = content
@@ -404,14 +513,40 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       window.api.draft.save({ text: '', threadId: null }).catch(console.error)
     }
 
+    const roleAssignments = activeThread?.agentRoleAssignments ?? settings.agentRoleAssignments ?? {}
+
+    if (isEnsemble && ensProviders.length > 0 && threadId) {
+      const providerIds = ensProviders.map(p => p.id)
+      const arbId = arbProvider?.id
+      updateThread(threadId, {
+        mode: 'ensemble',
+        ensembleProviderIds: providerIds,
+        arbitratorProviderId: arbId,
+        agentRoleAssignments: roleAssignments
+      })
+    } else if (!isEnsemble && threadId) {
+      updateThread(threadId, { mode: 'single' })
+    }
+
+    const sessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const payload: any = {
       messages: [...messages, userMsg],
-      providerId: settings.activeProviderId!,
+      sessionId,
       threadId
     }
 
     if (workspace) {
       payload.workspaceId = workspace.id
+    }
+
+    if (isEnsemble && ensProviders.length > 0) {
+      payload.mode = 'ensemble'
+      payload.providerIds = ensProviders.map(p => p.id)
+      payload.arbitratorProviderId = arbProvider?.id
+      payload.agentRoleAssignments = roleAssignments
+      startEnsembleRun(sessionId, ensProviders.map(p => p.id), arbProvider?.id)
+    } else {
+      payload.providerId = settings.activeProviderId!
     }
 
     if (window.api?.chat) {
@@ -426,7 +561,14 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   }
 
   function abort() {
-    if (settings.activeProviderId && window.api?.chat) window.api.chat.abort(settings.activeProviderId)
+    const chat = window.api?.chat
+    if (!chat) return
+    const { activeRunId } = useChatStore.getState()
+    if (activeRunId) {
+      chat.abort(activeRunId)
+    } else if (settings.activeProviderId) {
+      chat.abort(settings.activeProviderId)
+    }
     setStreaming(false)
   }
 
@@ -819,6 +961,20 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
               </div>
             )}
           </div>
+
+          {/* Ensemble mode toggle */}
+          <button
+            onClick={() => setEnsembleMode(!ensembleMode)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+              ensembleMode
+                ? 'bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20'
+                : 'hover:bg-[var(--border)] text-[var(--text-secondary)]'
+            }`}
+            title={ensembleMode ? 'Ensemble mode enabled' : 'Enable ensemble mode'}
+          >
+            <Users size={14} />
+            <span className="font-medium">{ensembleMode ? 'Ensemble' : 'Single'}</span>
+          </button>
 
           <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
             <button

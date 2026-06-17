@@ -1,5 +1,13 @@
 import { create } from 'zustand'
-import type { AppSettings, ProviderConfig, ModelInfo, MCPServerConfig, MCPTool } from '@shared/types'
+import type { AppSettings, ProviderConfig, ModelInfo, MCPServerConfig, MCPTool, AgentRole, AgentRoleConfig } from '@shared/types'
+
+const AGENT_ROLES: AgentRoleConfig[] = [
+  { id: 'generalist', name: 'Generalist', prompt: 'You are a helpful general-purpose assistant. Provide a balanced, accurate answer.' },
+  { id: 'coder', name: 'Coder', prompt: 'You are an expert software engineer. Focus on code correctness, best practices, and edge cases. Always reason through the code carefully.' },
+  { id: 'reviewer', name: 'Reviewer', prompt: 'You are a skeptical reviewer. Your job is to find mistakes, omissions, and weaknesses in the proposed solution. Be concise and critical.' },
+  { id: 'researcher', name: 'Researcher', prompt: 'You are a thorough researcher. Gather context, compare alternatives, and cite relevant facts. Be comprehensive.' },
+  { id: 'writer', name: 'Writer', prompt: 'You are a clear technical writer. Produce well-structured, easy-to-read output with good examples.' }
+]
 
 interface SettingsState {
   settings: AppSettings
@@ -13,6 +21,8 @@ interface SettingsState {
   updateProvider: (id: string, patch: Partial<ProviderConfig>) => Promise<void>
   removeProvider: (id: string) => Promise<void>
   activeProvider: () => ProviderConfig | null
+  ensembleProviders: () => ProviderConfig[]
+  arbitratorProvider: () => ProviderConfig | null
   fetchModels: (providerId: string) => Promise<ModelInfo[]>
   testProvider: (type: string, model: string, apiKey: string, baseUrl?: string) => Promise<boolean>
   addMCPServer: (config: MCPServerConfig) => Promise<boolean>
@@ -34,7 +44,12 @@ const defaultSettings: AppSettings = {
   autoUpdate: true,
   desktopEnabled: false,
   approvalMode: 'suggest',
-  showThinking: true
+  showThinking: true,
+  ensembleProviderIds: [],
+  arbitratorProviderId: null,
+  ensembleModeDefault: false,
+  autoEnsembleForComplexTasks: false,
+  agentRoleAssignments: {}
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -138,6 +153,35 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   activeProvider: () => {
     const { settings } = get()
     return settings.providers.find(p => p.id === settings.activeProviderId) ?? null
+  },
+
+  ensembleProviders: () => {
+    const { settings } = get()
+    return settings.providers.filter(p => settings.ensembleProviderIds?.includes(p.id) && p.enabled)
+  },
+
+  arbitratorProvider: () => {
+    const { settings } = get()
+    if (settings.arbitratorProviderId) {
+      return settings.providers.find(p => p.id === settings.arbitratorProviderId && p.enabled) ?? null
+    }
+    return settings.providers.find(p => p.enabled) ?? null
+  },
+
+  agentRoles: () => AGENT_ROLES,
+
+  getRoleForProvider: (providerId: string) => {
+    return get().settings.agentRoleAssignments?.[providerId] ?? 'generalist'
+  },
+
+  setRoleForProvider: async (providerId: string, role: AgentRole) => {
+    const current = get().settings.agentRoleAssignments ?? {}
+    const next = { ...current, [providerId]: role }
+    await get().update({ agentRoleAssignments: next })
+  },
+
+  getRolePrompt: (role: AgentRole) => {
+    return AGENT_ROLES.find(r => r.id === role)?.prompt ?? ''
   },
 
   fetchModels: async (providerId) => {

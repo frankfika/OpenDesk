@@ -13,11 +13,11 @@ export class OpenAIProvider implements Provider {
 
   private formatMessages(
     messages: Message[]
-  ): Array<{ role: string; content: string; tool_call_id?: string; tool_calls?: any[] }> {
+  ): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; tool_calls?: any[] }> {
     return messages.map((m) => {
       if (m.role === 'tool') {
         return {
-          role: 'tool',
+          role: 'tool' as const,
           tool_call_id: m.toolCallId || (m.metadata?.toolCallId as string) || '',
           content: m.content
         }
@@ -25,7 +25,7 @@ export class OpenAIProvider implements Provider {
       if (m.role === 'assistant' && m.metadata?.toolCalls) {
         const toolCalls = m.metadata.toolCalls as ToolCall[]
         return {
-          role: 'assistant',
+          role: 'assistant' as const,
           content: m.content,
           tool_calls: toolCalls.map((tc) => ({
             id: tc.id,
@@ -37,8 +37,9 @@ export class OpenAIProvider implements Provider {
           }))
         }
       }
+      // Skip system messages — OpenAI uses top-level 'system' message; for now just pass through
       return {
-        role: m.role,
+        role: (m.role === 'system' ? 'system' : m.role === 'user' ? 'user' : 'assistant') as 'system' | 'user' | 'assistant',
         content: m.content
       }
     })
@@ -53,7 +54,7 @@ export class OpenAIProvider implements Provider {
 
     const stream = await this.client.chat.completions.create({
       model: this.model,
-      messages: formatted,
+      messages: formatted as any,
       tools:
         tools && tools.length > 0
           ? tools.map((t) => ({

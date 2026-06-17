@@ -1,4 +1,4 @@
-import type { AppSettings, ChatSendPayload, Skill, SkillLoadLevel, SkillLoadResult, SkillImportResult, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool } from '@shared/types'
+import type { AppSettings, ChatSendPayload, Skill, SkillLoadLevel, SkillLoadResult, SkillImportResult, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool, ArbitrationResult } from '@shared/types'
 
 interface ChatAPI {
   send: (payload: ChatSendPayload) => void
@@ -10,6 +10,14 @@ interface ChatAPI {
   onToolResult: (cb: (result: { toolCallId: string; content: string; isError?: boolean }) => void) => () => void
   onDone: (cb: (meta?: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string }) => void) => () => void
   onError: (cb: (error: { message: string; type: string }) => void) => () => void
+  onAgentToken: (cb: (payload: { runId: string; agentId: string; providerId: string; token: string }) => void) => () => void
+  onAgentDone: (cb: (payload: { runId: string; agentId: string; providerId: string; latencyMs?: number; inputTokens?: number; outputTokens?: number }) => void) => () => void
+  onAgentError: (cb: (payload: { runId: string; agentId: string; providerId: string; error: string }) => void) => () => void
+  onAgentToolCall: (cb: (payload: { runId: string; agentId: string; providerId: string; toolCall: { id: string; name: string; arguments: Record<string, unknown> } }) => void) => () => void
+  onAgentToolResult: (cb: (payload: { runId: string; agentId: string; providerId: string; toolResult: { toolCallId: string; name: string; content: string; isError?: boolean } }) => void) => () => void
+  onArbitrationToken: (cb: (payload: { runId: string; token: string }) => void) => () => void
+  onArbitrationDone: (cb: (payload: { runId: string; result: ArbitrationResult }) => void) => () => void
+  onEnsembleDone: (cb: (payload: { runId: string; threadId?: string; workspaceId?: string }) => void) => () => void
 }
 
 interface SettingsAPI {
@@ -67,6 +75,7 @@ interface ThreadAPI {
 }
 
 interface DesktopAPI {
+  openPath: (path: string) => Promise<{ success: boolean; error?: string }>
   capture: () => Promise<string>
   emergencyStop: () => Promise<boolean>
   getWindows: () => Promise<Array<{ id: string; name: string; appIcon?: string }>>
@@ -74,6 +83,13 @@ interface DesktopAPI {
 
 interface DoctorAPI {
   run: () => Promise<DoctorReport>
+}
+
+interface ToolsAPI {
+  readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
+  writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>
+  listDirectory: (path: string) => Promise<{ success: boolean; entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>; error?: string }>
+  applyPatch: (path: string, patch: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {
@@ -88,6 +104,7 @@ declare global {
       thread: ThreadAPI
       desktop: DesktopAPI
       doctor: DoctorAPI
+      tools: ToolsAPI
       app: {
         onNewChat: (cb: () => void) => () => void
         onOpenSettings: (cb: () => void) => () => void

@@ -3,7 +3,7 @@ import { execSync } from 'child_process'
 import { freemem, totalmem } from 'os'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import type { DoctorReport, DoctorCheck } from '../../shared/types'
+import type { DoctorReport, DoctorCheck } from '../shared/types'
 import { listWorkspaces } from './workspace'
 
 function checkNodeVersion(): DoctorCheck {

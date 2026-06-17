@@ -1,12 +1,19 @@
 // Tool registry for OpenDesk
 import type { Tool } from '../providers/base'
 
+export interface ToolParameterProperty {
+  type: string
+  description?: string
+  enum?: string[]
+  items?: { type: string; description?: string; enum?: string[] }
+}
+
 export interface ToolDefinition {
   name: string
   description: string
   parameters: {
     type: 'object'
-    properties: Record<string, { type: string; description: string }>
+    properties: Record<string, ToolParameterProperty>
     required?: string[]
   }
   handler: (args: Record<string, unknown>) => Promise<string>

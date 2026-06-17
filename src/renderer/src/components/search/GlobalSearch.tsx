@@ -282,6 +282,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
             className="fixed left-1/2 top-[15%] z-50 w-full max-w-2xl -translate-x-1/2"
             onKeyDown={handleKeyDown}
           >
+            <Dialog.Title className="sr-only">Global Search</Dialog.Title>
             <div className="rounded-2xl bg-[var(--bg-content)]/95 border border-[var(--border)] shadow-2xl overflow-hidden">
               {/* Search input */}
               <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">

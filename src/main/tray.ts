@@ -1,9 +1,9 @@
-import { Tray, Menu, nativeImage, BrowserWindow, app } from 'electron'
+import { Tray, Menu, nativeImage, BrowserWindow, app, NativeImage } from 'electron'
 import { join } from 'path'
 
 let trayInstance: Tray | null = null
 
-function createIcon(): native.NativeImage {
+function createIcon(): NativeImage {
   // Try to use bundled icon
   const iconPath = join(process.resourcesPath || __dirname, 'resources', 'icon.png')
   if (existsSync(iconPath)) {

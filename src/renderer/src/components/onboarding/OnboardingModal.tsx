@@ -82,6 +82,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
             className="rounded-2xl shadow-2xl overflow-hidden bg-[var(--bg-content)] border border-[var(--border-strong)] text-[var(--text-primary)]"
             style={{ width: 480, maxHeight: '80vh' }}
           >
+          <Dialog.Title className="sr-only">Welcome to OpenDesk</Dialog.Title>
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 pt-6 pb-2">
             {STEPS.map((s, i) => (

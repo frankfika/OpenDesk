@@ -10,6 +10,14 @@ export interface Message {
   kind?: MessageKind
   metadata?: Record<string, unknown>
   toolCallId?: string
+  // Ensemble / multi-agent fields
+  sourceProviderId?: string
+  sourceModel?: string
+  agentId?: string
+  runId?: string
+  isArbitration?: boolean
+  arbitrationReason?: string
+  arbitrationConfidence?: number
 }
 
 export interface Workspace {
@@ -37,6 +45,29 @@ export interface Thread {
   totalOutputTokens: number
   status: 'active' | 'archived'
   skillId?: string
+  // Ensemble mode fields
+  mode?: 'single' | 'ensemble'
+  ensembleProviderIds?: string[]
+  arbitratorProviderId?: string
+  agentRoleAssignments?: Record<string, AgentRole>
+  agentAnswers?: AgentAnswerSnapshot[]
+}
+
+export type AgentRole = 'coder' | 'reviewer' | 'researcher' | 'writer' | 'generalist'
+
+export interface AgentRoleConfig {
+  id: AgentRole
+  name: string
+  prompt: string
+}
+
+export interface AgentAnswerSnapshot {
+  agentId: string
+  providerId: string
+  model?: string
+  role?: AgentRole
+  content: string
+  timestamp: number
 }
 
 export interface ProviderConfig {
@@ -65,14 +96,25 @@ export interface AppSettings {
   approvalMode: 'auto' | 'suggest' | 'full'
   showThinking: boolean
   agentsMd?: AgentsMdInfo
+  // Ensemble settings
+  ensembleProviderIds?: string[]
+  arbitratorProviderId?: string | null
+  ensembleModeDefault?: boolean
+  autoEnsembleForComplexTasks?: boolean
+  agentRoleAssignments?: Record<string, AgentRole>
 }
 
 export interface ChatSendPayload {
   messages: Message[]
-  providerId: string
+  providerId?: string
+  providerIds?: string[]
+  arbitratorProviderId?: string
+  agentRoleAssignments?: Record<string, AgentRole>
+  mode?: 'single' | 'ensemble'
   systemPrompt?: string
   workspaceId?: string
   threadId?: string
+  sessionId?: string
 }
 
 export type SkillSource = 'global' | 'workspace' | 'codex' | 'claude' | 'marketplace' | 'github' | 'builtin'
@@ -201,12 +243,23 @@ export interface ThreadCreatePayload {
   providerId?: string
   model?: string
   skillId?: string
+  mode?: 'single' | 'ensemble'
+  ensembleProviderIds?: string[]
+  arbitratorProviderId?: string
+  agentRoleAssignments?: Record<string, AgentRole>
 }
 
 export interface ThreadUpdatePayload {
   title?: string
   status?: 'active' | 'archived'
   skillId?: string
+  mode?: 'single' | 'ensemble'
+  ensembleProviderIds?: string[]
+  arbitratorProviderId?: string
+  agentRoleAssignments?: Record<string, AgentRole>
+  agentAnswers?: AgentAnswerSnapshot[]
+  totalInputTokens?: number
+  totalOutputTokens?: number
 }
 
 export interface FileAttachment {
@@ -224,4 +277,45 @@ export interface ModelInfo {
   contextWindow?: number
   supportsVision?: boolean
   supportsTools?: boolean
+}
+
+// Ensemble / multi-agent orchestration types
+
+export type AgentRunStatus = 'running' | 'done' | 'error'
+
+export interface AgentRun {
+  runId: string
+  agentId: string
+  providerId: string
+  model?: string
+  role?: AgentRole
+  status: AgentRunStatus
+  messages: Message[]
+  content: string
+  toolCalls: ToolCall[]
+  error?: string
+  startedAt: number
+  finishedAt?: number
+}
+
+export interface ArbitrationResult {
+  finalContent: string
+  reason: string
+  confidence: number
+  sourceRuns: AgentRun[]
+  startedAt: number
+  finishedAt?: number
+}
+
+export interface EnsembleConfig {
+  providerIds: string[]
+  arbitratorProviderId: string
+  maxIterations: number
+  shareToolResults: boolean
+}
+
+export interface ToolCall {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
 }

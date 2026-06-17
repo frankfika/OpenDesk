@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, safeStorage, app, desktopCapturer, screen } from 'electron'
+import { ipcMain, BrowserWindow, safeStorage, app, desktopCapturer, screen, shell } from 'electron'
 import { join, resolve, sep } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
 import { homedir } from 'os'
@@ -19,11 +19,14 @@ import type {
   DoctorReport,
   ModelInfo,
   MCPServerConfig,
-  MCPTool
+  MCPTool,
+  AgentRole,
+  ProviderConfig
 } from '../../shared/types'
+import type { Provider, Tool, ToolCall, ToolResult } from '../providers/base'
 import { AnthropicProvider } from '../providers/anthropic'
 import { OpenAIProvider } from '../providers/openai'
-import type { Provider, Tool, ToolCall, ToolResult } from '../providers/base'
+import { buildProviderById } from '../providers/builder'
 import {
   createWorkspace,
   listWorkspaces,
@@ -36,24 +39,27 @@ import {
 import { runDoctor } from '../doctor'
 import { readFile, writeFile as writeFileTool, listDirectory, applyPatch } from '../tools/file-tools'
 import { mcpBridge } from '../mcp/mcp-bridge'
-import { ToolRegistry } from '../tools/registry'
-import { registerBuiltins } from '../tools/builtins'
+import { executeTool, buildTools } from '../tools/executor'
 import {
   scanAllSkills,
   loadSkill,
-  executeSkillTool,
-  getSkillToolAsProviderTool,
   exportSkill,
   importSkillFromFolder,
   importSkillFromGitHub,
   deleteGlobalSkill,
-  saveNewSkill
+  saveNewSkill,
+  executeSkillTool
 } from '../skills'
+import { runEnsemble, createRunId } from '../orchestration/ensemble'
+import { abortRun } from '../orchestration/run-tracker'
+import { AGENT_ROLES, getRolePrompt } from '../../shared/agent-roles'
 
 const defaultSettings: AppSettings = {
   activeProviderId: null,
-  providers: [],
-  mcpServers: [],
+  activeWorkspaceId: null,
+  activeThreadId: null,
+  providers: [] as ProviderConfig[],
+  mcpServers: [] as MCPServerConfig[],
   theme: 'dark',
   language: 'en',
   startupBehavior: 'restore',
@@ -65,11 +71,6 @@ const defaultSettings: AppSettings = {
 
 let settings: AppSettings = { ...defaultSettings }
 const abortControllers = new Map<string, AbortController>()
-
-/* ---------- Tool Registry ---------- */
-
-const toolRegistry = new ToolRegistry()
-registerBuiltins(toolRegistry)
 
 function scanSkills(): Skill[] {
   // Use the new comprehensive scanner
@@ -91,121 +92,6 @@ function isPathAllowed(filePath: string, workspacePath: string | null): boolean 
     resolvedFile === resolvedWorkspace ||
     resolvedFile.startsWith(resolvedWorkspace + sep)
   )
-}
-
-async function executeBuiltinTool(
-  toolCall: ToolCall,
-  workspaceId?: string
-): Promise<ToolResult> {
-  const tool = toolRegistry.get(toolCall.name)
-  if (!tool) {
-    return {
-      toolCallId: toolCall.id,
-      content: `Tool '${toolCall.name}' not found`,
-      isError: true
-    }
-  }
-
-  // Security: desktop tools require desktopEnabled
-  if (toolCall.name.startsWith('desktop_')) {
-    if (!settings.desktopEnabled) {
-      return {
-        toolCallId: toolCall.id,
-        content: 'Desktop control is disabled. Enable it in Settings.',
-        isError: true
-      }
-    }
-  }
-
-  // Security: file tools restricted to workspace
-  if (
-    toolCall.name.startsWith('file_') ||
-    toolCall.name === 'apply_patch'
-  ) {
-    const workspacePath = getWorkspacePath(workspaceId)
-    const targetPath = (toolCall.arguments.path as string) || ''
-    if (workspacePath && !isPathAllowed(targetPath, workspacePath)) {
-      return {
-        toolCallId: toolCall.id,
-        content: `Path is outside the workspace directory (${workspacePath})`,
-        isError: true
-      }
-    }
-  }
-
-  try {
-    const result = await tool.handler(toolCall.arguments)
-    return { toolCallId: toolCall.id, content: result, isError: false }
-  } catch (err) {
-    return {
-      toolCallId: toolCall.id,
-      content: err instanceof Error ? err.message : String(err),
-      isError: true
-    }
-  }
-}
-
-async function executeTool(
-  toolCall: ToolCall,
-  workspaceId?: string
-): Promise<ToolResult> {
-  // Check if this is a skill tool (format: skillId_toolName)
-  const skillToolMatch = toolCall.name.match(/^([^_]+_[^_]+)_(.+)$/)
-  if (skillToolMatch) {
-    const possibleSkillId = skillToolMatch[1].replace(/_/g, ':')
-    const toolName = skillToolMatch[2]
-    const allSkills = scanAllSkills(getWorkspacePath(workspaceId) || undefined)
-    const skill = allSkills.find((s) => s.id === possibleSkillId || s.id.endsWith(':' + skillToolMatch[1].split('_').pop()))
-    if (skill && skill.scripts && skill.scripts[toolName]) {
-      const result = await executeSkillTool(skill, toolName, toolCall.arguments)
-      return {
-        toolCallId: toolCall.id,
-        content: result.success ? (result.output || '') : (result.error || 'Unknown error'),
-        isError: !result.success
-      }
-    }
-  }
-
-  // Try MCP first, then built-in
-  const mcpTools = mcpBridge.getAllTools()
-  const isMcpTool = mcpTools.some((t) => t.name === toolCall.name)
-
-  if (isMcpTool) {
-    try {
-      const result = await mcpBridge.callTool(toolCall.name, toolCall.arguments)
-      return { toolCallId: toolCall.id, content: result, isError: false }
-    } catch (err) {
-      return {
-        toolCallId: toolCall.id,
-        content: err instanceof Error ? err.message : String(err),
-        isError: true
-      }
-    }
-  }
-
-  return executeBuiltinTool(toolCall, workspaceId)
-}
-
-function buildTools(workspaceId?: string): Tool[] {
-  const mcpTools = mcpBridge.getAllTools()
-  const builtinTools = toolRegistry.toProviderTools()
-  const tools: Tool[] = [
-    ...builtinTools,
-    ...mcpTools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.inputSchema
-    }))
-  ]
-
-  // Add skill-defined tools
-  const allSkills = scanAllSkills(getWorkspacePath(workspaceId) || undefined)
-  for (const skill of allSkills) {
-    const skillTools = getSkillToolAsProviderTool(skill)
-    tools.push(...skillTools)
-  }
-
-  return tools
 }
 
 function getConfigDir(): string {
@@ -286,14 +172,7 @@ function saveKeys(keys: Record<string, string>): void {
 }
 
 function buildProvider(providerId: string, apiKey: string): Provider | null {
-  const config = settings.providers.find((p) => p.id === providerId)
-  if (!config) return null
-  if (config.type === 'anthropic') return new AnthropicProvider(apiKey, config.model)
-  if (config.type === 'openai' || config.type === 'openai-compatible')
-    return new OpenAIProvider(apiKey, config.model, config.baseUrl)
-  if (config.type === 'ollama')
-    return new OpenAIProvider(apiKey || 'ollama', config.model, config.baseUrl || 'http://localhost:11434/v1')
-  return null
+  return buildProviderById(settings.providers, providerId, apiKey)
 }
 
 /* ---------- Thread persistence ---------- */
@@ -448,6 +327,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       provider = new OpenAIProvider(key, model, url)
     }
     try {
+      if (!provider) return false
       return await provider.test()
     } catch {
       return false
@@ -623,7 +503,10 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       totalInputTokens: 0,
       totalOutputTokens: 0,
       status: 'active',
-      skillId: payload.skillId
+      skillId: payload.skillId,
+      mode: payload.mode,
+      ensembleProviderIds: payload.ensembleProviderIds,
+      arbitratorProviderId: payload.arbitratorProviderId
     }
     const threads = loadThreads()
     threads.push(thread)
@@ -664,7 +547,11 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
   /* ===== Chat ===== */
   async function doChatStream(payload: ChatSendPayload, regenerate = false, editIndex?: number) {
-    const { messages, providerId, systemPrompt, workspaceId, threadId } = payload
+    const { messages, providerId, systemPrompt, workspaceId, threadId, sessionId } = payload
+    if (!providerId) {
+      win.webContents.send('chat:error', { message: 'No provider selected', type: 'provider' })
+      return
+    }
     const apiKey = loadKeys()[providerId] ?? ''
     const provider = buildProvider(providerId, apiKey)
 
@@ -700,6 +587,12 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       combinedSystemPrompt += (combinedSystemPrompt ? '\n\n' : '') + skillSystemContent
     }
 
+    // Add workspace context so AI knows the project root and available file tools
+    const workspacePath = getWorkspacePath(workspaceId)
+    if (workspacePath) {
+      combinedSystemPrompt += (combinedSystemPrompt ? '\n\n' : '') + `You are working inside the workspace: ${workspacePath}. You can read, write, list, and patch files within this workspace using the available tools. Always use absolute paths when calling file tools.`
+    }
+
     if (combinedSystemPrompt) {
       finalMessages = [
         { id: 'system', role: 'system', content: combinedSystemPrompt, timestamp: Date.now() },
@@ -708,7 +601,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     }
 
     const ac = new AbortController()
-    abortControllers.set(providerId, ac)
+    const abortKey = sessionId || providerId
+    abortControllers.set(abortKey, ac)
 
     const availableTools = buildTools(workspaceId)
 
@@ -764,7 +658,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
         // Execute each tool call
         for (const tc of pendingToolCalls) {
-          const result = await executeTool(tc, workspaceId)
+          const result = await executeTool(tc, workspaceId, { desktopEnabled: settings.desktopEnabled })
           win.webContents.send('chat:tool_result', {
             toolCallId: result.toolCallId,
             content: result.content,
@@ -800,16 +694,70 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       }
       win.webContents.send('chat:error', { message: msg, type })
     } finally {
-      abortControllers.delete(providerId)
+      abortControllers.delete(abortKey)
+    }
+  }
+
+  async function doEnsembleChat(payload: ChatSendPayload) {
+    const runId = createRunId()
+    const apiKeys = loadKeys()
+
+    try {
+      await runEnsemble({
+        runId,
+        payload,
+        providers: settings.providers,
+        apiKeys,
+        desktopEnabled: settings.desktopEnabled,
+        agentRoleAssignments: payload.agentRoleAssignments,
+        rolePrompts: Object.fromEntries(AGENT_ROLES.map(r => [r.id, getRolePrompt(r.id)])) as Record<AgentRole, string>,
+        callbacks: {
+          onAgentToken: ({ agentId, providerId, token }) => {
+            win.webContents.send('chat:agent:token', { runId, agentId, providerId, token })
+          },
+          onAgentToolCall: ({ agentId, providerId, toolCall }) => {
+            win.webContents.send('chat:agent:tool_call', { runId, agentId, providerId, toolCall })
+          },
+          onAgentToolResult: ({ agentId, providerId, toolResult }) => {
+            win.webContents.send('chat:agent:tool_result', { runId, agentId, providerId, toolResult })
+          },
+          onAgentDone: ({ agentId, providerId, latencyMs, inputTokens, outputTokens }) => {
+            win.webContents.send('chat:agent:done', { runId, agentId, providerId, latencyMs, inputTokens, outputTokens })
+          },
+          onAgentError: ({ agentId, providerId, error }) => {
+            win.webContents.send('chat:agent:error', { runId, agentId, providerId, error })
+          },
+          onArbitrationToken: ({ token }) => {
+            win.webContents.send('chat:arbitration:token', { runId, token })
+          },
+          onArbitrationDone: ({ result }) => {
+            win.webContents.send('chat:arbitration:done', { runId, result })
+          },
+          onEnsembleDone: ({ threadId, workspaceId }) => {
+            win.webContents.send('chat:ensemble:done', { runId, threadId, workspaceId })
+          },
+          onError: ({ error }) => {
+            win.webContents.send('chat:error', { message: error, type: 'generic' })
+          }
+        }
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      win.webContents.send('chat:error', { message: msg, type: 'generic' })
     }
   }
 
   ipcMain.on('chat:send', async (_event, payload: ChatSendPayload) => {
-    await doChatStream(payload)
+    if (payload.mode === 'ensemble' || (payload.providerIds && payload.providerIds.length > 1)) {
+      await doEnsembleChat(payload)
+    } else {
+      await doChatStream(payload)
+    }
   })
 
-  ipcMain.on('chat:abort', (_e, providerId: string) => {
-    abortControllers.get(providerId)?.abort()
+  ipcMain.on('chat:abort', (_e, sessionId: string) => {
+    abortControllers.get(sessionId)?.abort()
+    abortRun(sessionId)
   })
 
   ipcMain.on('chat:regenerate', async (_e, payload: ChatSendPayload) => {
@@ -822,6 +770,15 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   })
 
   /* ===== Desktop ===== */
+  ipcMain.handle('desktop:openPath', async (_e, filePath: string) => {
+    try {
+      const result = await shell.openPath(filePath)
+      return { success: result === '', error: result || undefined }
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
   ipcMain.handle('desktop:capture', async () => {
     const base64 = await captureScreenshot()
     return base64

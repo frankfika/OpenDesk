@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs'
 import { dirname, join } from 'path'
-import type { AgentsMdInfo } from '../../shared/types'
+import type { AgentsMdInfo } from '../shared/types'
 
 const TARGET_FILES = ['AGENTS.md', '.cursorrules', '.traerules']
 

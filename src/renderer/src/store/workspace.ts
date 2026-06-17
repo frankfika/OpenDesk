@@ -83,6 +83,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           const threadExists = get().threads.find(t => t.id === activeThreadId)
           if (threadExists) {
             useChatStore.getState().switchThread(activeThreadId)
+            useChatStore.getState().setEnsembleMode(threadExists.mode === 'ensemble')
           }
         }
       } else if (workspaces.length > 0) {
@@ -189,14 +190,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   createThread: async (workspaceId, title, skillId) => {
-    const settings = useSettingsStore.getState()
-    const provider = settings.activeProvider()
+    const settingsState = useSettingsStore.getState()
+    const settings = settingsState.settings
+    const provider = settingsState.activeProvider()
+    const ensProviders = settingsState.ensembleProviders()
+    const arbProvider = settingsState.arbitratorProvider()
+    const isEnsemble = settings.ensembleModeDefault || ensProviders.length > 0
+
     const payload: ThreadCreatePayload = {
       workspaceId,
       title: title ?? 'New conversation',
       providerId: provider?.id,
       model: provider?.model,
-      skillId
+      skillId,
+      mode: isEnsemble ? 'ensemble' : 'single',
+      ensembleProviderIds: isEnsemble ? ensProviders.map(p => p.id) : undefined,
+      arbitratorProviderId: isEnsemble ? arbProvider?.id : undefined,
+      agentRoleAssignments: isEnsemble ? settings.agentRoleAssignments : undefined
     }
 
     if (!window.api?.thread?.create) {
@@ -211,7 +221,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         totalInputTokens: 0,
         totalOutputTokens: 0,
         status: 'active',
-        skillId
+        skillId,
+        mode: payload.mode,
+        ensembleProviderIds: payload.ensembleProviderIds,
+        arbitratorProviderId: payload.arbitratorProviderId,
+        agentRoleAssignments: payload.agentRoleAssignments
       }
       set(s => ({ threads: [mock, ...s.threads], activeThreadId: mock.id }))
       useChatStore.getState().switchThread(mock.id)
@@ -256,15 +270,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     useSettingsStore.getState().update({ activeThreadId: id })
     if (id) {
       useChatStore.getState().switchThread(id)
+      const thread = get().threads.find(t => t.id === id)
+      useChatStore.getState().setEnsembleMode(thread?.mode === 'ensemble')
     } else {
       useChatStore.getState().switchThread(null)
+      useChatStore.getState().setEnsembleMode(false)
     }
   },
 
   // Backward-compatible: addThread fills in defaults and syncs chat store
   addThread: (thread) => {
-    const settings = useSettingsStore.getState()
-    const provider = settings.activeProvider()
+    const settingsState = useSettingsStore.getState()
+    const settings = settingsState.settings
+    const provider = settingsState.activeProvider()
     const completeThread: Thread = {
       ...thread,
       workspaceId: thread.workspaceId ?? get().activeWorkspaceId ?? 'default',
@@ -274,7 +292,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       totalOutputTokens: thread.totalOutputTokens ?? 0,
       status: thread.status ?? 'active',
       createdAt: thread.createdAt ?? Date.now(),
-      updatedAt: thread.updatedAt ?? Date.now()
+      updatedAt: thread.updatedAt ?? Date.now(),
+      mode: thread.mode ?? (settings.ensembleModeDefault ? 'ensemble' : 'single'),
+      ensembleProviderIds: thread.ensembleProviderIds ?? (settings.ensembleModeDefault ? settings.ensembleProviderIds : undefined),
+      arbitratorProviderId: thread.arbitratorProviderId ?? (settings.ensembleModeDefault ? settings.arbitratorProviderId ?? undefined : undefined),
+      agentRoleAssignments: thread.agentRoleAssignments ?? (settings.ensembleModeDefault ? settings.agentRoleAssignments : undefined)
     }
     set(s => ({
       threads: [completeThread, ...s.threads],
@@ -287,7 +309,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         title: completeThread.title,
         providerId: completeThread.providerId,
         model: completeThread.model,
-        skillId: completeThread.skillId
+        skillId: completeThread.skillId,
+        mode: completeThread.mode,
+        ensembleProviderIds: completeThread.ensembleProviderIds,
+        arbitratorProviderId: completeThread.arbitratorProviderId,
+        agentRoleAssignments: completeThread.agentRoleAssignments
       }).catch(console.error)
     }
     useChatStore.getState().switchThread(completeThread.id)

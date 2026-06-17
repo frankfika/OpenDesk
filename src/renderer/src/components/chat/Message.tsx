@@ -1,17 +1,18 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { Message } from '@shared/types'
+import type { Message, Thread, ProviderConfig } from '@shared/types'
 import StreamCursor from './StreamCursor'
 import MessageActions from './MessageActions'
 import CodeBlock from './CodeBlock'
 import {
   Bot, User, ChevronDown, ChevronRight, Wrench, AlertCircle, Brain,
   Copy, Pencil, Trash2, RotateCcw, FileText, FolderOpen, Terminal,
-  CheckCircle, XCircle, Clock
+  CheckCircle, XCircle, Clock, Scale, Users
 } from 'lucide-react'
 import { useChatStore } from '../../store/chat'
 import { useSettingsStore } from '../../store/settings'
+import { useWorkspaceStore } from '../../store/workspace'
 import { useArtifactsStore, type ArtifactType } from '../../store/artifacts'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 
@@ -286,6 +287,71 @@ function InlineEditor({ content, onSave, onCancel }: {
   )
 }
 
+function AgentAnswersPanel({ runId, activeThread, settings, mdComponents }: {
+  runId?: string
+  activeThread: Thread | null
+  settings: { providers: ProviderConfig[] }
+  mdComponents: any
+}) {
+  const { ensembleRuns } = useChatStore()
+  const [expanded, setExpanded] = useState(false)
+
+  const activeAgents = runId ? ensembleRuns[runId]?.agents : undefined
+  const items = activeAgents
+    ? Object.values(activeAgents)
+        .filter(a => a.messages.length > 0)
+        .map(a => ({
+          id: a.agentId,
+          providerId: a.providerId,
+          model: a.model,
+          content: a.messages[a.messages.length - 1].content
+        }))
+    : (activeThread?.agentAnswers ?? []).map(a => ({
+        id: a.agentId,
+        providerId: a.providerId,
+        model: a.model,
+        content: a.content
+      }))
+
+  if (items.length === 0) return null
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+      >
+        {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        <Users size={13} />
+        Show agent answers ({items.length})
+      </button>
+      {expanded && (
+        <div className="mt-2 flex flex-col gap-2">
+          {items.map((item) => {
+            const provider = settings.providers.find(p => p.id === item.providerId)
+            const label = provider ? `${provider.name} · ${provider.model}` : item.providerId
+            return (
+              <div
+                key={item.id}
+                className="rounded-lg border border-[var(--border)] bg-[var(--bg-sidebar)]/30 p-3"
+              >
+                <div className="text-[11px] font-medium text-[var(--text-secondary)] mb-1">
+                  {item.id.replace('agent-', 'Agent ')} · {label}
+                </div>
+                <div className="prose-od text-[13px] text-[var(--text-primary)]">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                    {item.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main MessageRow ─────────────────────────────────────────────────────────
 
 export default function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTimestamp }: MessageProps) {
@@ -295,9 +361,13 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
   const [showTimeTooltip, setShowTimeTooltip] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const { editMessage, deleteMessage, regenerateLast } = useChatStore()
-  const { activeProvider } = useSettingsStore()
+  const { activeProvider, settings } = useSettingsStore()
+  const { activeThread: getActiveThread } = useWorkspaceStore()
+  const activeThread = getActiveThread()
   const { addArtifact } = useArtifactsStore()
-  const provider = activeProvider()
+  const provider = message.sourceProviderId
+    ? settings.providers.find(p => p.id === message.sourceProviderId)
+    : activeProvider()
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(message.content).catch(console.error)
@@ -439,8 +509,13 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-[var(--text-primary)]">
-                    {isUser ? 'You' : provider?.name || 'Assistant'}
+                    {isUser ? 'You' : message.isArbitration ? 'Arbitrator' : provider?.name || 'Assistant'}
                   </span>
+                  {!isUser && provider && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-muted)]">
+                      {provider.model}
+                    </span>
+                  )}
                   {!hideTimestamp && (
                     <span
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] text-[var(--text-muted)]"
@@ -484,9 +559,36 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
                 />
               ) : (
                 <div className="prose-od text-[15px] leading-relaxed text-[var(--text-primary)]">
+                  {message.isArbitration && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
+                        <Scale size={11} />
+                        Arbitrated
+                      </span>
+                      {message.arbitrationConfidence !== undefined && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-500/10 text-green-600 border border-green-200/60">
+                          Confidence {Math.round(message.arbitrationConfidence * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                     {message.content}
                   </ReactMarkdown>
+                  {message.isArbitration && message.arbitrationReason && (
+                    <div className="mt-3 p-3 rounded-lg bg-[var(--bg-sidebar)]/50 border border-[var(--border)] text-[12px] text-[var(--text-muted)] leading-relaxed">
+                      <span className="font-medium text-[var(--text-secondary)]">Arbitration reason:</span>{' '}
+                      {message.arbitrationReason}
+                    </div>
+                  )}
+                  {message.isArbitration && (
+                    <AgentAnswersPanel
+                      runId={message.runId}
+                      activeThread={activeThread}
+                      settings={settings}
+                      mdComponents={mdComponents}
+                    />
+                  )}
                   {isStreaming && <StreamCursor />}
                 </div>
               )}

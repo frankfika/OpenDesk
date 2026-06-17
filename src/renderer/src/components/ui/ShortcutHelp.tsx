@@ -108,6 +108,7 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
             transition={{ duration: 0.2 }}
             className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2"
           >
+            <Dialog.Title className="sr-only">Keyboard Shortcuts</Dialog.Title>
             <div className="rounded-2xl bg-[var(--bg-content)]/95 border border-[var(--border)] shadow-2xl overflow-hidden">
               <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
                 <Keyboard size={18} className="text-[var(--text-muted)]" />
