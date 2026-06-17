@@ -1,10 +1,12 @@
+<div align="center">
+
+<img src="resources/logo-1024.png" alt="OpenDesk" width="128" height="128">
+
 # OpenDesk
 
 > **An AI desktop assistant that can use any AI model**
 
 Model-agnostic · Computer-Use capable · Folder-as-workspace · BYOK · Apache 2.0
-
-<div align="center">
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Electron](https://img.shields.io/badge/Electron-31.0-47848F.svg)](https://www.electronjs.org/)
@@ -63,7 +65,7 @@ Model-agnostic · Computer-Use capable · Folder-as-workspace · BYOK · Apache 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/opendesk.git
+git clone https://github.com/frankfika/opendesk.git
 cd opendesk
 
 # Install dependencies
@@ -163,8 +165,8 @@ OpenDesk draws inspiration from:
 
 ## 📬 Contact
 
-- GitHub Issues: [Report bugs or request features](https://github.com/yourusername/opendesk/issues)
-- Discussions: [Join the community](https://github.com/yourusername/opendesk/discussions)
+- GitHub Issues: [Report bugs or request features](https://github.com/frankfika/opendesk/issues)
+- Discussions: [Join the community](https://github.com/frankfika/opendesk/discussions)
 
 ---
 
