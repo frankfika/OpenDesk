@@ -3,17 +3,20 @@ import { useChatStore } from '../../store/chat'
 import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useSkillsStore } from '../../store/skills'
-import type { Message, FileAttachment } from '@shared/types'
+import type { Message, FileAttachment, ChatMode, AgentRole } from '@shared/types'
 import { Send, Square, ChevronDown, Check, ShieldAlert, Cpu, Camera, Paperclip, X, Search, FileText, Folder, MessageSquare, Users } from 'lucide-react'
+import ModeSwitcher from './ModeSwitcher'
+import EnsembleModelPicker from './EnsembleModelPicker'
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
 const APPROVAL_MODES = [
-  { value: 'auto', label: 'Auto', desc: 'Approve safe actions automatically' },
-  { value: 'suggest', label: 'Suggest', desc: 'Always ask before running tools' },
-  { value: 'full', label: 'Full access', desc: 'Run all actions without approval' }
+  { value: 'ask', label: 'Ask', desc: 'Ask before every tool' },
+  { value: 'auto-edits', label: 'Auto edits', desc: 'Auto-approve file edits, ask for shell/desktop' },
+  { value: 'auto-all', label: 'Auto all', desc: 'Auto-approve common actions' },
+  { value: 'bypass', label: 'Bypass', desc: 'Run all actions without approval' }
 ]
 
 const QUICK_COMMANDS = [
@@ -48,20 +51,25 @@ function isComplexTask(content: string): boolean {
 
 export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, onWebSearch }: InputBarProps) {
   const [text, setText] = useState('')
-  const [approvalMode, setApprovalMode] = useState('suggest')
   const [showApproval, setShowApproval] = useState(false)
   const [showModelPicker, setShowModelPicker] = useState(false)
+  const [showEnsemblePicker, setShowEnsemblePicker] = useState(false)
   const [showSkillPicker, setShowSkillPicker] = useState(false)
   const [skillFilter, setSkillFilter] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
   const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { messages, streaming, error, errorType, addMessage, appendToken, addToolCall, addToolResult, setStreaming, setError, attachments, addAttachment, removeAttachment, clearAttachments, ensembleMode, setEnsembleMode, startEnsembleRun, appendAgentToken, setAgentRunStatus, setAgentMetrics, addAgentToolCall, addAgentToolResult, startArbitration, appendArbitrationToken, finalizeArbitration, completeEnsembleRun } = useChatStore()
+  const { messages, streaming, error, errorType, addMessage, appendToken, addToolCall, addToolResult, setStreaming, setError, attachments, addAttachment, removeAttachment, clearAttachments, mode, setMode, setArbitrationMode, startEnsembleRun, appendAgentToken, setAgentRunStatus, setAgentMetrics, addAgentToolCall, addAgentToolResult, startArbitration, appendArbitrationToken, finalizeArbitration, finalizeManualEnsemble, completeEnsembleRun } = useChatStore()
   const { settings, activeProvider, ensembleProviders, arbitratorProvider, update, fetchModels, updateProvider } = useSettingsStore()
   const { activeThreadId, activeWorkspace, createThread, updateThread, workspaces, threads } = useWorkspaceStore()
   const activeThread = threads.find(t => t.id === activeThreadId)
   const { skills } = useSkillsStore()
+
+  // Ensemble picker state
+  const [selectedEnsembleIds, setSelectedEnsembleIds] = useState<string[]>([])
+  const [ensembleArbitratorId, setEnsembleArbitratorId] = useState<string | null>(null)
+  const [ensembleRoleAssignments, setEnsembleRoleAssignments] = useState<Record<string, AgentRole>>({})
 
   // Mention / reference / command popover state
   const [popoverType, setPopoverType] = useState<'mention' | 'thread' | 'command' | null>(null)
@@ -97,8 +105,29 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   }, [text])
 
   useEffect(() => {
-    setEnsembleMode(settings.ensembleModeDefault ?? false)
-  }, [settings.ensembleModeDefault, setEnsembleMode])
+    if (settings.ensembleModeDefault) {
+      setMode('ensemble')
+    }
+  }, [settings.ensembleModeDefault, setMode])
+
+  // Sync ensemble state from thread or settings
+  useEffect(() => {
+    if (activeThread) {
+      setSelectedEnsembleIds(activeThread.ensembleProviderIds || [])
+      setEnsembleArbitratorId(activeThread.arbitratorProviderId || null)
+      setEnsembleRoleAssignments(activeThread.agentRoleAssignments || {})
+      if (activeThread.mode) {
+        setMode(activeThread.mode)
+      }
+    } else {
+      // Default from settings
+      const defaultProviders = ensembleProviders().map(p => p.id)
+      const defaultArbitrator = arbitratorProvider()?.id || null
+      setSelectedEnsembleIds(defaultProviders)
+      setEnsembleArbitratorId(defaultArbitrator)
+      setEnsembleRoleAssignments(settings.agentRoleAssignments || {})
+    }
+  }, [activeThread, settings.agentRoleAssignments])
 
   // Draft auto-save and restore
   useEffect(() => {
@@ -193,25 +222,22 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
         })
       : () => {}
     const offEnsembleDone = typeof chat.onEnsembleDone === 'function'
-      ? chat.onEnsembleDone(({ runId }) => {
-          completeEnsembleRun(runId)
-          // Persist agent answers to thread for future reference
-          const { ensembleRuns, threadId: currentThreadId } = useChatStore.getState()
+      ? chat.onEnsembleDone(({ runId, agentAnswers, arbitrationMode }) => {
+          const { ensembleRuns, threadId: currentThreadId, arbitrationMode: currentArbitrationMode } = useChatStore.getState()
           const run = ensembleRuns[runId]
-          if (run && currentThreadId) {
-            const agentAnswers = Object.values(run.agents)
-              .filter(a => a.messages.length > 0)
-              .map(a => ({
-                agentId: a.agentId,
-                providerId: a.providerId,
-                model: settings.providers.find(p => p.id === a.providerId)?.model,
-                content: a.messages[a.messages.length - 1].content,
-                timestamp: Date.now()
-              }))
-            if (agentAnswers.length > 0) {
-              updateThread(currentThreadId, { agentAnswers })
-            }
+          if (!run) return
+
+          // Persist agent answers to thread for future reference
+          if (currentThreadId && agentAnswers && agentAnswers.length > 0) {
+            updateThread(currentThreadId, { agentAnswers })
           }
+
+          // For manual/compare mode, show the compare UI instead of arbitration
+          const mode = (arbitrationMode || currentArbitrationMode) === 'manual' ? 'compare' : 'ensemble'
+          if (mode === 'compare') {
+            finalizeManualEnsemble(runId, agentAnswers || [])
+          }
+          completeEnsembleRun(runId)
         })
       : () => {}
 
@@ -438,22 +464,29 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     const content = text.trim()
     if (!content || streaming) return
 
-    const autoEnsemble = settings.autoEnsembleForComplexTasks && isComplexTask(content) && ensembleProviders().length > 0
-    const isEnsemble = ensembleMode || autoEnsemble
-    const ensProviders = isEnsemble
-      ? (activeThread?.ensembleProviderIds?.length
-          ? activeThread.ensembleProviderIds
+    const currentMode = mode
+    const isEnsembleMode = currentMode === 'ensemble' || currentMode === 'compare' || currentMode === 'agent'
+
+    const ensProviders = isEnsembleMode
+      ? (selectedEnsembleIds.length > 0
+          ? selectedEnsembleIds
               .map(id => settings.providers.find(p => p.id === id))
               .filter((p): p is NonNullable<typeof p> => Boolean(p))
           : ensembleProviders())
       : []
-    const arbProvider = isEnsemble
-      ? (activeThread?.arbitratorProviderId
-          ? settings.providers.find(p => p.id === activeThread.arbitratorProviderId)
+
+    const arbProvider = isEnsembleMode
+      ? (ensembleArbitratorId
+          ? settings.providers.find(p => p.id === ensembleArbitratorId)
           : arbitratorProvider())
       : null
 
     if (!provider && ensProviders.length === 0) { onOpenSettings(); return }
+
+    if (isEnsembleMode && ensProviders.length === 0) {
+      setShowEnsemblePicker(true)
+      return
+    }
 
     // Resolve @file references to actual content
     let processedContent = content
@@ -513,40 +546,44 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       window.api.draft.save({ text: '', threadId: null }).catch(console.error)
     }
 
-    const roleAssignments = activeThread?.agentRoleAssignments ?? settings.agentRoleAssignments ?? {}
+    const roleAssignments = ensembleRoleAssignments
+    const arbitrationMode = currentMode === 'compare' ? 'manual' : 'auto'
 
-    if (isEnsemble && ensProviders.length > 0 && threadId) {
-      const providerIds = ensProviders.map(p => p.id)
-      const arbId = arbProvider?.id
+    if (threadId) {
       updateThread(threadId, {
-        mode: 'ensemble',
-        ensembleProviderIds: providerIds,
-        arbitratorProviderId: arbId,
-        agentRoleAssignments: roleAssignments
+        mode: currentMode,
+        ensembleProviderIds: isEnsembleMode ? selectedEnsembleIds : undefined,
+        arbitratorProviderId: isEnsembleMode ? ensembleArbitratorId || undefined : undefined,
+        arbitrationMode,
+        agentRoleAssignments: isEnsembleMode ? roleAssignments : undefined
       })
-    } else if (!isEnsemble && threadId) {
-      updateThread(threadId, { mode: 'single' })
     }
 
     const sessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const payload: any = {
       messages: [...messages, userMsg],
       sessionId,
-      threadId
+      threadId,
+      mode: currentMode === 'compare' ? 'compare' : currentMode,
+      arbitrationMode
     }
 
     if (workspace) {
       payload.workspaceId = workspace.id
     }
 
-    if (isEnsemble && ensProviders.length > 0) {
-      payload.mode = 'ensemble'
+    if (isEnsembleMode && ensProviders.length > 0) {
       payload.providerIds = ensProviders.map(p => p.id)
       payload.arbitratorProviderId = arbProvider?.id
       payload.agentRoleAssignments = roleAssignments
       startEnsembleRun(sessionId, ensProviders.map(p => p.id), arbProvider?.id)
     } else {
-      payload.providerId = settings.activeProviderId!
+      if (!settings.activeProviderId) {
+        onOpenSettings()
+        setStreaming(false)
+        return
+      }
+      payload.providerId = settings.activeProviderId
     }
 
     if (window.api?.chat) {
@@ -962,19 +999,44 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
             )}
           </div>
 
-          {/* Ensemble mode toggle */}
-          <button
-            onClick={() => setEnsembleMode(!ensembleMode)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-              ensembleMode
-                ? 'bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20'
-                : 'hover:bg-[var(--border)] text-[var(--text-secondary)]'
-            }`}
-            title={ensembleMode ? 'Ensemble mode enabled' : 'Enable ensemble mode'}
-          >
-            <Users size={14} />
-            <span className="font-medium">{ensembleMode ? 'Ensemble' : 'Single'}</span>
-          </button>
+          {/* Mode Switcher */}
+          <ModeSwitcher
+            mode={mode}
+            onChange={setMode}
+            disabled={streaming}
+          />
+
+          {/* Ensemble Config Button - show when in ensemble/agent/compare mode */}
+          {(mode === 'ensemble' || mode === 'agent' || mode === 'compare') && (
+            <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setShowEnsemblePicker(v => !v)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20"
+                title="Configure ensemble models"
+              >
+                <Users size={14} />
+                <span className="font-medium">{selectedEnsembleIds.length || 0} models</span>
+              </button>
+
+              <EnsembleModelPicker
+                open={showEnsemblePicker}
+                providers={settings.providers}
+                selectedIds={selectedEnsembleIds}
+                arbitratorId={ensembleArbitratorId}
+                roleAssignments={ensembleRoleAssignments}
+                onToggleProvider={(id) => {
+                  setSelectedEnsembleIds(prev =>
+                    prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                  )
+                }}
+                onSetArbitrator={(id) => setEnsembleArbitratorId(id)}
+                onSetRole={(id, role) => {
+                  setEnsembleRoleAssignments(prev => ({ ...prev, [id]: role }))
+                }}
+                onClose={() => setShowEnsemblePicker(false)}
+              />
+            </div>
+          )}
 
           <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
             <button
