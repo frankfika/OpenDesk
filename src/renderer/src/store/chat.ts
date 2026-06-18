@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Message, FileAttachment, ChatSendPayload, ArbitrationResult } from '@shared/types'
+import type { Message, FileAttachment, ChatSendPayload, ArbitrationResult, ChatMode, ArbitrationMode, AgentAnswerSnapshot } from '@shared/types'
 import { useSettingsStore } from './settings'
 
 export interface AgentStream {
@@ -34,8 +34,11 @@ interface ChatState {
   threadId: string | null
   attachments: FileAttachment[]
 
+  // Session mode state
+  mode: ChatMode
+  arbitrationMode: ArbitrationMode
+
   // Ensemble state
-  ensembleMode: boolean
   ensembleRuns: Record<string, EnsembleRunState>
   activeRunId: string | null
 
@@ -48,8 +51,11 @@ interface ChatState {
   setError: (e: string | null, type?: ChatState['errorType']) => void
   clearMessages: () => void
 
+  // Mode actions
+  setMode: (mode: ChatMode) => void
+  setArbitrationMode: (mode: ArbitrationMode) => void
+
   // Ensemble actions
-  setEnsembleMode: (v: boolean) => void
   startEnsembleRun: (runId: string, providerIds: string[], arbitratorProviderId?: string) => void
   appendAgentToken: (runId: string, agentId: string, providerId: string, token: string) => void
   setAgentRunStatus: (runId: string, agentId: string, status: AgentStream['status'], error?: string) => void
@@ -59,6 +65,8 @@ interface ChatState {
   startArbitration: (runId: string) => void
   appendArbitrationToken: (runId: string, token: string) => void
   finalizeArbitration: (runId: string, result: ArbitrationResult) => void
+  finalizeManualEnsemble: (runId: string, agentAnswers: AgentAnswerSnapshot[]) => void
+  selectManualAnswer: (runId: string, agentId: string) => void
   completeEnsembleRun: (runId: string) => void
 
   // Thread management
@@ -101,8 +109,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   threadId: null,
   attachments: [],
 
-  // Ensemble initial state
-  ensembleMode: false,
+  // Session mode initial state
+  mode: 'single',
+  arbitrationMode: 'auto',
   ensembleRuns: {},
   activeRunId: null,
 
@@ -190,11 +199,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         streaming: false,
         ensembleRuns: {},
         activeRunId: null,
-        ensembleMode: false
+        mode: 'single',
+        arbitrationMode: 'auto'
       })
     } catch (e) {
       console.error('Failed to load thread messages:', e)
-      set({ threadId, messages: [], error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null, ensembleMode: false })
+      set({ threadId, messages: [], error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null, mode: 'single', arbitrationMode: 'auto' })
     }
   },
 
@@ -218,7 +228,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (threadId) {
       await get().loadThread(threadId)
     } else {
-      set({ messages: [], threadId: null, error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null })
+      set({ messages: [], threadId: null, error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null, mode: 'single', arbitrationMode: 'auto' })
     }
   },
 
@@ -235,12 +245,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       streaming: false,
       attachments: [],
       ensembleRuns: {},
-      activeRunId: null
+      activeRunId: null,
+      mode: 'single',
+      arbitrationMode: 'auto'
     })
   },
 
   regenerateLast: () => {
-    const { messages, threadId, ensembleMode } = get()
+    const { messages, threadId, mode } = get()
     // Find last assistant message
     let lastAssistantIndex = -1
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -256,7 +268,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (threadId && window.api?.chat?.regenerate) {
       const settings = useSettingsStore.getState()
-      if (ensembleMode) {
+      if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
         const providerIds = settings.ensembleProviders().map(p => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
@@ -264,7 +276,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             messages: newMessages,
             providerIds,
             arbitratorProviderId: arbitrator?.id,
-            mode: 'ensemble',
+            arbitrationMode: get().arbitrationMode,
+            mode: mode === 'compare' ? 'compare' : 'ensemble',
             threadId
           })
           return
@@ -275,6 +288,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const payload: ChatSendPayload = {
         messages: newMessages,
         providerId: provider.id,
+        mode: 'single',
         threadId
       }
       window.api.chat.regenerate(payload)
@@ -282,7 +296,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   editMessage: (messageId, newContent) => {
-    const { messages, threadId, ensembleMode } = get()
+    const { messages, threadId, mode } = get()
     const index = messages.findIndex(m => m.id === messageId)
     if (index === -1) return
 
@@ -297,7 +311,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (threadId && window.api?.chat?.send) {
       // Re-send from the edit point — use send with the truncated messages
       const settings = useSettingsStore.getState()
-      if (ensembleMode) {
+      if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
         const providerIds = settings.ensembleProviders().map(p => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
@@ -305,7 +319,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             messages: newMessages,
             providerIds,
             arbitratorProviderId: arbitrator?.id,
-            mode: 'ensemble',
+            arbitrationMode: get().arbitrationMode,
+            mode: mode === 'compare' ? 'compare' : 'ensemble',
             threadId
           })
           return
@@ -313,7 +328,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
       const provider = settings.activeProvider()
       if (provider) {
-        window.api.chat.send({ messages: newMessages, providerId: provider.id, threadId })
+        window.api.chat.send({ messages: newMessages, providerId: provider.id, mode: 'single', threadId })
       }
     }
   },
@@ -334,9 +349,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   clearAttachments: () => set({ attachments: [] }),
 
-  // Ensemble actions
-  setEnsembleMode: (v) => set({ ensembleMode: v }),
+  // Mode actions
+  setMode: (mode) => set({ mode }),
+  setArbitrationMode: (arbitrationMode) => set({ arbitrationMode }),
 
+  // Ensemble actions
   startEnsembleRun: (runId, providerIds, arbitratorProviderId) => {
     const agents: Record<string, AgentStream> = {}
     for (let i = 0; i < providerIds.length; i++) {
@@ -584,6 +601,62 @@ export const useChatStore = create<ChatState>((set, get) => ({
           [runId]: { ...run, status: 'done' }
         }
       }
+    })
+  },
+
+  finalizeManualEnsemble: (runId, agentAnswers) => {
+    set(s => {
+      const run = s.ensembleRuns[runId]
+      if (!run) return s
+
+      const compareMessage: Message = {
+        id: genId(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        kind: 'compare_results',
+        runId
+      }
+
+      const messages = [...s.messages, compareMessage]
+      if (s.threadId) debouncedSave(s.threadId, messages)
+
+      return {
+        messages,
+        streaming: false,
+        ensembleRuns: {
+          ...s.ensembleRuns,
+          [runId]: { ...run, status: 'done' }
+        }
+      }
+    })
+  },
+
+  selectManualAnswer: (runId, agentId) => {
+    set(s => {
+      const run = s.ensembleRuns[runId]
+      if (!run) return s
+      const agent = run.agents[agentId]
+      if (!agent) return s
+
+      const finalMessage: Message = {
+        id: genId(),
+        role: 'assistant',
+        content: agent.messages
+          .filter(m => m.role === 'assistant' && m.kind === 'assistant_message')
+          .map(m => m.content)
+          .join('') || '',
+        timestamp: Date.now(),
+        kind: 'assistant_message',
+        sourceProviderId: agent.providerId,
+        agentId,
+        runId
+      }
+
+      const messages = [...s.messages, finalMessage]
+      if (s.threadId) debouncedSave(s.threadId, messages)
+
+      return { messages }
     })
   },
 

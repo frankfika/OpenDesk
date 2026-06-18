@@ -1,6 +1,6 @@
 export type Role = 'user' | 'assistant' | 'system' | 'tool'
 
-export type MessageKind = 'user_message' | 'assistant_message' | 'reasoning' | 'tool_call' | 'tool_result' | 'error' | 'desktop_action' | 'screenshot'
+export type MessageKind = 'user_message' | 'assistant_message' | 'reasoning' | 'tool_call' | 'tool_result' | 'error' | 'desktop_action' | 'screenshot' | 'compare_results'
 
 export interface Message {
   id: string
@@ -33,6 +33,12 @@ export interface Workspace {
   status: 'active' | 'missing' | 'archived'
 }
 
+export type ChatMode = 'single' | 'agent' | 'ensemble' | 'compare'
+
+export type ArbitrationMode = 'auto' | 'manual'
+
+export type ApprovalMode = 'ask' | 'auto-edits' | 'auto-all' | 'bypass'
+
 export interface Thread {
   id: string
   workspaceId: string
@@ -45,12 +51,14 @@ export interface Thread {
   totalOutputTokens: number
   status: 'active' | 'archived'
   skillId?: string
-  // Ensemble mode fields
-  mode?: 'single' | 'ensemble'
+  // Chat / ensemble / compare mode fields
+  mode?: ChatMode
   ensembleProviderIds?: string[]
   arbitratorProviderId?: string
+  arbitrationMode?: ArbitrationMode
   agentRoleAssignments?: Record<string, AgentRole>
   agentAnswers?: AgentAnswerSnapshot[]
+  selectedAnswerId?: string
 }
 
 export type AgentRole = 'coder' | 'reviewer' | 'researcher' | 'writer' | 'generalist'
@@ -93,7 +101,7 @@ export interface AppSettings {
   startupBehavior: 'restore' | 'new' | 'tray'
   autoUpdate: boolean
   desktopEnabled: boolean
-  approvalMode: 'auto' | 'suggest' | 'full'
+  approvalMode: ApprovalMode
   showThinking: boolean
   agentsMd?: AgentsMdInfo
   // Ensemble settings
@@ -109,8 +117,9 @@ export interface ChatSendPayload {
   providerId?: string
   providerIds?: string[]
   arbitratorProviderId?: string
+  arbitrationMode?: ArbitrationMode
   agentRoleAssignments?: Record<string, AgentRole>
-  mode?: 'single' | 'ensemble'
+  mode?: ChatMode
   systemPrompt?: string
   workspaceId?: string
   threadId?: string
@@ -243,9 +252,10 @@ export interface ThreadCreatePayload {
   providerId?: string
   model?: string
   skillId?: string
-  mode?: 'single' | 'ensemble'
+  mode?: ChatMode
   ensembleProviderIds?: string[]
   arbitratorProviderId?: string
+  arbitrationMode?: ArbitrationMode
   agentRoleAssignments?: Record<string, AgentRole>
 }
 
@@ -253,11 +263,13 @@ export interface ThreadUpdatePayload {
   title?: string
   status?: 'active' | 'archived'
   skillId?: string
-  mode?: 'single' | 'ensemble'
+  mode?: ChatMode
   ensembleProviderIds?: string[]
   arbitratorProviderId?: string
+  arbitrationMode?: ArbitrationMode
   agentRoleAssignments?: Record<string, AgentRole>
   agentAnswers?: AgentAnswerSnapshot[]
+  selectedAnswerId?: string
   totalInputTokens?: number
   totalOutputTokens?: number
 }
