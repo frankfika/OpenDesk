@@ -62,8 +62,8 @@ export default function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { newThread } = useChatStore()
-  const { createThread, activeWorkspace, loadWorkspaces, workspaces } = useWorkspaceStore()
+  const newThread = useChatStore((state) => state.newThread)
+  const { createThread, activeWorkspace, loadWorkspaces } = useWorkspaceStore()
   const { settings, load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
   const { setTheme, toggleTheme } = useThemeStore()
 
@@ -78,16 +78,15 @@ export default function AppShell() {
       })
     }
     loadWorkspaces()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsLoaded, loadSettings, loadWorkspaces, setTheme])
 
   // Listen for global shortcuts from main process
   useEffect(() => {
     const offSidebar = window.api?.app?.onToggleSidebar
-      ? window.api.app.onToggleSidebar(() => setSidebarCollapsed(v => !v))
+      ? window.api.app.onToggleSidebar(() => setSidebarCollapsed((v) => !v))
       : () => {}
-    const offTheme = window.api?.app?.onToggleTheme
-      ? window.api.app.onToggleTheme(() => toggleTheme())
-      : () => {}
+    const offTheme = window.api?.app?.onToggleTheme ? window.api.app.onToggleTheme(() => toggleTheme()) : () => {}
     const offFocusModel = window.api?.app?.onFocusModel
       ? window.api.app.onFocusModel(() => window.dispatchEvent(new CustomEvent('opendesk:focus-model')))
       : () => {}
@@ -106,15 +105,15 @@ export default function AppShell() {
     }
   }, [settingsLoaded, settings.providers.length])
 
-  function handleNewThread() {
+  const handleNewThread = useCallback(() => {
     const ws = activeWorkspace()
     if (ws) {
-      createThread(ws.id).then((thread) => {
+      createThread(ws.id).then((_thread) => {
         // Thread is already activated in store
       })
     } else {
       // Fallback: create a thread without workspace
-      const thread: Thread = {
+      const _thread: Thread = {
         id: genId(),
         workspaceId: '',
         title: 'New conversation',
@@ -129,26 +128,29 @@ export default function AppShell() {
       // We can't use addThread anymore, so just clear messages
       newThread()
     }
-  }
+  }, [activeWorkspace, createThread, newThread])
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === ',') {
-      e.preventDefault()
-      setSettingsOpen(true)
-    }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-      e.preventDefault()
-      handleNewThread()
-    }
-    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || (e.shiftKey && e.key === 'F'))) {
-      e.preventDefault()
-      setSearchOpen(true)
-    }
-    if ((e.metaKey || e.ctrlKey) && (e.key === '/' || (e.shiftKey && e.key === '?'))) {
-      e.preventDefault()
-      setShortcutHelpOpen(v => !v)
-    }
-  }, [])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault()
+        setSettingsOpen(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        handleNewThread()
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || (e.shiftKey && e.key === 'F'))) {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === '/' || (e.shiftKey && e.key === '?'))) {
+        e.preventDefault()
+        setShortcutHelpOpen((v) => !v)
+      }
+    },
+    [handleNewThread]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -167,7 +169,11 @@ export default function AppShell() {
             onOpenMemory={() => setMemoryPanelOpen(true)}
           />
         )}
-        <main role="main" aria-label="Chat" className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]">
+        <main
+          role="main"
+          aria-label="Chat"
+          className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]"
+        >
           <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
         </main>
 
@@ -187,31 +193,21 @@ export default function AppShell() {
         </AnimatePresence>
 
         {/* FilePanel with slide-in animation */}
-        <AnimatePresence>
-          {filePanelOpen && (
-            <FilePanel onClose={() => setFilePanelOpen(false)} />
-          )}
-        </AnimatePresence>
+        <AnimatePresence>{filePanelOpen && <FilePanel onClose={() => setFilePanelOpen(false)} />}</AnimatePresence>
 
         {/* MemoryPanel with slide-in animation */}
         <AnimatePresence>
-          {memoryPanelOpen && (
-            <MemoryPanel onClose={() => setMemoryPanelOpen(false)} />
-          )}
+          {memoryPanelOpen && <MemoryPanel onClose={() => setMemoryPanelOpen(false)} />}
         </AnimatePresence>
 
         {/* Settings Modal with fade + slide */}
         <AnimatePresence>
-          {settingsOpen && (
-            <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-          )}
+          {settingsOpen && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
         </AnimatePresence>
 
         {/* Onboarding with fade + slide up */}
         <AnimatePresence>
-          {onboardingOpen && (
-            <OnboardingModal open={onboardingOpen} onComplete={() => setOnboardingOpen(false)} />
-          )}
+          {onboardingOpen && <OnboardingModal open={onboardingOpen} onComplete={() => setOnboardingOpen(false)} />}
         </AnimatePresence>
 
         {/* Global Search */}
@@ -221,10 +217,7 @@ export default function AppShell() {
         <ShortcutHelp open={shortcutHelpOpen} onOpenChange={setShortcutHelpOpen} />
 
         {/* Command Palette */}
-        <CommandPalette
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenSkills={() => setSkillsPanelOpen(true)}
-        />
+        <CommandPalette onOpenSettings={() => setSettingsOpen(true)} onOpenSkills={() => setSkillsPanelOpen(true)} />
 
         {/* Toast notifications */}
         <ToastContainer />

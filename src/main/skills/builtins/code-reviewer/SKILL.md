@@ -11,23 +11,27 @@ tags: [code, review, quality, security]
 When the user asks you to review code, follow this structured approach:
 
 ### 1. Initial Assessment
+
 - Identify the programming language and framework
 - Understand the context and purpose of the code
 - Check for obvious syntax errors
 
 ### 2. Quality Checks
+
 - **Readability**: Is the code easy to understand? Are variable names descriptive?
 - **Maintainability**: Is the code modular? Are functions appropriately sized?
 - **Performance**: Are there obvious inefficiencies or bottlenecks?
 - **Error Handling**: Are edge cases handled? Is there proper exception handling?
 
 ### 3. Security Review
+
 - Check for injection vulnerabilities (SQL, command, XSS)
 - Look for hardcoded secrets or credentials
 - Verify input validation and sanitization
 - Check for insecure dependencies
 
 ### 4. Best Practices
+
 - Language-specific idioms and conventions
 - Design patterns usage
 - Testing coverage considerations

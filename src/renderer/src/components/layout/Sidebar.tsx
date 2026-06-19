@@ -1,12 +1,27 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useSettingsStore } from '../../store/settings'
 import { useSkillsStore } from '../../store/skills'
 import { useThemeStore } from '../../store/theme'
 import {
-  MessageSquare, Library, Folder, Settings, Plus, Hexagon,
-  FolderOpen, Sun, Moon, Pencil, Copy, Smile, CheckCircle2,
-  FolderInput, Trash2, ChevronRight, MoreHorizontal, Brain
+  MessageSquare,
+  Library,
+  Folder,
+  Settings,
+  Plus,
+  Hexagon,
+  FolderOpen,
+  Sun,
+  Moon,
+  Pencil,
+  Copy,
+  Smile,
+  CheckCircle2,
+  FolderInput,
+  Trash2,
+  ChevronRight,
+  MoreHorizontal,
+  Brain
 } from 'lucide-react'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -27,13 +42,49 @@ const NAV_ITEMS = [
   { icon: Folder, label: 'Files' }
 ]
 
-const EMOJI_ICONS = ['📁', '💼', '📂', '🗂️', '📊', '📈', '📉', '💻', '🔧', '🎨', '📝', '🔬', '🚀', '🏠', '🌐', '⚙️', '🔒', '🔑', '📦', '📚']
+const EMOJI_ICONS = [
+  '📁',
+  '💼',
+  '📂',
+  '🗂️',
+  '📊',
+  '📈',
+  '📉',
+  '💻',
+  '🔧',
+  '🎨',
+  '📝',
+  '🔬',
+  '🚀',
+  '🏠',
+  '🌐',
+  '⚙️',
+  '🔒',
+  '🔑',
+  '📦',
+  '📚'
+]
 
-export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onOpenFiles, onOpenMemory }: SidebarProps) {
+export default function Sidebar({
+  onOpenSettings,
+  onNewThread,
+  onOpenSkills,
+  onOpenFiles,
+  onOpenMemory
+}: SidebarProps) {
   const {
-    workspaces, activeWorkspaceId, threads, activeThreadId,
-    setActiveWorkspace, removeWorkspace, updateWorkspace, relinkWorkspace, loadWorkspaces,
-    addWorkspace, setActiveThread, deleteThread, updateThread
+    workspaces,
+    activeWorkspaceId,
+    threads,
+    activeThreadId,
+    setActiveWorkspace,
+    removeWorkspace,
+    updateWorkspace,
+    relinkWorkspace,
+    addWorkspace,
+    setActiveThread,
+    deleteThread,
+    updateThread
   } = useWorkspaceStore()
   const { load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
   const { load: loadSkills, loaded: skillsLoaded } = useSkillsStore()
@@ -54,7 +105,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   // Auto-expand active workspace
   useEffect(() => {
     if (activeWorkspaceId) {
-      setExpandedWorkspaces(s => new Set([...s, activeWorkspaceId]))
+      setExpandedWorkspaces((s) => new Set([...s, activeWorkspaceId]))
     }
   }, [activeWorkspaceId])
 
@@ -75,7 +126,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   }
 
   function toggleWorkspaceExpand(id: string) {
-    setExpandedWorkspaces(s => {
+    setExpandedWorkspaces((s) => {
       const next = new Set(s)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -84,8 +135,11 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   }
 
   function handleThreadRename(id: string) {
-    const t = threads.find(th => th.id === id)
-    if (t) { setEditingThreadId(id); setEditThreadValue(t.title) }
+    const t = threads.find((th) => th.id === id)
+    if (t) {
+      setEditingThreadId(id)
+      setEditThreadValue(t.title)
+    }
   }
 
   function handleThreadRenameSubmit(id: string) {
@@ -116,7 +170,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   }
 
   function handleRename(id: string) {
-    const ws = workspaces.find(w => w.id === id)
+    const ws = workspaces.find((w) => w.id === id)
     if (ws) {
       setEditingId(id)
       setEditValue(ws.name)
@@ -169,7 +223,9 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
         >
           <Plus size={16} />
           New chat
-          <span className="ml-auto text-[11px] text-[var(--text-muted)] font-mono px-1.5 py-0.5 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)]">⌘N</span>
+          <span className="ml-auto text-[11px] text-[var(--text-muted)] font-mono px-1.5 py-0.5 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)]">
+            ⌘N
+          </span>
         </button>
       </div>
 
@@ -183,7 +239,9 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
               key={item.label}
               onClick={() => handleNavClick(item.label)}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive ? "bg-[var(--bg-content)] text-[var(--text-primary)] font-medium shadow-sm border border-[var(--border)]" : "text-[var(--text-secondary)] hover:bg-[var(--border)] border border-transparent"
+                isActive
+                  ? 'bg-[var(--bg-content)] text-[var(--text-primary)] font-medium shadow-sm border border-[var(--border)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--border)] border border-transparent'
               }`}
             >
               <Icon size={15} />
@@ -199,7 +257,9 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between px-2 py-2">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Workspaces</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+              Workspaces
+            </span>
             <button
               onClick={handleOpenFolder}
               className="no-drag p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
@@ -222,14 +282,16 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
             workspaces.map((ws) => {
               const isActive = activeWorkspaceId === ws.id
               const isExpanded = expandedWorkspaces.has(ws.id)
-              const wsThreads = threads.filter(t => t.workspaceId === ws.id)
+              const wsThreads = threads.filter((t) => t.workspaceId === ws.id)
               return (
                 <div key={ws.id}>
                   <ContextMenu.Root>
                     <ContextMenu.Trigger asChild>
                       <div
                         className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-colors cursor-pointer ${
-                          isActive ? 'bg-[var(--bg-content)]/60 border border-[var(--border)]' : 'hover:bg-[var(--border)] border border-transparent'
+                          isActive
+                            ? 'bg-[var(--bg-content)]/60 border border-[var(--border)]'
+                            : 'hover:bg-[var(--border)] border border-transparent'
                         }`}
                         onClick={() => {
                           setActiveWorkspace(ws.id)
@@ -237,7 +299,10 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                         }}
                       >
                         <button
-                          onClick={(e) => { e.stopPropagation(); toggleWorkspaceExpand(ws.id) }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleWorkspaceExpand(ws.id)
+                          }}
                           className="shrink-0 p-0.5 rounded hover:bg-[var(--border)] transition-colors"
                           aria-label={isExpanded ? 'Collapse workspace' : 'Expand workspace'}
                           aria-expanded={isExpanded}
@@ -257,26 +322,31 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                             onBlur={() => handleSubmitRename(ws.id)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleSubmitRename(ws.id)
-                              if (e.key === 'Escape') { setEditingId(null); setEditValue('') }
+                              if (e.key === 'Escape') {
+                                setEditingId(null)
+                                setEditValue('')
+                              }
                             }}
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <span className={`flex-1 min-w-0 text-sm truncate ${isActive ? 'font-medium text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                          <span
+                            className={`flex-1 min-w-0 text-sm truncate ${isActive ? 'font-medium text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
+                          >
                             {ws.icon ? <span className="mr-1.5">{ws.icon}</span> : null}
                             {ws.name || ws.folderPath.split('/').pop() || 'Untitled'}
                           </span>
                         )}
                         {wsThreads.length > 0 && (
-                          <span className="shrink-0 text-[10px] text-[var(--text-muted)] font-mono">{wsThreads.length}</span>
+                          <span className="shrink-0 text-[10px] text-[var(--text-muted)] font-mono">
+                            {wsThreads.length}
+                          </span>
                         )}
                       </div>
                     </ContextMenu.Trigger>
 
                     <ContextMenu.Portal>
-                      <ContextMenu.Content
-                        className="z-50 min-w-[200px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1"
-                      >
+                      <ContextMenu.Content className="z-50 min-w-[200px] rounded-lg overflow-hidden bg-[var(--bg-content)] border border-[var(--border)] shadow-xl py-1">
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => onOpenFiles()}
@@ -349,7 +419,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                           {wsThreads.length === 0 ? (
                             <p className="text-[11px] text-[var(--text-muted)] px-2 py-1">No conversations yet</p>
                           ) : (
-                            wsThreads.map(t => {
+                            wsThreads.map((t) => {
                               const isActiveThread = activeThreadId === t.id
                               return (
                                 <div key={t.id} className="group relative flex items-center">
@@ -358,13 +428,15 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                                       autoFocus
                                       className="flex-1 min-w-0 text-[12px] px-2 py-1.5 rounded bg-transparent outline-none text-[var(--text-primary)] border-b border-[var(--accent)]"
                                       value={editThreadValue}
-                                      onChange={e => setEditThreadValue(e.target.value)}
+                                      onChange={(e) => setEditThreadValue(e.target.value)}
                                       onBlur={() => handleThreadRenameSubmit(t.id)}
-                                      onKeyDown={e => {
+                                      onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleThreadRenameSubmit(t.id)
-                                        if (e.key === 'Escape') { setEditingThreadId(null) }
+                                        if (e.key === 'Escape') {
+                                          setEditingThreadId(null)
+                                        }
                                       }}
-                                      onClick={e => e.stopPropagation()}
+                                      onClick={(e) => e.stopPropagation()}
                                     />
                                   ) : (
                                     <button
@@ -386,7 +458,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                                   <DropdownMenu.Root>
                                     <DropdownMenu.Trigger asChild>
                                       <button
-                                        onClick={e => e.stopPropagation()}
+                                        onClick={(e) => e.stopPropagation()}
                                         className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                                         aria-label="Thread actions"
                                       >

@@ -1,8 +1,8 @@
 import { join, basename } from 'path'
 import { homedir } from 'os'
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, readFileSync, writeFileSync } from 'fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs'
 import type { Skill, SkillImportResult } from '../../shared/types'
-import { scanSkillDirectory, parseFrontmatter } from './scanner'
+import { scanSkillDirectory } from './scanner'
 
 function getGlobalSkillsPath(): string {
   return join(homedir(), '.opendesk', 'skills')
@@ -76,6 +76,19 @@ export async function importSkillFromGitHub(repoUrl: string, targetDir?: string)
     } else {
       return { success: false, error: `Invalid GitHub URL or shorthand: ${repoUrl}` }
     }
+  }
+
+  // Validate URL: only http/https and github.com are allowed
+  try {
+    const url = new URL(normalizedUrl)
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { success: false, error: 'Invalid URL protocol' }
+    }
+    if (!url.hostname.toLowerCase().endsWith('github.com')) {
+      return { success: false, error: 'Only github.com repositories are supported' }
+    }
+  } catch {
+    return { success: false, error: `Invalid URL: ${repoUrl}` }
   }
 
   // Convert to zip download URL
@@ -164,7 +177,11 @@ export async function importSkillFromGitHub(repoUrl: string, targetDir?: string)
     return { success: true, skill: importedSkills[0] }
   } catch (err) {
     // Cleanup
-    try { rmSync(tmpDir, { recursive: true, force: true }) } catch { /* ignore */ }
+    try {
+      rmSync(tmpDir, { recursive: true, force: true })
+    } catch {
+      /* ignore */
+    }
     return { success: false, error: `Import failed: ${err instanceof Error ? err.message : String(err)}` }
   }
 }

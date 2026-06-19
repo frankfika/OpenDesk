@@ -1,9 +1,10 @@
-import { app, BrowserWindow, shell, globalShortcut, nativeTheme } from 'electron'
+import { app, BrowserWindow, shell, nativeTheme } from 'electron'
 import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
 import { createTray, destroyTray } from './tray'
 import { registerShortcuts, unregisterShortcuts } from './shortcuts'
+import { OLLAMA_BASE_URL } from '../shared/providers'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -26,7 +27,7 @@ function createWindow(): BrowserWindow {
     backgroundColor,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -72,9 +73,9 @@ interface AppSettings {
 
 async function detectOllama(): Promise<{ available: boolean; models: string[] }> {
   try {
-    const response = await fetch('http://localhost:11434/v1/models', { signal: AbortSignal.timeout(3000) })
+    const response = await fetch(`${OLLAMA_BASE_URL}/models`, { signal: AbortSignal.timeout(3000) })
     if (!response.ok) return { available: false, models: [] }
-    const data = await response.json() as { data?: Array<{ id: string }> }
+    const data = (await response.json()) as { data?: Array<{ id: string }> }
     const models = data.data?.map((m) => m.id) || []
     return { available: true, models }
   } catch {
@@ -117,7 +118,7 @@ async function autoDetectOllama(): Promise<void> {
     type: 'ollama',
     name: 'Ollama (Auto-detected)',
     model: defaultModel,
-    baseUrl: 'http://localhost:11434/v1',
+    baseUrl: OLLAMA_BASE_URL,
     enabled: true
   }
 

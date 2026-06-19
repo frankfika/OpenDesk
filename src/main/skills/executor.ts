@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import { existsSync } from 'fs'
-import { dirname, join } from 'path'
+import { dirname } from 'path'
 import type { Skill } from '../../shared/types'
 
 export interface SkillToolCall {
@@ -90,8 +90,12 @@ export async function executeSkillTool(
         const fallback = spawn('ts-node', [scriptPath], { env, cwd: dirname(scriptPath), timeout: 30000 })
         let fbStdout = ''
         let fbStderr = ''
-        fallback.stdout.on('data', (d) => { fbStdout += d.toString() })
-        fallback.stderr.on('data', (d) => { fbStderr += d.toString() })
+        fallback.stdout.on('data', (d) => {
+          fbStdout += d.toString()
+        })
+        fallback.stderr.on('data', (d) => {
+          fbStderr += d.toString()
+        })
         fallback.on('close', (code) => {
           if (code === 0) {
             resolve({ success: true, output: fbStdout.trim() })

@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -31,7 +30,17 @@ const toastConfig: Record<ToastType, { icon: typeof CheckCircle2; color: string;
   }
 }
 
-function ToastItem({ toast, onRemove, onPause, onResume }: { toast: Toast; onRemove: (id: string) => void; onPause: (id: string) => void; onResume: (id: string) => void }) {
+function ToastItem({
+  toast,
+  onRemove,
+  onPause,
+  onResume
+}: {
+  toast: Toast
+  onRemove: (id: string) => void
+  onPause: (id: string) => void
+  onResume: (id: string) => void
+}) {
   const config = toastConfig[toast.type]
   const Icon = config.icon
 
@@ -61,10 +70,7 @@ function ToastItem({ toast, onRemove, onPause, onResume }: { toast: Toast; onRem
               toast.action?.onClick()
               onRemove(toast.id)
             }}
-            className={cn(
-              'mt-1.5 text-[11px] font-medium hover:underline',
-              config.color
-            )}
+            className={cn('mt-1.5 text-[11px] font-medium hover:underline', config.color)}
           >
             {toast.action.label}
           </button>

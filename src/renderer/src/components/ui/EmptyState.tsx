@@ -50,11 +50,7 @@ export default function EmptyState({
 
   return (
     <Wrapper
-      className={cn(
-        'flex flex-col items-center justify-center text-center px-6',
-        s.padding,
-        className
-      )}
+      className={cn('flex flex-col items-center justify-center text-center px-6', s.padding, className)}
       {...wrapperProps}
     >
       {Icon && (
@@ -68,14 +64,10 @@ export default function EmptyState({
         </motion.div>
       )}
 
-      <h3 className={cn('font-semibold text-[var(--text-primary)] mb-1.5', s.title)}>
-        {title}
-      </h3>
+      <h3 className={cn('font-semibold text-[var(--text-primary)] mb-1.5', s.title)}>{title}</h3>
 
       {description && (
-        <p className={cn('text-[var(--text-secondary)] max-w-xs leading-relaxed mb-4', s.desc)}>
-          {description}
-        </p>
+        <p className={cn('text-[var(--text-secondary)] max-w-xs leading-relaxed mb-4', s.desc)}>{description}</p>
       )}
 
       {actions && actions.length > 0 && (

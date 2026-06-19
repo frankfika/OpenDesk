@@ -2,14 +2,13 @@ import { create } from 'zustand'
 import type {
   Workspace,
   Thread,
-  WorkspaceCreatePayload,
   WorkspaceUpdatePayload,
   ThreadCreatePayload,
   ThreadUpdatePayload,
   AgentsMdInfo
 } from '@shared/types'
 import { useSettingsStore } from './settings'
-import { useChatStore } from './chat'
+import { switchThread, setMode } from './chat-actions'
 
 interface WorkspaceState {
   workspaces: Workspace[]
@@ -68,7 +67,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       let activeThreadId = settings.activeThreadId
 
       // Validate restored IDs still exist
-      if (activeWorkspaceId && !workspaces.find(w => w.id === activeWorkspaceId)) {
+      if (activeWorkspaceId && !workspaces.find((w) => w.id === activeWorkspaceId)) {
         activeWorkspaceId = null
         activeThreadId = null
       }
@@ -80,10 +79,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         await get().loadThreads(activeWorkspaceId)
         // Restore active thread
         if (activeThreadId) {
-          const threadExists = get().threads.find(t => t.id === activeThreadId)
+          const threadExists = get().threads.find((t) => t.id === activeThreadId)
           if (threadExists) {
-            useChatStore.getState().switchThread(activeThreadId)
-            useChatStore.getState().setMode(threadExists.mode || 'single')
+            switchThread(activeThreadId)
+            setMode(threadExists.mode || 'single')
           }
         }
       } else if (workspaces.length > 0) {
@@ -106,14 +105,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         tags: [],
         status: 'active'
       }
-      set(s => ({ workspaces: [mock, ...s.workspaces] }))
+      set((s) => ({ workspaces: [mock, ...s.workspaces] }))
       get().setActiveWorkspace(mock.id)
       return mock
     }
     // workspace.add() opens a folder picker and returns the new workspace
     const workspace = await window.api.workspace.add()
     if (!workspace) throw new Error('No folder selected')
-    set(s => ({ workspaces: [workspace, ...s.workspaces] }))
+    set((s) => ({ workspaces: [workspace, ...s.workspaces] }))
     get().setActiveWorkspace(workspace.id)
     return workspace
   },
@@ -122,8 +121,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (window.api?.workspace?.remove) {
       await window.api.workspace.remove(id)
     }
-    set(s => {
-      const workspaces = s.workspaces.filter(w => w.id !== id)
+    set((s) => {
+      const workspaces = s.workspaces.filter((w) => w.id !== id)
       const activeWorkspaceId = s.activeWorkspaceId === id ? (workspaces[0]?.id ?? null) : s.activeWorkspaceId
       return { workspaces, activeWorkspaceId, threads: activeWorkspaceId === id ? [] : s.threads }
     })
@@ -133,10 +132,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (window.api?.workspace?.update) {
       await window.api.workspace.update(id, patch)
     }
-    set(s => ({
-      workspaces: s.workspaces.map(w =>
-        w.id === id ? { ...w, ...patch, updatedAt: Date.now() } : w
-      )
+    set((s) => ({
+      workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, ...patch, updatedAt: Date.now() } : w))
     }))
   },
 
@@ -144,8 +141,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (window.api?.workspace?.relink) {
       await window.api.workspace.relink(id, newPath)
     }
-    set(s => ({
-      workspaces: s.workspaces.map(w =>
+    set((s) => ({
+      workspaces: s.workspaces.map((w) =>
         w.id === id ? { ...w, folderPath: newPath, status: 'active', updatedAt: Date.now() } : w
       )
     }))
@@ -159,7 +156,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (id) {
       get().loadThreads(id)
     } else {
-      useChatStore.getState().switchThread(null)
+      switchThread(null)
     }
   },
 
@@ -204,7 +201,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       model: provider?.model,
       skillId,
       mode: isEnsemble ? 'ensemble' : 'single',
-      ensembleProviderIds: isEnsemble ? ensProviders.map(p => p.id) : undefined,
+      ensembleProviderIds: isEnsemble ? ensProviders.map((p) => p.id) : undefined,
       arbitratorProviderId: isEnsemble ? arbProvider?.id : undefined,
       agentRoleAssignments: isEnsemble ? settings.agentRoleAssignments : undefined
     }
@@ -227,14 +224,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         arbitratorProviderId: payload.arbitratorProviderId,
         agentRoleAssignments: payload.agentRoleAssignments
       }
-      set(s => ({ threads: [mock, ...s.threads], activeThreadId: mock.id }))
-      useChatStore.getState().switchThread(mock.id)
+      set((s) => ({ threads: [mock, ...s.threads], activeThreadId: mock.id }))
+      switchThread(mock.id)
       return mock
     }
 
     const thread = await window.api.thread.create(payload)
-    set(s => ({ threads: [thread, ...s.threads], activeThreadId: thread.id }))
-    useChatStore.getState().switchThread(thread.id)
+    set((s) => ({ threads: [thread, ...s.threads], activeThreadId: thread.id }))
+    switchThread(thread.id)
     return thread
   },
 
@@ -242,10 +239,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (window.api?.thread?.update) {
       await window.api.thread.update(id, patch)
     }
-    set(s => ({
-      threads: s.threads.map(t =>
-        t.id === id ? { ...t, ...patch, updatedAt: Date.now() } : t
-      )
+    set((s) => ({
+      threads: s.threads.map((t) => (t.id === id ? { ...t, ...patch, updatedAt: Date.now() } : t))
     }))
   },
 
@@ -253,12 +248,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (window.api?.thread?.delete) {
       await window.api.thread.delete(id)
     }
-    set(s => ({
-      threads: s.threads.filter(t => t.id !== id),
+    set((s) => ({
+      threads: s.threads.filter((t) => t.id !== id),
       activeThreadId: s.activeThreadId === id ? null : s.activeThreadId
     }))
     if (get().activeThreadId === id) {
-      useChatStore.getState().switchThread(null)
+      switchThread(null)
     }
   },
 
@@ -269,12 +264,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     // Save to settings for crash recovery
     useSettingsStore.getState().update({ activeThreadId: id })
     if (id) {
-      useChatStore.getState().switchThread(id)
-      const thread = get().threads.find(t => t.id === id)
-      useChatStore.getState().setMode(thread?.mode || 'single')
+      switchThread(id)
+      const thread = get().threads.find((t) => t.id === id)
+      setMode(thread?.mode || 'single')
     } else {
-      useChatStore.getState().switchThread(null)
-      useChatStore.getState().setMode('single')
+      switchThread(null)
+      setMode('single')
     }
   },
 
@@ -294,29 +289,35 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       createdAt: thread.createdAt ?? Date.now(),
       updatedAt: thread.updatedAt ?? Date.now(),
       mode: thread.mode ?? (settings.ensembleModeDefault ? 'ensemble' : 'single'),
-      ensembleProviderIds: thread.ensembleProviderIds ?? (settings.ensembleModeDefault ? settings.ensembleProviderIds : undefined),
-      arbitratorProviderId: thread.arbitratorProviderId ?? (settings.ensembleModeDefault ? settings.arbitratorProviderId ?? undefined : undefined),
-      agentRoleAssignments: thread.agentRoleAssignments ?? (settings.ensembleModeDefault ? settings.agentRoleAssignments : undefined)
+      ensembleProviderIds:
+        thread.ensembleProviderIds ?? (settings.ensembleModeDefault ? settings.ensembleProviderIds : undefined),
+      arbitratorProviderId:
+        thread.arbitratorProviderId ??
+        (settings.ensembleModeDefault ? (settings.arbitratorProviderId ?? undefined) : undefined),
+      agentRoleAssignments:
+        thread.agentRoleAssignments ?? (settings.ensembleModeDefault ? settings.agentRoleAssignments : undefined)
     }
-    set(s => ({
+    set((s) => ({
       threads: [completeThread, ...s.threads],
       activeThreadId: completeThread.id
     }))
     // Persist via IPC (fire-and-forget)
     if (window.api?.thread?.create) {
-      window.api.thread.create({
-        workspaceId: completeThread.workspaceId,
-        title: completeThread.title,
-        providerId: completeThread.providerId,
-        model: completeThread.model,
-        skillId: completeThread.skillId,
-        mode: completeThread.mode,
-        ensembleProviderIds: completeThread.ensembleProviderIds,
-        arbitratorProviderId: completeThread.arbitratorProviderId,
-        agentRoleAssignments: completeThread.agentRoleAssignments
-      }).catch(console.error)
+      window.api.thread
+        .create({
+          workspaceId: completeThread.workspaceId,
+          title: completeThread.title,
+          providerId: completeThread.providerId,
+          model: completeThread.model,
+          skillId: completeThread.skillId,
+          mode: completeThread.mode,
+          ensembleProviderIds: completeThread.ensembleProviderIds,
+          arbitratorProviderId: completeThread.arbitratorProviderId,
+          agentRoleAssignments: completeThread.agentRoleAssignments
+        })
+        .catch(console.error)
     }
-    useChatStore.getState().switchThread(completeThread.id)
+    switchThread(completeThread.id)
   },
 
   updateThreadTitle: (id, title) => {
@@ -329,15 +330,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   activeWorkspace: () => {
     const { workspaces, activeWorkspaceId } = get()
-    return workspaces.find(w => w.id === activeWorkspaceId) ?? null
+    return workspaces.find((w) => w.id === activeWorkspaceId) ?? null
   },
 
   activeThread: () => {
     const { threads, activeThreadId } = get()
-    return threads.find(t => t.id === activeThreadId) ?? null
+    return threads.find((t) => t.id === activeThreadId) ?? null
   },
 
   threadsByWorkspace: (workspaceId) => {
-    return get().threads.filter(t => t.workspaceId === workspaceId)
+    return get().threads.filter((t) => t.workspaceId === workspaceId)
   }
 }))

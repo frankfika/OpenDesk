@@ -22,16 +22,10 @@ function isPathAllowed(filePath: string, workspacePath: string | null): boolean 
   if (!workspacePath) return false
   const resolvedFile = resolve(filePath)
   const resolvedWorkspace = resolve(workspacePath)
-  return (
-    resolvedFile === resolvedWorkspace ||
-    resolvedFile.startsWith(resolvedWorkspace + sep)
-  )
+  return resolvedFile === resolvedWorkspace || resolvedFile.startsWith(resolvedWorkspace + sep)
 }
 
-async function executeBuiltinTool(
-  toolCall: ToolCall,
-  workspaceId?: string
-): Promise<ToolResult> {
+async function executeBuiltinTool(toolCall: ToolCall, workspaceId?: string): Promise<ToolResult> {
   const tool = toolRegistry.get(toolCall.name)
   if (!tool) {
     return {
@@ -47,10 +41,7 @@ async function executeBuiltinTool(
   }
 
   // Security: file tools restricted to workspace
-  if (
-    toolCall.name.startsWith('file_') ||
-    toolCall.name === 'apply_patch'
-  ) {
+  if (toolCall.name.startsWith('file_') || toolCall.name === 'apply_patch') {
     const workspacePath = getWorkspacePath(workspaceId)
     const targetPath = (toolCall.arguments.path as string) || ''
     if (workspacePath && !isPathAllowed(targetPath, workspacePath)) {
@@ -59,6 +50,10 @@ async function executeBuiltinTool(
         content: `Path is outside the workspace directory (${workspacePath})`,
         isError: true
       }
+    }
+    // Normalize relative paths to absolute workspace paths before invoking the handler
+    if (workspacePath && targetPath) {
+      toolCall.arguments.path = resolve(workspacePath, targetPath)
     }
   }
 
@@ -77,7 +72,7 @@ async function executeBuiltinTool(
 export async function executeTool(
   toolCall: ToolCall,
   workspaceId?: string,
-  options?: { desktopEnabled?: boolean }
+  options?: { desktopEnabled?: boolean; approvalMode?: string }
 ): Promise<ToolResult> {
   // Security: desktop tools require desktopEnabled
   if (toolCall.name.startsWith('desktop_')) {
@@ -89,17 +84,30 @@ export async function executeTool(
       }
     }
   }
+
+  // Security: approval mode check for shell and desktop tools
+  const approvalMode = options?.approvalMode ?? 'ask'
+  if (approvalMode === 'ask' && (toolCall.name === 'shell' || toolCall.name.startsWith('desktop_'))) {
+    return {
+      toolCallId: toolCall.id,
+      content: `Tool execution blocked: approvalMode is 'ask'. The tool '${toolCall.name}' requires user approval. Enable auto-approval in Settings to run tools without confirmation.`,
+      isError: true
+    }
+  }
+
   const skillToolMatch = toolCall.name.match(/^([^_]+_[^_]+)_(.+)$/)
   if (skillToolMatch) {
     const possibleSkillId = skillToolMatch[1].replace(/_/g, ':')
     const toolName = skillToolMatch[2]
     const allSkills = scanAllSkills(getWorkspacePath(workspaceId) || undefined)
-    const skill = allSkills.find((s) => s.id === possibleSkillId || s.id.endsWith(':' + skillToolMatch[1].split('_').pop()))
+    const skill = allSkills.find(
+      (s) => s.id === possibleSkillId || s.id.endsWith(':' + skillToolMatch[1].split('_').pop())
+    )
     if (skill && skill.scripts && skill.scripts[toolName]) {
       const result = await executeSkillTool(skill, toolName, toolCall.arguments)
       return {
         toolCallId: toolCall.id,
-        content: result.success ? (result.output || '') : (result.error || 'Unknown error'),
+        content: result.success ? result.output || '' : result.error || 'Unknown error',
         isError: !result.success
       }
     }

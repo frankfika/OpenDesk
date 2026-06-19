@@ -61,9 +61,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
 
   activateSkill: (skillId) => {
     set((s) => ({
-      activeSkillIds: s.activeSkillIds.includes(skillId)
-        ? s.activeSkillIds
-        : [...s.activeSkillIds, skillId]
+      activeSkillIds: s.activeSkillIds.includes(skillId) ? s.activeSkillIds : [...s.activeSkillIds, skillId]
     }))
   },
 

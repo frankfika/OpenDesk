@@ -14,10 +14,7 @@ const TABS = [
 ]
 
 export default function MemoryPanel({ onClose }: MemoryPanelProps) {
-  const {
-    user, identity, soul, loaded, activeTab, saving,
-    load, setActiveTab, updateContent, save
-  } = useMemoryStore()
+  const { user, identity, soul, loaded, activeTab, saving, load, setActiveTab, updateContent, save } = useMemoryStore()
 
   const [localContent, setLocalContent] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -33,14 +30,17 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
     setLocalContent(content)
   }, [activeTab, user, identity, soul])
 
-  const handleChange = useCallback((value: string) => {
-    setLocalContent(value)
-    updateContent(activeTab, value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      save(activeTab)
-    }, 1000)
-  }, [activeTab, updateContent, save])
+  const handleChange = useCallback(
+    (value: string) => {
+      setLocalContent(value)
+      updateContent(activeTab, value)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        save(activeTab)
+      }, 1000)
+    },
+    [activeTab, updateContent, save]
+  )
 
   const handleBlur = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -54,7 +54,9 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
 
   // Keep a ref to the latest activeTab so unmount cleanup always sees current value
   const tabRef = useRef(activeTab)
-  useEffect(() => { tabRef.current = activeTab }, [activeTab])
+  useEffect(() => {
+    tabRef.current = activeTab
+  }, [activeTab])
 
   useEffect(() => {
     return () => {
@@ -62,7 +64,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
       // Auto-save on unmount
       save(tabRef.current)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -137,9 +139,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
 
       {/* Description */}
       <div className="px-5 py-2 border-b border-[var(--border)] shrink-0">
-        <p className="text-[11px] text-[var(--text-muted)]">
-          {TABS.find((t) => t.key === activeTab)?.description}
-        </p>
+        <p className="text-[11px] text-[var(--text-muted)]">{TABS.find((t) => t.key === activeTab)?.description}</p>
       </div>
 
       {/* Editor */}

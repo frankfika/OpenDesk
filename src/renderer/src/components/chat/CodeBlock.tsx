@@ -77,7 +77,17 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
       // Auto-detect
       try {
         const result = hljs.highlightAuto(code, [
-          'javascript', 'typescript', 'python', 'bash', 'json', 'yaml', 'html', 'css', 'sql', 'go', 'rust'
+          'javascript',
+          'typescript',
+          'python',
+          'bash',
+          'json',
+          'yaml',
+          'html',
+          'css',
+          'sql',
+          'go',
+          'rust'
         ])
         codeRef.current.innerHTML = result.value
       } catch {
@@ -91,7 +101,7 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
       await navigator.clipboard.writeText(code)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch (e) {
+    } catch {
       toast.error('Failed to copy code')
     }
   }, [code, toast])
@@ -102,7 +112,9 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
     const blob = new Blob([code], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = name; a.click()
+    a.href = url
+    a.download = name
+    a.click()
     URL.revokeObjectURL(url)
   }, [code, language, filename])
 
@@ -114,12 +126,20 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
       // Use tools:writeFile + shell execution via IPC
       // We can use the existing applyPatch or a new shell route
       // For now, show a "copy to run" prompt — real execution needs shell IPC
-      const lines = code.trim().split('\n').filter(l => l.trim() && !l.trim().startsWith('#'))
-      if (lines.length === 0) { setRunning(false); return }
+      const lines = code
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim() && !l.trim().startsWith('#'))
+      if (lines.length === 0) {
+        setRunning(false)
+        return
+      }
       // Dispatch event so InputBar can pick it up
-      window.dispatchEvent(new CustomEvent('opendesk:fill-input', {
-        detail: { text: lines.join('\n') }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('opendesk:fill-input', {
+          detail: { text: lines.join('\n') }
+        })
+      )
       toast.success('Command sent to input')
     } catch (e) {
       setRunOutput(`Error: ${e instanceof Error ? e.message : String(e)}`)
@@ -135,9 +155,13 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
         <div className="flex items-center gap-2">
           {isShell && <Terminal size={11} className="text-[var(--text-muted)]" />}
           {filename ? (
-            <span className="text-[11px] font-sans text-[var(--text-secondary)] truncate max-w-[240px]">{filename}</span>
+            <span className="text-[11px] font-sans text-[var(--text-secondary)] truncate max-w-[240px]">
+              {filename}
+            </span>
           ) : (
-            <span className="text-[10px] font-mono font-medium text-[var(--text-muted)] uppercase">{language || 'text'}</span>
+            <span className="text-[10px] font-mono font-medium text-[var(--text-muted)] uppercase">
+              {language || 'text'}
+            </span>
           )}
         </div>
 
@@ -148,7 +172,8 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
               className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
               title="Preview"
             >
-              <Eye size={12} /><span>Preview</span>
+              <Eye size={12} />
+              <span>Preview</span>
             </button>
           )}
           {isShell && (
@@ -158,7 +183,8 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
               className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
               title="Send to input"
             >
-              <Play size={12} /><span>Run</span>
+              <Play size={12} />
+              <span>Run</span>
             </button>
           )}
           <button
@@ -175,12 +201,26 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
           >
             <AnimatePresence mode="wait">
               {copied ? (
-                <motion.span key="ok" className="flex items-center gap-1 text-green-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <Check size={12} /><span>Copied</span>
+                <motion.span
+                  key="ok"
+                  className="flex items-center gap-1 text-green-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Check size={12} />
+                  <span>Copied</span>
                 </motion.span>
               ) : (
-                <motion.span key="cp" className="flex items-center gap-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <Copy size={12} /><span>Copy</span>
+                <motion.span
+                  key="cp"
+                  className="flex items-center gap-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Copy size={12} />
+                  <span>Copy</span>
                 </motion.span>
               )}
             </AnimatePresence>
@@ -191,7 +231,9 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
       {/* Code body */}
       <div className="overflow-x-auto bg-[var(--bg-sidebar)]/40">
         <pre className="p-4 m-0 text-[13px] leading-relaxed overflow-visible whitespace-pre">
-          <code ref={codeRef} className={`hljs language-${language || ''}`}>{code}</code>
+          <code ref={codeRef} className={`hljs language-${language || ''}`}>
+            {code}
+          </code>
         </pre>
       </div>
 

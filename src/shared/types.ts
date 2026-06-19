@@ -1,6 +1,15 @@
 export type Role = 'user' | 'assistant' | 'system' | 'tool'
 
-export type MessageKind = 'user_message' | 'assistant_message' | 'reasoning' | 'tool_call' | 'tool_result' | 'error' | 'desktop_action' | 'screenshot' | 'compare_results'
+export type MessageKind =
+  | 'user_message'
+  | 'assistant_message'
+  | 'reasoning'
+  | 'tool_call'
+  | 'tool_result'
+  | 'error'
+  | 'desktop_action'
+  | 'screenshot'
+  | 'compare_results'
 
 export interface Message {
   id: string

@@ -1,9 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  X, PanelRightClose, PanelRightOpen, GripVertical
-} from 'lucide-react'
-import { useArtifactsStore, type Artifact } from '../../store/artifacts'
+import { X, PanelRightClose, PanelRightOpen, GripVertical } from 'lucide-react'
+import { useArtifactsStore } from '../../store/artifacts'
 import ArtifactRenderer, { ArtifactTypeIcon } from './ArtifactRenderer'
 
 interface ArtifactPanelProps {
@@ -12,10 +10,9 @@ interface ArtifactPanelProps {
 
 export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
   const { artifacts, activeId, panelOpen, setActive, removeArtifact, togglePanel, setPanelOpen } = useArtifactsStore()
-  const activeArtifact = artifacts.find(a => a.id === activeId)
+  const activeArtifact = artifacts.find((a) => a.id === activeId)
   const [width, setWidth] = useState(480)
   const [isResizing, setIsResizing] = useState(false)
-  const [tabChanging, setTabChanging] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Handle resize
@@ -39,11 +36,12 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
     }
   }, [isResizing])
 
-  const handleSetActive = useCallback((id: string) => {
-    setTabChanging(true)
-    setActive(id)
-    setTimeout(() => setTabChanging(false), 200)
-  }, [setActive])
+  const handleSetActive = useCallback(
+    (id: string) => {
+      setActive(id)
+    },
+    [setActive]
+  )
 
   if (!panelOpen) {
     return (
@@ -104,7 +102,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
       {/* Tab bar */}
       {artifacts.length > 0 && (
         <div className="shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/20 overflow-x-auto">
-          {artifacts.map(art => (
+          {artifacts.map((art) => (
             <button
               key={art.id}
               onClick={() => handleSetActive(art.id)}
@@ -159,7 +157,8 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
               <div className="text-center">
                 <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">No artifacts yet</p>
                 <p className="text-[11px] leading-relaxed">
-                  When the AI generates HTML, React, Mermaid, SVG, or Markdown code blocks, click <strong>Preview</strong> to open them here.
+                  When the AI generates HTML, React, Mermaid, SVG, or Markdown code blocks, click{' '}
+                  <strong>Preview</strong> to open them here.
                 </p>
               </div>
             </motion.div>

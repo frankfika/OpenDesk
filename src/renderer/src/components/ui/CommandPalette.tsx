@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
-  MessageSquare, Folder, Settings, Sun, Moon, Monitor,
-  Search, Zap, Plus, ArrowUpRight, Command, FileText,
-  Cpu, Globe, Plug, Library, Wrench, RefreshCw
+  MessageSquare,
+  Folder,
+  Settings,
+  Sun,
+  Moon,
+  Search,
+  Plus,
+  ArrowUpRight,
+  FileText,
+  Plug,
+  Wrench
 } from 'lucide-react'
 import { useChatStore } from '../../store/chat'
 import { useWorkspaceStore } from '../../store/workspace'
@@ -26,20 +34,19 @@ interface CommandPaletteProps {
   onOpenSkills?: () => void
 }
 
-export default function CommandPalette({ onOpenSettings, onOpenSkills }: CommandPaletteProps) {
+export default function CommandPalette({ onOpenSettings }: CommandPaletteProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const { newThread, messages } = useChatStore()
-  const {
-    workspaces, activeWorkspaceId, setActiveWorkspace,
-    threads, setActiveThread, createThread
-  } = useWorkspaceStore()
-  const { settings, update } = useSettingsStore()
-  const { theme, setTheme, toggleTheme } = useThemeStore()
+  const newThread = useChatStore((state) => state.newThread)
+  const messages = useChatStore((state) => state.messages)
+  const { workspaces, activeWorkspaceId, setActiveWorkspace, threads, setActiveThread, createThread } =
+    useWorkspaceStore()
+  const _settings = useSettingsStore((state) => state.settings)
+  const { theme, toggleTheme } = useThemeStore()
 
   const commands = useMemo<CommandItem[]>(() => {
     const list: CommandItem[] = []
@@ -148,15 +155,17 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
         setOpen(false)
         const msgs = messages
         if (!msgs.length) return
-        const markdown = msgs.map(m => {
-          const role = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'Assistant' : m.role
-          return `### ${role}\n\n${m.content}\n`
-        }).join('\n---\n\n')
+        const markdown = msgs
+          .map((m) => {
+            const role = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'Assistant' : m.role
+            return `### ${role}\n\n${m.content}\n`
+          })
+          .join('\n---\n\n')
         const blob = new Blob([markdown], { type: 'text/markdown' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `thread-export-${new Date().toISOString().slice(0,10)}.md`
+        a.download = `thread-export-${new Date().toISOString().slice(0, 10)}.md`
         a.click()
         URL.revokeObjectURL(url)
       }
@@ -196,15 +205,24 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
     })
 
     return list
-  }, [workspaces, threads, activeWorkspaceId, theme, onOpenSettings, onOpenSkills, newThread, setActiveWorkspace, setActiveThread, createThread, toggleTheme])
+  }, [
+    workspaces,
+    threads,
+    activeWorkspaceId,
+    theme,
+    onOpenSettings,
+    newThread,
+    setActiveWorkspace,
+    setActiveThread,
+    createThread,
+    toggleTheme,
+    messages
+  ])
 
   const filtered = useMemo(() => {
     if (!query.trim()) return commands
     const q = query.toLowerCase()
-    return commands.filter((c) =>
-      c.label.toLowerCase().includes(q) ||
-      c.group.toLowerCase().includes(q)
-    )
+    return commands.filter((c) => c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q))
   }, [commands, query])
 
   const grouped = useMemo(() => {
@@ -238,23 +256,26 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
   }, [open])
 
   // Navigation inside palette
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.max(i - 1, 0))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const item = filtered[selectedIndex]
-      if (item) {
-        item.action()
-        setOpen(false)
-        setQuery('')
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const item = filtered[selectedIndex]
+        if (item) {
+          item.action()
+          setOpen(false)
+          setQuery('')
+        }
       }
-    }
-  }, [filtered, selectedIndex])
+    },
+    [filtered, selectedIndex]
+  )
 
   // Scroll selected into view
   useEffect(() => {
@@ -348,7 +369,13 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
                                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)]/60'
                             )}
                           >
-                            <Icon size={15} className={cn('shrink-0', isSelected ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]')} />
+                            <Icon
+                              size={15}
+                              className={cn(
+                                'shrink-0',
+                                isSelected ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+                              )}
+                            />
                             <span className="flex-1 text-[13px] font-medium truncate">{item.label}</span>
                             {item.shortcut && (
                               <kbd className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-sidebar)] border border-[var(--border)]">

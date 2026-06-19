@@ -65,7 +65,7 @@ async function buildTreeRecursively(
     }
 
     return nodes
-  } catch (e) {
+  } catch {
     return []
   }
 }
@@ -107,7 +107,10 @@ function TreeNode({
       >
         {node.isDirectory ? (
           <span
-            onClick={(e) => { e.stopPropagation(); onToggleExpand(node.path) }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleExpand(node.path)
+            }}
             className="shrink-0 text-[var(--text-muted)] cursor-pointer"
           >
             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -228,9 +231,11 @@ export default function FilePanel({ onClose }: FilePanelProps) {
 
   function handleReferenceInChat() {
     if (!selectedFile) return
-    window.dispatchEvent(new CustomEvent('opendesk:reference-file', {
-      detail: { path: selectedFile, name: selectedFile.split('/').pop() || selectedFile }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('opendesk:reference-file', {
+        detail: { path: selectedFile, name: selectedFile.split('/').pop() || selectedFile }
+      })
+    )
     onClose()
   }
 
@@ -275,7 +280,9 @@ export default function FilePanel({ onClose }: FilePanelProps) {
         <div className="flex items-center gap-3 min-w-0">
           <Folder size={18} className="text-[var(--text-muted)] shrink-0" />
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold truncate">{workspace.name || workspace.folderPath.split('/').pop()}</h2>
+            <h2 className="text-sm font-semibold truncate">
+              {workspace.name || workspace.folderPath.split('/').pop()}
+            </h2>
             <p className="text-[11px] text-[var(--text-muted)] truncate">{currentPath}</p>
           </div>
         </div>
@@ -294,11 +301,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="px-5 py-2 bg-red-50/50 dark:bg-red-950/20 text-red-600 text-xs shrink-0">
-          {error}
-        </div>
-      )}
+      {error && <div className="px-5 py-2 bg-red-50/50 dark:bg-red-950/20 text-red-600 text-xs shrink-0">{error}</div>}
 
       {/* Main content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">

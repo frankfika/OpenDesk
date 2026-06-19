@@ -1,7 +1,16 @@
 import { create } from 'zustand'
-import type { Message, FileAttachment, ChatSendPayload, ArbitrationResult, ChatMode, ArbitrationMode, AgentAnswerSnapshot } from '@shared/types'
+import type {
+  Message,
+  FileAttachment,
+  ChatSendPayload,
+  ArbitrationResult,
+  ChatMode,
+  ArbitrationMode,
+  AgentAnswerSnapshot
+} from '@shared/types'
 import { useSettingsStore } from './settings'
 import { useWorkspaceStore } from './workspace'
+import { registerChatStore } from './chat-actions'
 
 export interface AgentStream {
   agentId: string
@@ -60,9 +69,27 @@ interface ChatState {
   startEnsembleRun: (runId: string, providerIds: string[], arbitratorProviderId?: string) => void
   appendAgentToken: (runId: string, agentId: string, providerId: string, token: string) => void
   setAgentRunStatus: (runId: string, agentId: string, status: AgentStream['status'], error?: string) => void
-  setAgentMetrics: (runId: string, agentId: string, metrics: { latencyMs?: number; inputTokens?: number; outputTokens?: number; startedAt?: number; finishedAt?: number }) => void
-  addAgentToolCall: (runId: string, agentId: string, toolCall: { id: string; name: string; arguments: Record<string, unknown> }) => void
-  addAgentToolResult: (runId: string, agentId: string, toolResult: { toolCallId: string; name: string; content: string; isError?: boolean }) => void
+  setAgentMetrics: (
+    runId: string,
+    agentId: string,
+    metrics: {
+      latencyMs?: number
+      inputTokens?: number
+      outputTokens?: number
+      startedAt?: number
+      finishedAt?: number
+    }
+  ) => void
+  addAgentToolCall: (
+    runId: string,
+    agentId: string,
+    toolCall: { id: string; name: string; arguments: Record<string, unknown> }
+  ) => void
+  addAgentToolResult: (
+    runId: string,
+    agentId: string,
+    toolResult: { toolCallId: string; name: string; content: string; isError?: boolean }
+  ) => void
   startArbitration: (runId: string) => void
   appendArbitrationToken: (runId: string, token: string) => void
   finalizeArbitration: (runId: string, result: ArbitrationResult) => void
@@ -118,7 +145,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeRunId: null,
 
   addMessage: (msg) => {
-    set(s => {
+    set((s) => {
       const messages = [...s.messages, msg]
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
@@ -126,43 +153,50 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   addToolCall: (toolCall) => {
-    set(s => {
-      const messages: Message[] = [...s.messages, {
-        id: genId(),
-        role: 'assistant' as const,
-        content: '',
-        timestamp: Date.now(),
-        kind: 'tool_call' as const,
-        metadata: { toolName: toolCall.name, params: toolCall.arguments }
-      }]
+    set((s) => {
+      const messages: Message[] = [
+        ...s.messages,
+        {
+          id: genId(),
+          role: 'assistant' as const,
+          content: '',
+          timestamp: Date.now(),
+          kind: 'tool_call' as const,
+          metadata: { toolName: toolCall.name, params: toolCall.arguments }
+        }
+      ]
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
     })
   },
 
   addToolResult: (result) => {
-    set(s => {
+    set((s) => {
       // Find the matching tool_call to get the toolName
-      const matchingCall = [...s.messages].reverse().find(
-        m => m.kind === 'tool_call' && (m.metadata?.toolCallId === result.toolCallId || !result.toolCallId)
-      )
-      const toolName = (matchingCall?.metadata?.toolName as string) || (result as any).toolName || 'tool'
-      const messages: Message[] = [...s.messages, {
-        id: genId(),
-        role: 'tool' as const,
-        content: result.content,
-        timestamp: Date.now(),
-        kind: 'tool_result' as const,
-        toolCallId: result.toolCallId,
-        metadata: { isError: result.isError, toolName }
-      }]
+      const matchingCall = [...s.messages]
+        .reverse()
+        .find((m) => m.kind === 'tool_call' && (m.metadata?.toolCallId === result.toolCallId || !result.toolCallId))
+      const toolName =
+        (matchingCall?.metadata?.toolName as string) || (result as unknown as { toolName?: string }).toolName || 'tool'
+      const messages: Message[] = [
+        ...s.messages,
+        {
+          id: genId(),
+          role: 'tool' as const,
+          content: result.content,
+          timestamp: Date.now(),
+          kind: 'tool_result' as const,
+          toolCallId: result.toolCallId,
+          metadata: { isError: result.isError, toolName }
+        }
+      ]
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
     })
   },
 
   appendToken: (token) => {
-    set(s => {
+    set((s) => {
       const msgs = [...s.messages]
       const last = msgs[msgs.length - 1]
       if (last && last.role === 'assistant') {
@@ -206,7 +240,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
     } catch (e) {
       console.error('Failed to load thread messages:', e)
-      set({ threadId, messages: [], error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null, mode: 'single', arbitrationMode: 'auto' })
+      set({
+        threadId,
+        messages: [],
+        error: null,
+        errorType: null,
+        streaming: false,
+        ensembleRuns: {},
+        activeRunId: null,
+        mode: 'single',
+        arbitrationMode: 'auto'
+      })
     }
   },
 
@@ -230,7 +274,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (threadId) {
       await get().loadThread(threadId)
     } else {
-      set({ messages: [], threadId: null, error: null, errorType: null, streaming: false, ensembleRuns: {}, activeRunId: null, mode: 'single', arbitrationMode: 'auto' })
+      set({
+        messages: [],
+        threadId: null,
+        error: null,
+        errorType: null,
+        streaming: false,
+        ensembleRuns: {},
+        activeRunId: null,
+        mode: 'single',
+        arbitrationMode: 'auto'
+      })
     }
   },
 
@@ -271,7 +325,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (threadId && window.api?.chat?.regenerate) {
       const settings = useSettingsStore.getState()
       if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
-        const providerIds = settings.ensembleProviders().map(p => p.id)
+        const providerIds = settings.ensembleProviders().map((p) => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
           window.api.chat.regenerate({
@@ -299,7 +353,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   editMessage: (messageId, newContent) => {
     const { messages, threadId, mode } = get()
-    const index = messages.findIndex(m => m.id === messageId)
+    const index = messages.findIndex((m) => m.id === messageId)
     if (index === -1) return
 
     const editedMessage: Message = {
@@ -314,7 +368,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Re-send from the edit point — use send with the truncated messages
       const settings = useSettingsStore.getState()
       if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
-        const providerIds = settings.ensembleProviders().map(p => p.id)
+        const providerIds = settings.ensembleProviders().map((p) => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
           window.api.chat.send({
@@ -336,8 +390,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   deleteMessage: (messageId) => {
-    set(s => {
-      const messages = s.messages.filter(m => m.id !== messageId)
+    set((s) => {
+      const messages = s.messages.filter((m) => m.id !== messageId)
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
     })
@@ -345,14 +399,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   forkThread: async (messageId) => {
     const state = get()
-    const index = state.messages.findIndex(m => m.id === messageId)
+    const index = state.messages.findIndex((m) => m.id === messageId)
     if (index === -1) return
 
     const forkedMessages = state.messages.slice(0, index + 1)
     const workspace = useWorkspaceStore.getState().activeWorkspace()
     if (!workspace) return
 
-    const titleSource = forkedMessages.find(m => m.role === 'user')?.content || 'Forked conversation'
+    const titleSource = forkedMessages.find((m) => m.role === 'user')?.content || 'Forked conversation'
     const thread = await useWorkspaceStore.getState().createThread(workspace.id, titleSource.slice(0, 40))
     if (!thread) return
 
@@ -364,11 +418,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await get().loadThread(thread.id)
   },
 
-  addAttachment: (file) =>
-    set(s => ({ attachments: [...s.attachments, file] })),
+  addAttachment: (file) => set((s) => ({ attachments: [...s.attachments, file] })),
 
-  removeAttachment: (id) =>
-    set(s => ({ attachments: s.attachments.filter(a => a.id !== id) })),
+  removeAttachment: (id) => set((s) => ({ attachments: s.attachments.filter((a) => a.id !== id) })),
 
   clearAttachments: () => set({ attachments: [] }),
 
@@ -389,7 +441,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: []
       }
     }
-    set(s => ({
+    set((s) => ({
       streaming: true,
       error: null,
       errorType: null,
@@ -407,7 +459,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   appendAgentToken: (runId, agentId, providerId, token) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
@@ -446,7 +498,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setAgentRunStatus: (runId, agentId, status, error) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
@@ -467,7 +519,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setAgentMetrics: (runId, agentId, metrics) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
@@ -486,7 +538,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
               [agentId]: {
                 ...agent,
                 startedAt: metrics.startedAt ?? agent.startedAt,
-                finishedAt: metrics.finishedAt ?? (metrics.latencyMs && agent.startedAt ? agent.startedAt + metrics.latencyMs : agent.finishedAt),
+                finishedAt:
+                  metrics.finishedAt ??
+                  (metrics.latencyMs && agent.startedAt ? agent.startedAt + metrics.latencyMs : agent.finishedAt),
                 latencyMs: metrics.latencyMs ?? agent.latencyMs,
                 inputTokens,
                 outputTokens,
@@ -500,21 +554,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   addAgentToolCall: (runId, agentId, toolCall) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
       if (!agent) return s
-      const msgs: Message[] = [...agent.messages, {
-        id: genId(),
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        kind: 'tool_call',
-        agentId,
-        runId,
-        metadata: { toolName: toolCall.name, params: toolCall.arguments, toolCallId: toolCall.id }
-      }]
+      const msgs: Message[] = [
+        ...agent.messages,
+        {
+          id: genId(),
+          role: 'assistant',
+          content: '',
+          timestamp: Date.now(),
+          kind: 'tool_call',
+          agentId,
+          runId,
+          metadata: { toolName: toolCall.name, params: toolCall.arguments, toolCallId: toolCall.id }
+        }
+      ]
       return {
         ensembleRuns: {
           ...s.ensembleRuns,
@@ -528,22 +585,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   addAgentToolResult: (runId, agentId, toolResult) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
       if (!agent) return s
-      const msgs: Message[] = [...agent.messages, {
-        id: genId(),
-        role: 'tool',
-        content: toolResult.content,
-        timestamp: Date.now(),
-        kind: 'tool_result',
-        toolCallId: toolResult.toolCallId,
-        agentId,
-        runId,
-        metadata: { toolName: toolResult.name, isError: toolResult.isError }
-      }]
+      const msgs: Message[] = [
+        ...agent.messages,
+        {
+          id: genId(),
+          role: 'tool',
+          content: toolResult.content,
+          timestamp: Date.now(),
+          kind: 'tool_result',
+          toolCallId: toolResult.toolCallId,
+          agentId,
+          runId,
+          metadata: { toolName: toolResult.name, isError: toolResult.isError }
+        }
+      ]
       return {
         ensembleRuns: {
           ...s.ensembleRuns,
@@ -557,7 +617,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   startArbitration: (runId) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
 
@@ -587,10 +647,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   appendArbitrationToken: (runId, token) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run || !run.arbitrationMessageId) return s
-      const idx = s.messages.findIndex(m => m.id === run.arbitrationMessageId)
+      const idx = s.messages.findIndex((m) => m.id === run.arbitrationMessageId)
       if (idx === -1) return s
 
       const messages = [...s.messages]
@@ -601,10 +661,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   finalizeArbitration: (runId, result) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run || !run.arbitrationMessageId) return s
-      const idx = s.messages.findIndex(m => m.id === run.arbitrationMessageId)
+      const idx = s.messages.findIndex((m) => m.id === run.arbitrationMessageId)
       if (idx === -1) return s
 
       const messages = [...s.messages]
@@ -627,8 +687,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
   },
 
-  finalizeManualEnsemble: (runId, agentAnswers) => {
-    set(s => {
+  finalizeManualEnsemble: (runId, _agentAnswers) => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
 
@@ -656,7 +716,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   selectManualAnswer: (runId, agentId) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       const agent = run.agents[agentId]
@@ -665,10 +725,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const finalMessage: Message = {
         id: genId(),
         role: 'assistant',
-        content: agent.messages
-          .filter(m => m.role === 'assistant' && m.kind === 'assistant_message')
-          .map(m => m.content)
-          .join('') || '',
+        content:
+          agent.messages
+            .filter((m) => m.role === 'assistant' && m.kind === 'assistant_message')
+            .map((m) => m.content)
+            .join('') || '',
         timestamp: Date.now(),
         kind: 'assistant_message',
         sourceProviderId: agent.providerId,
@@ -684,7 +745,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   completeEnsembleRun: (runId) => {
-    set(s => {
+    set((s) => {
       const run = s.ensembleRuns[runId]
       if (!run) return s
       return {
@@ -698,3 +759,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
   }
 }))
+
+registerChatStore(useChatStore)

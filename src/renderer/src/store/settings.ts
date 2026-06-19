@@ -1,14 +1,45 @@
 import { create } from 'zustand'
-import type { AppSettings, ProviderConfig, ModelInfo, MCPServerConfig, MCPTool, AgentRole, AgentRoleConfig } from '@shared/types'
+import type {
+  AppSettings,
+  ProviderConfig,
+  ModelInfo,
+  MCPServerConfig,
+  MCPTool,
+  AgentRole,
+  AgentRoleConfig
+} from '@shared/types'
 
 let healthListenerRegistered = false
 
 const AGENT_ROLES: AgentRoleConfig[] = [
-  { id: 'generalist', name: 'Generalist', prompt: 'You are a helpful general-purpose assistant. Provide a balanced, accurate answer.' },
-  { id: 'coder', name: 'Coder', prompt: 'You are an expert software engineer. Focus on code correctness, best practices, and edge cases. Always reason through the code carefully.' },
-  { id: 'reviewer', name: 'Reviewer', prompt: 'You are a skeptical reviewer. Your job is to find mistakes, omissions, and weaknesses in the proposed solution. Be concise and critical.' },
-  { id: 'researcher', name: 'Researcher', prompt: 'You are a thorough researcher. Gather context, compare alternatives, and cite relevant facts. Be comprehensive.' },
-  { id: 'writer', name: 'Writer', prompt: 'You are a clear technical writer. Produce well-structured, easy-to-read output with good examples.' }
+  {
+    id: 'generalist',
+    name: 'Generalist',
+    prompt: 'You are a helpful general-purpose assistant. Provide a balanced, accurate answer.'
+  },
+  {
+    id: 'coder',
+    name: 'Coder',
+    prompt:
+      'You are an expert software engineer. Focus on code correctness, best practices, and edge cases. Always reason through the code carefully.'
+  },
+  {
+    id: 'reviewer',
+    name: 'Reviewer',
+    prompt:
+      'You are a skeptical reviewer. Your job is to find mistakes, omissions, and weaknesses in the proposed solution. Be concise and critical.'
+  },
+  {
+    id: 'researcher',
+    name: 'Researcher',
+    prompt:
+      'You are a thorough researcher. Gather context, compare alternatives, and cite relevant facts. Be comprehensive.'
+  },
+  {
+    id: 'writer',
+    name: 'Writer',
+    prompt: 'You are a clear technical writer. Produce well-structured, easy-to-read output with good examples.'
+  }
 ]
 
 interface SettingsState {
@@ -26,7 +57,7 @@ interface SettingsState {
   ensembleProviders: () => ProviderConfig[]
   arbitratorProvider: () => ProviderConfig | null
   fetchModels: (providerId: string) => Promise<ModelInfo[]>
-  testProvider: (type: string, model: string, apiKey: string, baseUrl?: string) => Promise<boolean>
+  testProvider: (providerId: string, type: string, model: string, baseUrl?: string) => Promise<boolean>
   addMCPServer: (config: MCPServerConfig) => Promise<boolean>
   removeMCPServer: (name: string) => Promise<boolean>
   toggleMCPServer: (name: string) => Promise<boolean>
@@ -76,10 +107,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (window.api?.app?.onHealthChanged && !healthListenerRegistered) {
         healthListenerRegistered = true
         window.api.app.onHealthChanged(({ providerId, result }) => {
-          const providers = get().settings.providers.map(p =>
+          const providers = get().settings.providers.map((p) =>
             p.id === providerId ? { ...p, lastTestResult: result, lastTestedAt: Date.now() } : p
           )
-          set(s => ({ settings: { ...s.settings, providers } }))
+          set((s) => ({ settings: { ...s.settings, providers } }))
         })
       }
     } catch (e) {
@@ -93,7 +124,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (window.api?.settings?.set) {
         await window.api.settings.set(next)
       }
-      set(s => ({ settings: { ...s.settings, ...next } }))
+      set((s) => ({ settings: { ...s.settings, ...next } }))
     } catch (e) {
       console.error('Failed to update settings:', e)
     }
@@ -121,7 +152,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch (e) {
       console.error('Failed to add provider:', e)
     }
-    set(s => ({
+    set((s) => ({
       settings: {
         ...s.settings,
         providers,
@@ -131,9 +162,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   updateProvider: async (id, patch) => {
-    const providers = get().settings.providers.map(p =>
-      p.id === id ? { ...p, ...patch } : p
-    )
+    const providers = get().settings.providers.map((p) => (p.id === id ? { ...p, ...patch } : p))
     try {
       if (window.api?.settings?.set) {
         await window.api.settings.set({ providers })
@@ -141,11 +170,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch (e) {
       console.error('Failed to update provider:', e)
     }
-    set(s => ({ settings: { ...s.settings, providers } }))
+    set((s) => ({ settings: { ...s.settings, providers } }))
   },
 
   removeProvider: async (id) => {
-    const providers = get().settings.providers.filter(p => p.id !== id)
+    const providers = get().settings.providers.filter((p) => p.id !== id)
     try {
       if (window.api?.settings?.set) {
         await window.api.settings.set({ providers })
@@ -153,7 +182,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch (e) {
       console.error('Failed to remove provider:', e)
     }
-    set(s => ({
+    set((s) => ({
       settings: {
         ...s.settings,
         providers,
@@ -164,20 +193,20 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   activeProvider: () => {
     const { settings } = get()
-    return settings.providers.find(p => p.id === settings.activeProviderId) ?? null
+    return settings.providers.find((p) => p.id === settings.activeProviderId) ?? null
   },
 
   ensembleProviders: () => {
     const { settings } = get()
-    return settings.providers.filter(p => settings.ensembleProviderIds?.includes(p.id) && p.enabled)
+    return settings.providers.filter((p) => settings.ensembleProviderIds?.includes(p.id) && p.enabled)
   },
 
   arbitratorProvider: () => {
     const { settings } = get()
     if (settings.arbitratorProviderId) {
-      return settings.providers.find(p => p.id === settings.arbitratorProviderId && p.enabled) ?? null
+      return settings.providers.find((p) => p.id === settings.arbitratorProviderId && p.enabled) ?? null
     }
-    return settings.providers.find(p => p.enabled) ?? null
+    return settings.providers.find((p) => p.enabled) ?? null
   },
 
   agentRoles: () => AGENT_ROLES,
@@ -193,24 +222,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   getRolePrompt: (role: AgentRole) => {
-    return AGENT_ROLES.find(r => r.id === role)?.prompt ?? ''
+    return AGENT_ROLES.find((r) => r.id === role)?.prompt ?? ''
   },
 
   fetchModels: async (providerId) => {
-    const provider = get().settings.providers.find(p => p.id === providerId)
+    const provider = get().settings.providers.find((p) => p.id === providerId)
     if (!provider) return []
     try {
-      if (!window.api?.settings?.fetchModels || !window.api?.settings?.getApiKey) {
+      if (!window.api?.settings?.fetchModels) {
         return []
       }
-      const apiKey = (await window.api.settings.getApiKey(providerId)) ?? ''
-      const models = await window.api.settings.fetchModels(provider.type, apiKey, provider.baseUrl)
+      const models = await window.api.settings.fetchModels(providerId, provider.type, provider.baseUrl)
       // Update provider's models list
-      const providers = get().settings.providers.map(p =>
-        p.id === providerId ? { ...p, models: models.map(m => m.id) } : p
+      const providers = get().settings.providers.map((p) =>
+        p.id === providerId ? { ...p, models: models.map((m) => m.id) } : p
       )
       await window.api.settings.set({ providers })
-      set(s => ({ settings: { ...s.settings, providers } }))
+      set((s) => ({ settings: { ...s.settings, providers } }))
       return models
     } catch (e) {
       console.error('Failed to fetch models:', e)
@@ -218,10 +246,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   },
 
-  testProvider: async (type, model, apiKey, baseUrl) => {
+  testProvider: async (providerId, type, model, baseUrl) => {
     try {
       if (!window.api?.settings?.testProvider) return false
-      return await window.api.settings.testProvider(type, model, apiKey, baseUrl)
+      return await window.api.settings.testProvider(providerId, type, model, baseUrl)
     } catch (e) {
       console.error('Failed to test provider:', e)
       return false
@@ -234,7 +262,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const success = await window.api.mcp.addServer(config)
       if (success) {
         const mcpServers = [...get().settings.mcpServers, config]
-        set(s => ({ settings: { ...s.settings, mcpServers } }))
+        set((s) => ({ settings: { ...s.settings, mcpServers } }))
         get().refreshMCPTools()
       }
       return success
@@ -249,8 +277,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (!window.api?.mcp?.removeServer) return false
       const success = await window.api.mcp.removeServer(name)
       if (success) {
-        const mcpServers = get().settings.mcpServers.filter(s => s.name !== name)
-        set(s => ({ settings: { ...s.settings, mcpServers } }))
+        const mcpServers = get().settings.mcpServers.filter((s) => s.name !== name)
+        set((s) => ({ settings: { ...s.settings, mcpServers } }))
         get().refreshMCPTools()
       }
       return success
@@ -265,10 +293,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (!window.api?.mcp?.toggleServer) return false
       const success = await window.api.mcp.toggleServer(name)
       if (success) {
-        const mcpServers = get().settings.mcpServers.map(s =>
-          s.name === name ? { ...s, enabled: !s.enabled } : s
-        )
-        set(s => ({ settings: { ...s.settings, mcpServers } }))
+        const mcpServers = get().settings.mcpServers.map((s) => (s.name === name ? { ...s, enabled: !s.enabled } : s))
+        set((s) => ({ settings: { ...s.settings, mcpServers } }))
         get().refreshMCPTools()
       }
       return success
@@ -292,7 +318,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       if (!window.api?.mcp?.listServers) return
       const servers = await window.api.mcp.listServers()
-      set(s => ({ settings: { ...s.settings, mcpServers: servers } }))
+      set((s) => ({ settings: { ...s.settings, mcpServers: servers } }))
     } catch (e) {
       console.error('Failed to fetch MCP servers:', e)
     }

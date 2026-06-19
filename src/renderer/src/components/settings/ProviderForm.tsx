@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import type { ProviderConfig, ModelInfo } from '@shared/types'
 import { useSettingsStore } from '../../store/settings'
 import { RefreshCw, Check, X } from 'lucide-react'
+import { OLLAMA_BASE_URL, ANTHROPIC_BASE_URL, DEFAULT_OPENAI_BASE_URL } from '@shared/providers'
 
 interface ProviderFormProps {
   onSave: (config: ProviderConfig, apiKey: string) => void
@@ -10,44 +11,45 @@ interface ProviderFormProps {
 
 type ProviderType = ProviderConfig['type']
 
-const TYPE_PRESETS: Record<ProviderType, { label: string; defaultModel: string; models: string[]; baseUrl?: string }> = {
-  anthropic: {
-    label: 'Anthropic',
-    defaultModel: 'claude-sonnet-4',
-    models: ['claude-sonnet-4', 'claude-opus-4'],
-    baseUrl: 'https://api.anthropic.com'
-  },
-  openai: {
-    label: 'OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4o-mini', 'o3-mini'],
-    baseUrl: 'https://api.openai.com/v1'
-  },
-  'openai-compatible': {
-    label: 'OpenAI-Compatible',
-    defaultModel: 'gpt-4o',
-    models: [],
-    baseUrl: ''
-  },
-  ollama: {
-    label: 'Ollama (local)',
-    defaultModel: 'llama3',
-    models: ['llama3', 'qwen2.5', 'deepseek-coder'],
-    baseUrl: 'http://localhost:11434/v1'
-  },
-  google: {
-    label: 'Google',
-    defaultModel: 'gemini-1.5-pro',
-    models: [],
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta'
-  },
-  generic: {
-    label: 'Generic',
-    defaultModel: '',
-    models: [],
-    baseUrl: ''
+const TYPE_PRESETS: Record<ProviderType, { label: string; defaultModel: string; models: string[]; baseUrl?: string }> =
+  {
+    anthropic: {
+      label: 'Anthropic',
+      defaultModel: 'claude-sonnet-4',
+      models: ['claude-sonnet-4', 'claude-opus-4'],
+      baseUrl: ANTHROPIC_BASE_URL
+    },
+    openai: {
+      label: 'OpenAI',
+      defaultModel: 'gpt-4o',
+      models: ['gpt-4o', 'gpt-4o-mini', 'o3-mini'],
+      baseUrl: DEFAULT_OPENAI_BASE_URL
+    },
+    'openai-compatible': {
+      label: 'OpenAI-Compatible',
+      defaultModel: 'gpt-4o',
+      models: [],
+      baseUrl: ''
+    },
+    ollama: {
+      label: 'Ollama (local)',
+      defaultModel: 'llama3',
+      models: ['llama3', 'qwen2.5', 'deepseek-coder'],
+      baseUrl: OLLAMA_BASE_URL
+    },
+    google: {
+      label: 'Google',
+      defaultModel: 'gemini-1.5-pro',
+      models: [],
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta'
+    },
+    generic: {
+      label: 'Generic',
+      defaultModel: '',
+      models: [],
+      baseUrl: ''
+    }
   }
-}
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -166,7 +168,10 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
             className="w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none selectable font-mono bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--text-muted)] focus:bg-[var(--bg-content)] focus:shadow-sm transition-all duration-200"
             placeholder="sk-..."
             value={apiKey}
-            onChange={(e) => { setApiKey(e.target.value); setTestResult(null) }}
+            onChange={(e) => {
+              setApiKey(e.target.value)
+              setTestResult(null)
+            }}
           />
         </div>
       )}
@@ -222,7 +227,9 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
               className="w-full px-3 py-2 rounded-lg text-[12px] bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
             >
               {fetchedModels.map((m) => (
-                <option key={m.id} value={m.id}>{m.displayName || m.id}</option>
+                <option key={m.id} value={m.id}>
+                  {m.displayName || m.id}
+                </option>
               ))}
             </select>
           </div>
@@ -231,9 +238,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
 
       {/* Base URL */}
       <div>
-        <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">
-          Base URL
-        </label>
+        <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">Base URL</label>
         <input
           type="text"
           className="w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none selectable font-mono border transition-all duration-200 bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--text-muted)] focus:bg-[var(--bg-content)] focus:shadow-sm"
@@ -258,7 +263,9 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
         </button>
 
         {testResult !== null && (
-          <span className={`text-[13px] font-medium flex items-center gap-1 ${testResult ? 'text-green-600' : 'text-red-600'}`}>
+          <span
+            className={`text-[13px] font-medium flex items-center gap-1 ${testResult ? 'text-green-600' : 'text-red-600'}`}
+          >
             {testResult ? <Check size={14} /> : <X size={14} />}
             {testResult ? 'Connected' : 'Failed'}
           </span>

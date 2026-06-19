@@ -1,5 +1,26 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'fs'
-import { dirname } from 'path'
+import { dirname, isAbsolute, resolve, sep } from 'path'
+
+function isSafePath(filePath: string, allowedBase?: string): { safe: boolean; error?: string } {
+  if (!filePath || typeof filePath !== 'string') {
+    return { safe: false, error: 'Invalid path' }
+  }
+  if (filePath.includes('\0')) {
+    return { safe: false, error: 'Path contains null bytes' }
+  }
+  const resolved = resolve(filePath)
+  if (allowedBase) {
+    const base = resolve(allowedBase)
+    if (resolved !== base && !resolved.startsWith(base + sep)) {
+      return { safe: false, error: `Path is outside allowed base (${allowedBase})` }
+    }
+    return { safe: true }
+  }
+  if (!isAbsolute(filePath)) {
+    return { safe: false, error: 'Relative paths are not allowed' }
+  }
+  return { safe: true }
+}
 
 export function readFile(path: string): { success: boolean; content?: string; error?: string } {
   try {
@@ -11,10 +32,9 @@ export function readFile(path: string): { success: boolean; content?: string; er
   }
 }
 
-export function writeFile(
-  path: string,
-  content: string
-): { success: boolean; error?: string } {
+export function writeFile(path: string, content: string, allowedBase?: string): { success: boolean; error?: string } {
+  const check = isSafePath(path, allowedBase)
+  if (!check.safe) return { success: false, error: check.error }
   try {
     const dir = dirname(path)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
@@ -60,10 +80,9 @@ export function listDirectory(path: string): { success: boolean; entries?: DirEn
   }
 }
 
-export function applyPatch(
-  path: string,
-  patch: string
-): { success: boolean; error?: string } {
+export function applyPatch(path: string, patch: string, allowedBase?: string): { success: boolean; error?: string } {
+  const check = isSafePath(path, allowedBase)
+  if (!check.safe) return { success: false, error: check.error }
   try {
     if (!existsSync(path)) return { success: false, error: 'File not found' }
     const original = readFileSync(path, 'utf-8')

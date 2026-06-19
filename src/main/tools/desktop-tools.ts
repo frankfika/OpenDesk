@@ -4,24 +4,18 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
-export async function captureScreenshot(region?: string): Promise<string> {
+export async function captureScreenshot(_region?: string): Promise<string> {
   const primaryDisplay = screen.getPrimaryDisplay()
   const sources = await desktopCapturer.getSources({
     types: ['screen'],
     thumbnailSize: primaryDisplay.size
   })
-  const primarySource =
-    sources.find((s) => s.display_id === String(primaryDisplay.id)) || sources[0]
+  const primarySource = sources.find((s) => s.display_id === String(primaryDisplay.id)) || sources[0]
   if (!primarySource) throw new Error('No screen source found')
   return primarySource.thumbnail.toPNG().toString('base64')
 }
 
-export async function desktopClick(
-  x: number,
-  y: number,
-  button?: string,
-  double?: boolean
-): Promise<string> {
+export async function desktopClick(x: number, y: number, button?: string, double?: boolean): Promise<string> {
   const action = double ? 'double click' : 'click'
   const script = `
     tell application "System Events"
@@ -43,10 +37,7 @@ export async function desktopType(text: string): Promise<string> {
 }
 
 export async function desktopKey(key: string, modifiers?: string[]): Promise<string> {
-  const modStr =
-    modifiers && modifiers.length > 0
-      ? ` using {${modifiers.map((m) => `${m} down`).join(', ')}}`
-      : ''
+  const modStr = modifiers && modifiers.length > 0 ? ` using {${modifiers.map((m) => `${m} down`).join(', ')}}` : ''
   const script = `
     tell application "System Events"
       keystroke "${key.replace(/"/g, '\\"')}"${modStr}

@@ -82,7 +82,22 @@ export class MCPClient {
 
     return new Promise((resolve, reject) => {
       try {
-        this.process = spawn(this.config.command, this.config.args, {
+        // Validate MCP command: reject path traversal and commands requiring PATH resolution
+        const cmd = this.config.command
+        if (!cmd || typeof cmd !== 'string') {
+          throw new Error('MCP command is required')
+        }
+        if (cmd.includes('..')) {
+          throw new Error('MCP command contains path traversal ("..")')
+        }
+        // For absolute paths, verify the executable exists
+        if (cmd.startsWith('/') || (process.platform === 'win32' && /^[A-Za-z]:[\\\/]/.test(cmd))) {
+          const { existsSync } = require('fs')
+          if (!existsSync(cmd)) {
+            throw new Error(`MCP command not found: ${cmd}`)
+          }
+        }
+        this.process = spawn(cmd, this.config.args, {
           env: { ...process.env, ...this.config.env },
           stdio: ['pipe', 'pipe', 'pipe']
         })
@@ -135,7 +150,9 @@ export class MCPClient {
           // Auto-reconnect if not intentionally disconnected
           if (this.reconnectAttempts < this.maxReconnectAttempts && code !== 0) {
             this.reconnectAttempts++
-            console.log(`[MCP ${this.config.name}] reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
+            console.log(
+              `[MCP ${this.config.name}] reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+            )
             setTimeout(() => {
               this.connect().catch(() => {})
             }, 2000)
@@ -154,7 +171,9 @@ export class MCPClient {
             this.initialized = true
 
             // Fetch tools
-            const toolsResult = await this.sendRequest('tools/list', {}) as { tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> }
+            const toolsResult = (await this.sendRequest('tools/list', {})) as {
+              tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>
+            }
             this.tools = (toolsResult.tools || []).map((t) => ({
               name: `${this.config.name}_${t.name}`,
               description: t.description,
@@ -218,16 +237,19 @@ export class MCPClient {
     // Extract original tool name (remove server prefix)
     const originalName = name.startsWith(`${this.config.name}_`) ? name.slice(this.config.name.length + 1) : name
 
-    const result = await this.sendRequest('tools/call', {
+    const result = (await this.sendRequest('tools/call', {
       name: originalName,
       arguments: args
-    }) as { content?: Array<{ type: string; text?: string }>; isError?: boolean }
+    })) as { content?: Array<{ type: string; text?: string }>; isError?: boolean }
 
     if (result.isError) {
       throw new Error('Tool execution returned an error')
     }
 
-    const textContent = result.content?.filter((c) => c.type === 'text').map((c) => c.text).join('\n')
+    const textContent = result.content
+      ?.filter((c) => c.type === 'text')
+      .map((c) => c.text)
+      .join('\n')
     return textContent || JSON.stringify(result)
   }
 

@@ -7,7 +7,7 @@ import type {
   ProviderConfig,
   AgentRole
 } from '../../shared/types'
-import type { Tool, ToolCall, ToolResult } from '../providers/base'
+import type { ToolCall } from '../providers/base'
 import { buildProvider } from '../providers/builder'
 import { executeTool, buildTools } from '../tools/executor'
 import { runAgentIteration, createToolResultMessages } from './agent-run'
@@ -18,8 +18,20 @@ import { registerRun, registerAgent, completeRun, isRunAborted } from './run-tra
 export interface EnsembleCallbacks {
   onAgentToken?: (payload: { runId: string; agentId: string; providerId: string; token: string }) => void
   onAgentToolCall?: (payload: { runId: string; agentId: string; providerId: string; toolCall: ToolCall }) => void
-  onAgentToolResult?: (payload: { runId: string; agentId: string; providerId: string; toolResult: { toolCallId: string; name: string; content: string; isError?: boolean } }) => void
-  onAgentDone?: (payload: { runId: string; agentId: string; providerId: string; latencyMs?: number; inputTokens?: number; outputTokens?: number }) => void
+  onAgentToolResult?: (payload: {
+    runId: string
+    agentId: string
+    providerId: string
+    toolResult: { toolCallId: string; name: string; content: string; isError?: boolean }
+  }) => void
+  onAgentDone?: (payload: {
+    runId: string
+    agentId: string
+    providerId: string
+    latencyMs?: number
+    inputTokens?: number
+    outputTokens?: number
+  }) => void
   onAgentError?: (payload: { runId: string; agentId: string; providerId: string; error: string }) => void
   onArbitrationToken?: (payload: { runId: string; token: string }) => void
   onArbitrationDone?: (payload: { runId: string; result: ArbitrationResult }) => void
@@ -34,6 +46,7 @@ export interface EnsembleContext {
   apiKeys: Record<string, string>
   callbacks: EnsembleCallbacks
   desktopEnabled?: boolean
+  approvalMode?: string
   agentRoleAssignments?: Record<string, AgentRole>
   rolePrompts?: Record<AgentRole, string>
 }
@@ -55,7 +68,17 @@ interface AgentContext {
 }
 
 export async function runEnsemble(context: EnsembleContext): Promise<ArbitrationResult | null> {
-  const { runId, payload, providers, apiKeys, callbacks, desktopEnabled, agentRoleAssignments, rolePrompts } = context
+  const {
+    runId,
+    payload,
+    providers,
+    apiKeys,
+    callbacks,
+    desktopEnabled,
+    approvalMode,
+    agentRoleAssignments,
+    rolePrompts
+  } = context
   const { messages, providerIds = [], arbitratorProviderId, systemPrompt, workspaceId, threadId } = payload
 
   const controller = new AbortController()
@@ -98,10 +121,7 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     }
 
     const agentMessages: Message[] = combinedSystemPrompt
-      ? [
-          { id: `system-${agentId}`, role: 'system', content: combinedSystemPrompt, timestamp: Date.now() },
-          ...messages
-        ]
+      ? [{ id: `system-${agentId}`, role: 'system', content: combinedSystemPrompt, timestamp: Date.now() }, ...messages]
       : [...messages]
 
     agentContexts.push({
@@ -188,7 +208,7 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
 
     // Execute shared tools once and broadcast results to all agents
     const sharedResults = await executeSharedTools(allToolCalls, (tc) =>
-      executeTool(tc, workspaceId, { desktopEnabled })
+      executeTool(tc, workspaceId, { desktopEnabled, approvalMode })
     )
 
     // Convert shared results to tool result messages for each agent
@@ -198,9 +218,15 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
         sharedResults.some((sr) => sr.name === tc.name && JSON.stringify(sr.arguments) === JSON.stringify(tc.arguments))
       )
       const agentResults = sharedResults
-        .filter((sr) => agentToolCalls.some((tc) => sr.name === tc.name && JSON.stringify(sr.arguments) === JSON.stringify(tc.arguments)))
+        .filter((sr) =>
+          agentToolCalls.some(
+            (tc) => sr.name === tc.name && JSON.stringify(sr.arguments) === JSON.stringify(tc.arguments)
+          )
+        )
         .map((sr) => ({
-          toolCallId: agentToolCalls.find((tc) => sr.name === tc.name && JSON.stringify(sr.arguments) === JSON.stringify(tc.arguments))!.id,
+          toolCallId: agentToolCalls.find(
+            (tc) => sr.name === tc.name && JSON.stringify(sr.arguments) === JSON.stringify(tc.arguments)
+          )!.id,
           content: sr.content,
           isError: sr.isError
         }))
@@ -218,7 +244,7 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
             toolCallId: toolResult.toolCallId!,
             name: (toolResult.metadata?.toolName as string) || 'tool',
             content: toolResult.content,
-            isError: !!(toolResult.metadata?.isError)
+            isError: !!toolResult.metadata?.isError
           }
         })
       }
@@ -266,7 +292,8 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
   // Determine arbitrator provider
   let arbProviderId = arbitratorProviderId
   if (!arbProviderId || !providers.some((p) => p.id === arbProviderId && p.enabled)) {
-    const fallback = providers.find((p) => p.enabled && !enabledProviderIds.includes(p.id)) ??
+    const fallback =
+      providers.find((p) => p.enabled && !enabledProviderIds.includes(p.id)) ??
       providers.find((p) => p.id === enabledProviderIds[0])
     arbProviderId = fallback?.id
   }
@@ -295,23 +322,17 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     }
     callbacks.onArbitrationDone?.({ runId, result: arbitrationResult })
   } else {
-    arbitrationResult = await arbitrate(
-      agentRuns,
-      userQuestion,
-      arbProvider,
-      controller.signal,
-      {
-        onToken: (token) => {
-          callbacks.onArbitrationToken?.({ runId, token })
-        },
-        onDone: (result) => {
-          callbacks.onArbitrationDone?.({ runId, result })
-        },
-        onError: (error) => {
-          callbacks.onError?.({ runId, error })
-        }
+    arbitrationResult = await arbitrate(agentRuns, userQuestion, arbProvider, controller.signal, {
+      onToken: (token) => {
+        callbacks.onArbitrationToken?.({ runId, token })
+      },
+      onDone: (result) => {
+        callbacks.onArbitrationDone?.({ runId, result })
+      },
+      onError: (error) => {
+        callbacks.onError?.({ runId, error })
       }
-    )
+    })
   }
 
   completeRun(runId)

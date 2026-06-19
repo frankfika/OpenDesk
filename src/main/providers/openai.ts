@@ -11,9 +11,12 @@ export class OpenAIProvider implements Provider {
     this.model = model
   }
 
-  private formatMessages(
-    messages: Message[]
-  ): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; tool_calls?: any[] }> {
+  private formatMessages(messages: Message[]): Array<{
+    role: 'system' | 'user' | 'assistant' | 'tool'
+    content: string
+    tool_call_id?: string
+    tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]
+  }> {
     return messages.map((m) => {
       if (m.role === 'tool') {
         return {
@@ -23,7 +26,7 @@ export class OpenAIProvider implements Provider {
         }
       }
       if (m.role === 'assistant' && m.metadata?.toolCalls) {
-        const toolCalls = m.metadata.toolCalls as ToolCall[]
+        const toolCalls = m.metadata.toolCalls as unknown as ToolCall[]
         return {
           role: 'assistant' as const,
           content: m.content,
@@ -34,27 +37,26 @@ export class OpenAIProvider implements Provider {
               name: tc.name,
               arguments: JSON.stringify(tc.arguments)
             }
-          }))
+          })) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]
         }
       }
       // Skip system messages — OpenAI uses top-level 'system' message; for now just pass through
       return {
-        role: (m.role === 'system' ? 'system' : m.role === 'user' ? 'user' : 'assistant') as 'system' | 'user' | 'assistant',
+        role: (m.role === 'system' ? 'system' : m.role === 'user' ? 'user' : 'assistant') as
+          | 'system'
+          | 'user'
+          | 'assistant',
         content: m.content
       }
     })
   }
 
-  async *stream(
-    messages: Message[],
-    signal: AbortSignal,
-    tools?: Tool[]
-  ): AsyncIterable<string | ToolCall> {
+  async *stream(messages: Message[], signal: AbortSignal, tools?: Tool[]): AsyncIterable<string | ToolCall> {
     const formatted = this.formatMessages(messages)
 
     const stream = await this.client.chat.completions.create({
       model: this.model,
-      messages: formatted as any,
+      messages: formatted,
       tools:
         tools && tools.length > 0
           ? tools.map((t) => ({

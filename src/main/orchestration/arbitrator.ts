@@ -7,11 +7,7 @@ export interface ArbitratorCallbacks {
   onError?: (error: string) => void
 }
 
-function buildJudgeMessages(
-  userQuestion: string,
-  agentRuns: AgentRun[],
-  systemPrompt?: string
-): Message[] {
+function buildJudgeMessages(userQuestion: string, agentRuns: AgentRun[], systemPrompt?: string): Message[] {
   const agentAnswers = agentRuns
     .filter((r) => r.status === 'done' && r.content.trim().length > 0)
     .map((r, idx) => {

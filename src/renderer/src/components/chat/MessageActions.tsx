@@ -1,6 +1,16 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import type { Message } from '@shared/types'
-import { Copy, RefreshCw, Pencil, GitBranch, Trash2, MoreHorizontal, MessageSquarePlus, Star, FileCode } from 'lucide-react'
+import {
+  Copy,
+  RefreshCw,
+  Pencil,
+  GitBranch,
+  Trash2,
+  MoreHorizontal,
+  MessageSquarePlus,
+  Star,
+  FileCode
+} from 'lucide-react'
 import { useState } from 'react'
 
 interface MessageActionsProps {
@@ -51,7 +61,10 @@ export default function MessageActions({
         >
           <DropdownMenu.Item
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-            onSelect={() => { onCopy(); setOpen(false) }}
+            onSelect={() => {
+              onCopy()
+              setOpen(false)
+            }}
           >
             <Copy size={13} />
             Copy
@@ -60,7 +73,10 @@ export default function MessageActions({
           {onCopyMarkdown && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-              onSelect={() => { onCopyMarkdown(); setOpen(false) }}
+              onSelect={() => {
+                onCopyMarkdown()
+                setOpen(false)
+              }}
             >
               <FileCode size={13} />
               Copy as Markdown
@@ -70,7 +86,10 @@ export default function MessageActions({
           {isUser && onEdit && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-              onSelect={() => { onEdit(); setOpen(false) }}
+              onSelect={() => {
+                onEdit()
+                setOpen(false)
+              }}
             >
               <Pencil size={13} />
               Edit
@@ -80,7 +99,10 @@ export default function MessageActions({
           {isAssistant && onRegenerate && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-              onSelect={() => { onRegenerate(); setOpen(false) }}
+              onSelect={() => {
+                onRegenerate()
+                setOpen(false)
+              }}
             >
               <RefreshCw size={13} />
               Regenerate
@@ -90,7 +112,10 @@ export default function MessageActions({
           {onReplyTo && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-              onSelect={() => { onReplyTo(); setOpen(false) }}
+              onSelect={() => {
+                onReplyTo()
+                setOpen(false)
+              }}
             >
               <MessageSquarePlus size={13} />
               Reply to this message
@@ -100,7 +125,10 @@ export default function MessageActions({
           {onAddToFavorites && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-              onSelect={() => { onAddToFavorites(); setOpen(false) }}
+              onSelect={() => {
+                onAddToFavorites()
+                setOpen(false)
+              }}
             >
               <Star size={13} />
               Add to Favorites
@@ -112,7 +140,10 @@ export default function MessageActions({
               <DropdownMenu.Separator className="h-px bg-[var(--border)] my-1" />
               <DropdownMenu.Item
                 className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
-                onSelect={() => { onFork(); setOpen(false) }}
+                onSelect={() => {
+                  onFork()
+                  setOpen(false)
+                }}
               >
                 <GitBranch size={13} />
                 Fork thread
@@ -125,7 +156,10 @@ export default function MessageActions({
           {onDelete && (
             <DropdownMenu.Item
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50/10 cursor-pointer outline-none transition-colors"
-              onSelect={() => { onDelete(); setOpen(false) }}
+              onSelect={() => {
+                onDelete()
+                setOpen(false)
+              }}
             >
               <Trash2 size={13} />
               Delete

@@ -10,19 +10,19 @@ export function extractFromMessages(messages: Message[]): MemoryEntry[] {
   const preferencePatterns = [
     /i\s+(?:prefer|like|love|enjoy|hate|dislike|always use|usually use|never use)\s+(.+?)(?:\.|$)/i,
     /my\s+(?:favorite|preferred|default|usual)\s+(?:\w+\s+)?is\s+(.+?)(?:\.|$)/i,
-    /i\s+(?:always|usually|never|often|sometimes)\s+(.+?)(?:\.|$)/i,
+    /i\s+(?:always|usually|never|often|sometimes)\s+(.+?)(?:\.|$)/i
   ]
 
   // Technical stack patterns
   const techPatterns = [
     /\b(using|use|with|in|built on|written in|migrated to|switched to)\s+([A-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)*(?:\s+[a-zA-Z0-9]+){0,3})\b/g,
-    /\b(React|Vue|Angular|Svelte|Next\.js|Nuxt|Express|Fastify|Django|Flask|Spring|Rails|Laravel|\.NET|Node\.js|Python|TypeScript|JavaScript|Go|Rust|Java|Kotlin|Swift|C\+\+|C#|Ruby|PHP|PostgreSQL|MySQL|MongoDB|Redis|Docker|Kubernetes|AWS|GCP|Azure|Vercel|Netlify|Tailwind|Bootstrap|Material UI|Electron|Tauri|Vite|Webpack|esbuild|Rollup|pnpm|yarn|npm|bun|deno)\b/g,
+    /\b(React|Vue|Angular|Svelte|Next\.js|Nuxt|Express|Fastify|Django|Flask|Spring|Rails|Laravel|\.NET|Node\.js|Python|TypeScript|JavaScript|Go|Rust|Java|Kotlin|Swift|C\+\+|C#|Ruby|PHP|PostgreSQL|MySQL|MongoDB|Redis|Docker|Kubernetes|AWS|GCP|Azure|Vercel|Netlify|Tailwind|Bootstrap|Material UI|Electron|Tauri|Vite|Webpack|esbuild|Rollup|pnpm|yarn|npm|bun|deno)\b/g
   ]
 
   // Lesson / pattern patterns (assistant messages)
   const lessonPatterns = [
     /(?:remember|note|keep in mind|best practice|pattern|anti-pattern|lesson|tip|avoid)\s*:?\s*(.+?)(?:\.|$)/i,
-    /(?:it's best to|you should|recommended to|consider|suggested|good idea to|better to)\s+(.+?)(?:\.|$)/i,
+    /(?:it's best to|you should|recommended to|consider|suggested|good idea to|better to)\s+(.+?)(?:\.|$)/i
   ]
 
   for (const msg of messages) {

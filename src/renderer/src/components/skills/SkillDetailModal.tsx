@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSkillsStore } from '../../store/skills'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import {
-  X, Download, Trash2, ExternalLink, FileText, Code, Box,
-  Tag, Clock, User, Hash
-} from 'lucide-react'
+import { X, Download, Trash2, FileText, Code, Box, Tag, Clock, User, Hash } from 'lucide-react'
 
 interface SkillDetailModalProps {
   skillId: string
@@ -63,21 +60,15 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
         <div className="shrink-0 px-6 py-4 border-b border-[var(--border)] flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                {skill.name}
-              </h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">{skill.name}</h2>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md border font-medium bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border-[var(--border)]">
                 {skill.source}
               </span>
               {skill.version && (
-                <span className="text-[10px] text-[var(--text-muted)] font-mono">
-                  v{skill.version}
-                </span>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono">v{skill.version}</span>
               )}
             </div>
-            <p className="text-[12px] text-[var(--text-secondary)]">
-              {skill.description}
-            </p>
+            <p className="text-[12px] text-[var(--text-secondary)]">{skill.description}</p>
           </div>
           <button
             onClick={onClose}
@@ -147,33 +138,22 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
             </div>
           ) : (
             <div className="prose-od text-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {fullContent}
-              </ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullContent}</ReactMarkdown>
             </div>
           )}
 
           {/* Tools section */}
           {skill.tools && skill.tools.length > 0 && (
             <div className="mt-6 pt-4 border-t border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-                Defined Tools
-              </h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Defined Tools</h3>
               <div className="space-y-2">
                 {skill.tools.map((tool) => (
-                  <div
-                    key={tool.name}
-                    className="p-3 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border)]"
-                  >
+                  <div key={tool.name} className="p-3 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border)]">
                     <div className="flex items-center gap-2 mb-1">
                       <Code size={12} className="text-[var(--text-muted)]" />
-                      <span className="text-xs font-medium text-[var(--text-primary)]">
-                        {tool.name}
-                      </span>
+                      <span className="text-xs font-medium text-[var(--text-primary)]">{tool.name}</span>
                     </div>
-                    <p className="text-[11px] text-[var(--text-secondary)]">
-                      {tool.description}
-                    </p>
+                    <p className="text-[11px] text-[var(--text-secondary)]">{tool.description}</p>
                   </div>
                 ))}
               </div>
@@ -183,9 +163,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
           {/* Scripts section */}
           {skill.scripts && Object.keys(skill.scripts).length > 0 && (
             <div className="mt-6 pt-4 border-t border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-                Scripts
-              </h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Scripts</h3>
               <div className="space-y-1">
                 {Object.entries(skill.scripts).map(([name, path]) => (
                   <div
@@ -204,9 +182,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
           {/* References section */}
           {skill.references && skill.references.length > 0 && (
             <div className="mt-6 pt-4 border-t border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-                References
-              </h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">References</h3>
               <div className="space-y-1">
                 {skill.references.map((ref) => (
                   <div
@@ -224,9 +200,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
 
         {/* Footer actions */}
         <div className="shrink-0 px-6 py-3 border-t border-[var(--border)] flex items-center justify-between">
-          <div className="text-[10px] text-[var(--text-muted)] font-mono truncate max-w-[60%]">
-            {skill.path}
-          </div>
+          <div className="text-[10px] text-[var(--text-muted)] font-mono truncate max-w-[60%]">{skill.path}</div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExport}

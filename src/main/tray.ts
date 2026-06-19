@@ -12,7 +12,6 @@ function createIcon(): NativeImage {
 
   // Fallback: generate a simple 16x16 template icon (transparent with a dot)
   const size = { width: 16, height: 16 }
-  const empty = nativeImage.createEmpty()
   // Create a simple colored square as fallback
   const canvas = nativeImage.createFromBuffer(Buffer.alloc(size.width * size.height * 4), size)
   return canvas

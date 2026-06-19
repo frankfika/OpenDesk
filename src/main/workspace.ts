@@ -1,13 +1,8 @@
 import { app, dialog } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { randomUUID } from 'crypto'
-import type {
-  Workspace,
-  WorkspaceCreatePayload,
-  WorkspaceUpdatePayload,
-  AgentsMdInfo
-} from '../shared/types'
+import type { Workspace, WorkspaceCreatePayload, WorkspaceUpdatePayload, AgentsMdInfo } from '../shared/types'
 import { scanAgentsMd } from './agents-md'
 
 const WORKSPACES_FILE = 'workspaces.json'

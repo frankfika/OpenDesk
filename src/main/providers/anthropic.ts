@@ -13,7 +13,7 @@ export class AnthropicProvider implements Provider {
 
   private formatMessages(
     messages: Message[]
-  ): Array<{ role: 'user' | 'assistant'; content: any }> {
+  ): Array<{ role: 'user' | 'assistant'; content: string | Anthropic.ContentBlockParam[] }> {
     return messages
       .filter((m) => m.role !== 'system')
       .map((m) => {
@@ -26,12 +26,12 @@ export class AnthropicProvider implements Provider {
                 tool_use_id: m.toolCallId || (m.metadata?.toolCallId as string) || '',
                 content: m.content
               }
-            ]
+            ] as Anthropic.ContentBlockParam[]
           }
         }
         if (m.role === 'assistant' && m.metadata?.toolCalls) {
-          const toolCalls = m.metadata.toolCalls as ToolCall[]
-          const content: any[] = []
+          const toolCalls = m.metadata.toolCalls as unknown as ToolCall[]
+          const content: Anthropic.ContentBlockParam[] = []
           if (m.content) {
             content.push({ type: 'text', text: m.content })
           }
@@ -52,11 +52,7 @@ export class AnthropicProvider implements Provider {
       })
   }
 
-  async *stream(
-    messages: Message[],
-    signal: AbortSignal,
-    tools?: Tool[]
-  ): AsyncIterable<string | ToolCall> {
+  async *stream(messages: Message[], signal: AbortSignal, tools?: Tool[]): AsyncIterable<string | ToolCall> {
     const formatted = this.formatMessages(messages)
     const systemMsg = messages.find((m) => m.role === 'system')
 
@@ -70,7 +66,7 @@ export class AnthropicProvider implements Provider {
           ? tools.map((t) => ({
               name: t.name,
               description: t.description,
-              input_schema: t.parameters as Anthropic.Messages.Tool['input_schema']
+              input_schema: t.parameters as unknown as Anthropic.Messages.Tool['input_schema']
             }))
           : undefined
     })

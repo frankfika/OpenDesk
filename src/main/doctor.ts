@@ -77,7 +77,11 @@ function checkNetwork(): DoctorCheck {
     }
     return { name: 'Network Connection', status: 'pass', message: 'Can reach api.openai.com' }
   } catch {
-    return { name: 'Network Connection', status: 'warn', message: 'Cannot reach api.openai.com (may be blocked or offline)' }
+    return {
+      name: 'Network Connection',
+      status: 'warn',
+      message: 'Cannot reach api.openai.com (may be blocked or offline)'
+    }
   }
 }
 

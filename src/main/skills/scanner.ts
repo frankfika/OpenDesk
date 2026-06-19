@@ -126,7 +126,7 @@ export function scanSkillDirectory(dirPath: string, source: SkillSource): Skill 
 
   try {
     const content = readFileSync(skillMdPath, 'utf-8')
-    const { frontmatter, body } = parseFrontmatter(content)
+    const { frontmatter } = parseFrontmatter(content)
 
     const dirName = dirPath.split('/').pop() || dirPath.split('\\').pop() || 'unknown'
     const id = `${source}:${dirName}`

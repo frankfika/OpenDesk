@@ -43,12 +43,8 @@ export default function SuggestionCard({
         <Icon size={20} className="text-[var(--text-primary)]" />
       </div>
       <div className="mt-1">
-        <div className="text-sm font-semibold text-[var(--text-primary)] mb-1">
-          {title}
-        </div>
-        <div className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
-          {description}
-        </div>
+        <div className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</div>
+        <div className="text-[13px] text-[var(--text-secondary)] leading-relaxed">{description}</div>
       </div>
     </motion.button>
   )

@@ -2,13 +2,24 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, X, Folder, MessageSquare, FileText, Zap, Command,
-  ArrowUp, ArrowDown, Sun, Moon, Settings, Plus, Copy, CornerDownLeft
+  Search,
+  X,
+  Folder,
+  MessageSquare,
+  FileText,
+  Zap,
+  ArrowUp,
+  ArrowDown,
+  Sun,
+  Settings,
+  Plus,
+  Copy,
+  CornerDownLeft,
+  Command
 } from 'lucide-react'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useChatStore } from '../../store/chat'
 import { useSkillsStore } from '../../store/skills'
-import { useSettingsStore } from '../../store/settings'
 import { useThemeStore } from '../../store/theme'
 import type { Workspace, Thread, Message, Skill } from '@shared/types'
 
@@ -71,8 +82,9 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const { workspaces, threads, activeWorkspaceId, setActiveWorkspace, setActiveThread, createThread } = useWorkspaceStore()
-  const { messages } = useChatStore()
+  const { workspaces, threads, activeWorkspaceId, setActiveWorkspace, setActiveThread, createThread } =
+    useWorkspaceStore()
+  const messages = useChatStore((state) => state.messages)
   const { skills } = useSkillsStore()
   const { toggleTheme } = useThemeStore()
 
@@ -172,10 +184,43 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
 
     // Actions
     const actions: Omit<SearchResult, 'id' | 'score' | 'matchRanges'>[] = [
-      { type: 'action', title: 'New Chat', subtitle: 'Start a new conversation', icon: <Plus size={16} />, onSelect: () => { onOpenChange(false) } },
-      { type: 'action', title: 'Open Settings', subtitle: 'Configure providers and preferences', icon: <Settings size={16} />, onSelect: () => { onOpenChange(false) } },
-      { type: 'action', title: 'Toggle Theme', subtitle: 'Switch between light and dark mode', icon: <Sun size={16} />, onSelect: () => { toggleTheme(); onOpenChange(false) } },
-      { type: 'action', title: 'Copy Last Response', subtitle: 'Copy the most recent AI message', icon: <Copy size={16} />, onSelect: () => { onOpenChange(false) } },
+      {
+        type: 'action',
+        title: 'New Chat',
+        subtitle: 'Start a new conversation',
+        icon: <Plus size={16} />,
+        onSelect: () => {
+          onOpenChange(false)
+        }
+      },
+      {
+        type: 'action',
+        title: 'Open Settings',
+        subtitle: 'Configure providers and preferences',
+        icon: <Settings size={16} />,
+        onSelect: () => {
+          onOpenChange(false)
+        }
+      },
+      {
+        type: 'action',
+        title: 'Toggle Theme',
+        subtitle: 'Switch between light and dark mode',
+        icon: <Sun size={16} />,
+        onSelect: () => {
+          toggleTheme()
+          onOpenChange(false)
+        }
+      },
+      {
+        type: 'action',
+        title: 'Copy Last Response',
+        subtitle: 'Copy the most recent AI message',
+        icon: <Copy size={16} />,
+        onSelect: () => {
+          onOpenChange(false)
+        }
+      }
     ]
     actions.forEach((a, i) => {
       const matches = findMatches(a.title, query)
@@ -190,7 +235,20 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
     })
 
     return allResults.sort((a, b) => b.score - a.score)
-  }, [query, workspaces, threads, messages, skills, activeWorkspaceId, setActiveWorkspace, setActiveThread, createThread, toggleTheme, onOpenChange])
+  }, [
+    debouncedQuery,
+    query,
+    workspaces,
+    threads,
+    messages,
+    skills,
+    activeWorkspaceId,
+    setActiveWorkspace,
+    setActiveThread,
+    createThread,
+    toggleTheme,
+    onOpenChange
+  ])
 
   const grouped = useMemo(() => {
     const groups: Record<string, SearchResult[]> = {}
@@ -225,27 +283,30 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
     }
   }, [open])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onOpenChange(false)
-      return
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.min(i + 1, flatResults.length - 1))
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.max(i - 1, 0))
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const item = flatResults[selectedIndex]
-      if (item) {
-        item.onSelect()
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false)
+        return
       }
-    }
-  }, [flatResults, selectedIndex, onOpenChange])
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex((i) => Math.min(i + 1, flatResults.length - 1))
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex((i) => Math.max(i - 1, 0))
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const item = flatResults[selectedIndex]
+        if (item) {
+          item.onSelect()
+        }
+      }
+    },
+    [flatResults, selectedIndex, onOpenChange]
+  )
 
   useEffect(() => {
     if (!open) return
@@ -351,9 +412,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                                   item.onSelect()
                                 }}
                                 className={`w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors ${
-                                  isSelected
-                                    ? 'bg-[var(--accent)]/10'
-                                    : 'hover:bg-[var(--bg-sidebar)]'
+                                  isSelected ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--bg-sidebar)]'
                                 }`}
                               >
                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)]">
@@ -363,9 +422,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                                   <div className="text-[13px] font-medium text-[var(--text-primary)] truncate">
                                     {highlightText(item.title, item.matchRanges)}
                                   </div>
-                                  <div className="text-[11px] text-[var(--text-muted)] truncate">
-                                    {item.subtitle}
-                                  </div>
+                                  <div className="text-[11px] text-[var(--text-muted)] truncate">{item.subtitle}</div>
                                 </div>
                                 {isSelected && (
                                   <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">

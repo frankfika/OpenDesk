@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
 interface SkeletonProps {
@@ -10,32 +9,33 @@ interface SkeletonProps {
   shimmer?: boolean
 }
 
-export function SkeletonLine({ className, width = '100%', shimmer = true }: { className?: string; width?: string | number; shimmer?: boolean }) {
+export function SkeletonLine({
+  className,
+  width = '100%',
+  shimmer = true
+}: {
+  className?: string
+  width?: string | number
+  shimmer?: boolean
+}) {
   return (
-    <div
-      className={cn(
-        'h-3 rounded-md',
-        shimmer ? 'shimmer' : 'bg-[var(--border)]/60',
-        className
-      )}
-      style={{ width }}
-    />
+    <div className={cn('h-3 rounded-md', shimmer ? 'shimmer' : 'bg-[var(--border)]/60', className)} style={{ width }} />
   )
 }
 
 export function SkeletonAvatar({ className, size = 32 }: { className?: string; size?: number }) {
-  return (
-    <div
-      className={cn(
-        'rounded-full shimmer flex-shrink-0',
-        className
-      )}
-      style={{ width: size, height: size }}
-    />
-  )
+  return <div className={cn('rounded-full shimmer flex-shrink-0', className)} style={{ width: size, height: size }} />
 }
 
-export function SkeletonText({ className, lines = 3, widths = ['60%', '80%', '40%'] }: { className?: string; lines?: number; widths?: string[] }) {
+export function SkeletonText({
+  className,
+  lines = 3,
+  widths = ['60%', '80%', '40%']
+}: {
+  className?: string
+  lines?: number
+  widths?: string[]
+}) {
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -86,20 +86,12 @@ export function SkeletonProviderCard({ className }: { className?: string }) {
 export default function Skeleton({ className, variant = 'text', width, height, lines = 3 }: SkeletonProps) {
   if (variant === 'circle') {
     return (
-      <div
-        className={cn('rounded-full shimmer', className)}
-        style={{ width: width ?? 32, height: height ?? 32 }}
-      />
+      <div className={cn('rounded-full shimmer', className)} style={{ width: width ?? 32, height: height ?? 32 }} />
     )
   }
 
   if (variant === 'rect') {
-    return (
-      <div
-        className={cn('rounded-lg shimmer', className)}
-        style={{ width, height }}
-      />
-    )
+    return <div className={cn('rounded-lg shimmer', className)} style={{ width, height }} />
   }
 
   return <SkeletonText className={className} lines={lines} />

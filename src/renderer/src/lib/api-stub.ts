@@ -1,7 +1,7 @@
 // Stub window.api when running outside Electron (browser dev preview / Playwright)
 if (typeof window !== 'undefined' && !window.api) {
   const noop = () => () => {}
-  ;(window as any).api = {
+  ;(window as unknown as { api: unknown }).api = {
     settings: {
       get: async () => ({
         activeProviderId: null,
@@ -16,7 +16,6 @@ if (typeof window !== 'undefined' && !window.api) {
       }),
       set: async () => true,
       setApiKey: async () => true,
-      getApiKey: async () => null,
       testProvider: async () => false,
       fetchModels: async () => []
     },
@@ -38,6 +37,7 @@ if (typeof window !== 'undefined' && !window.api) {
     },
     thread: {
       list: async () => [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       create: async (payload: any) => ({
         id: 'mock-thread-' + Date.now(),
         workspaceId: payload.workspaceId,

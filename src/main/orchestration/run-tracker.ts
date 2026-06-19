@@ -1,5 +1,3 @@
-import type { AgentRun } from '../../shared/types'
-
 interface ActiveRun {
   runId: string
   controller: AbortController

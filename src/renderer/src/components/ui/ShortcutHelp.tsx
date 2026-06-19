@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Command, Keyboard } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { X, Keyboard } from 'lucide-react'
 
 interface ShortcutCategory {
   name: string
@@ -17,7 +17,7 @@ const SHORTCUTS: ShortcutCategory[] = [
       { keys: '⌘,', description: 'Open settings' },
       { keys: '⌘/', description: 'Show keyboard shortcuts' },
       { keys: '⌘N', description: 'New chat' },
-      { keys: 'Esc', description: 'Close modal / stop streaming' },
+      { keys: 'Esc', description: 'Close modal / stop streaming' }
     ]
   },
   {
@@ -28,7 +28,7 @@ const SHORTCUTS: ShortcutCategory[] = [
       { keys: '/', description: 'Trigger skill selector' },
       { keys: '@', description: 'Mention file or workspace' },
       { keys: '#', description: 'Reference thread' },
-      { keys: '↑', description: 'Edit last message (when input empty)' },
+      { keys: '↑', description: 'Edit last message (when input empty)' }
     ]
   },
   {
@@ -36,7 +36,7 @@ const SHORTCUTS: ShortcutCategory[] = [
     shortcuts: [
       { keys: '⌘1-9', description: 'Switch workspace' },
       { keys: '⌘[ / ⌘]', description: 'Previous / next thread' },
-      { keys: '⌘⇧↑ / ⌘⇧↓', description: 'Focus previous / next message' },
+      { keys: '⌘⇧↑ / ⌘⇧↓', description: 'Focus previous / next message' }
     ]
   },
   {
@@ -46,7 +46,7 @@ const SHORTCUTS: ShortcutCategory[] = [
       { keys: '⌘⇧D', description: 'Duplicate thread' },
       { keys: '⌘⇧E', description: 'Export thread' },
       { keys: '⌘⇧A', description: 'Archive thread' },
-      { keys: '⌘⇧Delete', description: 'Delete thread' },
+      { keys: '⌘⇧Delete', description: 'Delete thread' }
     ]
   },
   {
@@ -54,7 +54,7 @@ const SHORTCUTS: ShortcutCategory[] = [
     shortcuts: [
       { keys: '⌘⇧T', description: 'Toggle theme' },
       { keys: '⌘⇧M', description: 'Switch model' },
-      { keys: '⌘⇧.', description: 'Toggle sidebar' },
+      { keys: '⌘⇧.', description: 'Toggle sidebar' }
     ]
   }
 ]
@@ -67,20 +67,24 @@ interface ShortcutHelpProps {
 export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) {
   const [search, setSearch] = useState('')
 
-  const filtered = SHORTCUTS.map(cat => ({
+  const filtered = SHORTCUTS.map((cat) => ({
     ...cat,
-    shortcuts: cat.shortcuts.filter(s =>
-      s.description.toLowerCase().includes(search.toLowerCase()) ||
-      s.keys.toLowerCase().includes(search.toLowerCase())
+    shortcuts: cat.shortcuts.filter(
+      (s) =>
+        s.description.toLowerCase().includes(search.toLowerCase()) ||
+        s.keys.toLowerCase().includes(search.toLowerCase())
     )
-  })).filter(cat => cat.shortcuts.length > 0)
+  })).filter((cat) => cat.shortcuts.length > 0)
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && (e.key === '/' || (e.shiftKey && e.key === '?'))) {
-      e.preventDefault()
-      onOpenChange(!open)
-    }
-  }, [open, onOpenChange])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === '/' || (e.shiftKey && e.key === '?'))) {
+        e.preventDefault()
+        onOpenChange(!open)
+      }
+    },
+    [open, onOpenChange]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -134,9 +138,7 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
 
               <div className="max-h-[60vh] overflow-y-auto py-2">
                 {filtered.length === 0 ? (
-                  <div className="px-5 py-8 text-center text-[13px] text-[var(--text-muted)]">
-                    No shortcuts found
-                  </div>
+                  <div className="px-5 py-8 text-center text-[13px] text-[var(--text-muted)]">No shortcuts found</div>
                 ) : (
                   filtered.map((cat) => (
                     <div key={cat.name} className="mb-4">
@@ -162,7 +164,10 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
               </div>
 
               <div className="px-5 py-3 border-t border-[var(--border)] bg-[var(--bg-sidebar)]/30 text-[10px] text-[var(--text-muted)] text-center">
-                Press <kbd className="font-mono bg-[var(--bg-sidebar)] border border-[var(--border)] rounded px-1">⌘/</kbd> or <kbd className="font-mono bg-[var(--bg-sidebar)] border border-[var(--border)] rounded px-1">⌘⇧?</kbd> to toggle this dialog
+                Press{' '}
+                <kbd className="font-mono bg-[var(--bg-sidebar)] border border-[var(--border)] rounded px-1">⌘/</kbd> or{' '}
+                <kbd className="font-mono bg-[var(--bg-sidebar)] border border-[var(--border)] rounded px-1">⌘⇧?</kbd>{' '}
+                to toggle this dialog
               </div>
             </div>
           </motion.div>

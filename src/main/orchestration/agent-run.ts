@@ -149,10 +149,20 @@ export interface RunAgentToCompletionOptions {
   callbacks?: AgentRunCallbacks
 }
 
-export async function runAgentToCompletion(
-  options: RunAgentToCompletionOptions
-): Promise<AgentRun> {
-  const { runId, agentId, providerId, model, provider, messages, availableTools, signal, maxIterations = 5, executeTools, callbacks } = options
+export async function runAgentToCompletion(options: RunAgentToCompletionOptions): Promise<AgentRun> {
+  const {
+    runId,
+    agentId,
+    providerId,
+    model,
+    provider,
+    messages,
+    availableTools,
+    signal,
+    maxIterations = 5,
+    executeTools,
+    callbacks
+  } = options
 
   const run: AgentRun = {
     runId,

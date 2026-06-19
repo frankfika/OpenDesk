@@ -3,8 +3,17 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
 import {
-  Copy, Check, Download, ExternalLink, ZoomIn, ZoomOut,
-  FileCode, FileJson, Image, Globe, Type
+  Copy,
+  Check,
+  Download,
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  FileCode,
+  FileJson,
+  Image,
+  Globe,
+  Type
 } from 'lucide-react'
 import CodeBlock from '../chat/CodeBlock'
 
@@ -96,7 +105,7 @@ ${content}
         <iframe
           ref={iframeRef}
           srcDoc={srcdoc()}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
           className="w-full h-full rounded-lg border border-[var(--border)] bg-white"
           title={isReact ? 'React preview' : 'HTML preview'}
         />
@@ -122,14 +131,17 @@ function MermaidArtifact({ content }: { content: string }) {
       theme: 'default',
       securityLevel: 'strict'
     })
-    mermaid.render('mermaid-artifact-' + Date.now(), content.trim())
+    mermaid
+      .render('mermaid-artifact-' + Date.now(), content.trim())
       .then(({ svg }) => {
         if (!cancelled) setSvg(svg)
       })
       .catch((err) => {
         if (!cancelled) setError(String(err?.message ?? err))
       })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [content])
 
   const handleDownload = useCallback(() => {
@@ -150,7 +162,7 @@ function MermaidArtifact({ content }: { content: string }) {
         </span>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setScale(s => Math.max(0.3, s - 0.2))}
+            onClick={() => setScale((s) => Math.max(0.3, s - 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom out"
           >
@@ -158,7 +170,7 @@ function MermaidArtifact({ content }: { content: string }) {
           </button>
           <span className="text-[11px] text-[var(--text-muted)] w-10 text-center">{Math.round(scale * 100)}%</span>
           <button
-            onClick={() => setScale(s => Math.min(3, s + 0.2))}
+            onClick={() => setScale((s) => Math.min(3, s + 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom in"
           >
@@ -180,7 +192,11 @@ function MermaidArtifact({ content }: { content: string }) {
           <div
             ref={containerRef}
             dangerouslySetInnerHTML={{ __html: svg }}
-            style={{ transform: `scale(${scale})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.2s ease'
+            }}
           />
         ) : (
           <div className="text-[var(--text-muted)] text-sm">Rendering diagram…</div>
@@ -210,12 +226,10 @@ function SvgArtifact({ content }: { content: string }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/50">
-        <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">
-          SVG Image
-        </span>
+        <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">SVG Image</span>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setScale(s => Math.max(0.3, s - 0.2))}
+            onClick={() => setScale((s) => Math.max(0.3, s - 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom out"
           >
@@ -223,7 +237,7 @@ function SvgArtifact({ content }: { content: string }) {
           </button>
           <span className="text-[11px] text-[var(--text-muted)] w-10 text-center">{Math.round(scale * 100)}%</span>
           <button
-            onClick={() => setScale(s => Math.min(3, s + 0.2))}
+            onClick={() => setScale((s) => Math.min(3, s + 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom in"
           >
@@ -337,9 +351,7 @@ function MarkdownArtifact({ content }: { content: string }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/50">
-        <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">
-          Markdown
-        </span>
+        <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">Markdown</span>
         <button
           onClick={handlePrint}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
@@ -350,9 +362,7 @@ function MarkdownArtifact({ content }: { content: string }) {
         </button>
       </div>
       <div className="flex-1 overflow-auto p-4 prose-od text-[14px] leading-relaxed">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {content}
-        </ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
     </div>
   )
@@ -388,12 +398,19 @@ export default function ArtifactRenderer({ type, content, title }: ArtifactRende
 
 export function ArtifactTypeIcon({ type, size = 14 }: { type: ArtifactType; size?: number }) {
   switch (type) {
-    case 'html': return <Globe size={size} />
-    case 'react': return <FileCode size={size} />
-    case 'mermaid': return <Image size={size} />
-    case 'svg': return <Image size={size} />
-    case 'code': return <FileCode size={size} />
-    case 'markdown': return <Type size={size} />
-    default: return <FileJson size={size} />
+    case 'html':
+      return <Globe size={size} />
+    case 'react':
+      return <FileCode size={size} />
+    case 'mermaid':
+      return <Image size={size} />
+    case 'svg':
+      return <Image size={size} />
+    case 'code':
+      return <FileCode size={size} />
+    case 'markdown':
+      return <Type size={size} />
+    default:
+      return <FileJson size={size} />
   }
 }

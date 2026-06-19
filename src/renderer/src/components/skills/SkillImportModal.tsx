@@ -48,9 +48,7 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
       <div className="w-full max-w-lg bg-[var(--bg-content)] rounded-2xl border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-base font-semibold text-[var(--text-primary)]">
-            Import Skill
-          </h3>
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">Import Skill</h3>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
@@ -62,7 +60,10 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
         {/* Tabs */}
         <div className="px-6 pt-4 flex items-center gap-2">
           <button
-            onClick={() => { setTab('folder'); setResult(null) }}
+            onClick={() => {
+              setTab('folder')
+              setResult(null)
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               tab === 'folder'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
@@ -73,7 +74,10 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
             From Folder
           </button>
           <button
-            onClick={() => { setTab('github'); setResult(null) }}
+            onClick={() => {
+              setTab('github')
+              setResult(null)
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               tab === 'github'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'

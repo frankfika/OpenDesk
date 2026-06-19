@@ -44,9 +44,7 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 cursor-pointer" onClick={onViewDetail}>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                {skill.name}
-              </h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">{skill.name}</h3>
               <span
                 className={`text-[10px] px-1.5 py-0.5 rounded-md border font-medium shrink-0 ${
                   SOURCE_COLORS[skill.source] || 'bg-gray-50 text-gray-600 border-gray-100'
@@ -55,13 +53,14 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
                 {SOURCE_LABELS[skill.source] || skill.source}
               </span>
             </div>
-            <p className="text-[12px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
-              {skill.description}
-            </p>
+            <p className="text-[12px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">{skill.description}</p>
           </div>
 
           <button
-            onClick={(e) => { e.stopPropagation(); onToggle() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
             className={`shrink-0 p-1.5 rounded-lg transition-all ${
               isActive
                 ? 'bg-[var(--accent)] text-white'
@@ -75,16 +74,8 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
 
         {/* Meta row */}
         <div className="flex items-center gap-3 mt-2.5 flex-wrap">
-          {skill.version && (
-            <span className="text-[10px] text-[var(--text-muted)] font-mono">
-              v{skill.version}
-            </span>
-          )}
-          {skill.author && (
-            <span className="text-[10px] text-[var(--text-muted)]">
-              by {skill.author}
-            </span>
-          )}
+          {skill.version && <span className="text-[10px] text-[var(--text-muted)] font-mono">v{skill.version}</span>}
+          {skill.author && <span className="text-[10px] text-[var(--text-muted)]">by {skill.author}</span>}
           {skill.usageCount > 0 && (
             <span className="text-[10px] text-[var(--text-muted)] flex items-center gap-0.5">
               <Zap size={10} />
@@ -93,12 +84,18 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
           )}
           <div className="flex items-center gap-1.5 ml-auto">
             {skill.hasReference && (
-              <span className="text-[10px] text-[var(--text-muted)] flex items-center gap-0.5" title="Has reference documentation">
+              <span
+                className="text-[10px] text-[var(--text-muted)] flex items-center gap-0.5"
+                title="Has reference documentation"
+              >
                 <BookOpen size={10} />
               </span>
             )}
             {skill.hasScripts && (
-              <span className="text-[10px] text-[var(--text-muted)] flex items-center gap-0.5" title="Has executable scripts">
+              <span
+                className="text-[10px] text-[var(--text-muted)] flex items-center gap-0.5"
+                title="Has executable scripts"
+              >
                 <Code size={10} />
               </span>
             )}
@@ -123,9 +120,7 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
               </span>
             ))}
             {!expanded && skill.tags.length > 3 && (
-              <span className="text-[10px] text-[var(--text-muted)]">
-                +{skill.tags.length - 3}
-              </span>
+              <span className="text-[10px] text-[var(--text-muted)]">+{skill.tags.length - 3}</span>
             )}
           </div>
         )}
@@ -175,9 +170,7 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
                 </div>
               </div>
             )}
-            <div className="text-[10px] text-[var(--text-muted)] font-mono truncate">
-              {skill.path}
-            </div>
+            <div className="text-[10px] text-[var(--text-muted)] font-mono truncate">{skill.path}</div>
           </div>
         )}
       </div>

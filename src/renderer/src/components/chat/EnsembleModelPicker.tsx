@@ -33,10 +33,7 @@ export default function EnsembleModelPicker({
   onSetRole,
   onClose
 }: EnsembleModelPickerProps) {
-  const selectedProviders = useMemo(
-    () => providers.filter(p => selectedIds.includes(p.id)),
-    [providers, selectedIds]
-  )
+  const selectedProviders = useMemo(() => providers.filter((p) => selectedIds.includes(p.id)), [providers, selectedIds])
 
   const estimatedCost = useMemo(() => {
     // Rough estimate per 1k tokens blended; should be replaced by per-provider pricing
@@ -98,7 +95,9 @@ export default function EnsembleModelPicker({
                     className="text-xs rounded-lg border border-[var(--border)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-primary)] focus:border-[var(--text-muted)]"
                   >
                     {ROLES.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
                     ))}
                   </select>
 
@@ -126,7 +125,9 @@ export default function EnsembleModelPicker({
       <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-[var(--text-muted)]">
           <Cpu size={14} />
-          <span>{selectedProviders.length} model{selectedProviders.length !== 1 ? 's' : ''} selected</span>
+          <span>
+            {selectedProviders.length} model{selectedProviders.length !== 1 ? 's' : ''} selected
+          </span>
         </div>
         <div className="text-[var(--text-secondary)]">{estimatedCost}</div>
       </div>

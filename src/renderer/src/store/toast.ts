@@ -52,7 +52,7 @@ export const useToastStore = create<ToastState>((set) => ({
 
   remove: (id) => {
     set((s) => {
-      const toast = s.toasts.find(t => t.id === id)
+      const toast = s.toasts.find((t) => t.id === id)
       if (toast?.timerId) clearTimeout(toast.timerId)
       return { toasts: s.toasts.filter((t) => t.id !== id) }
     })
@@ -60,22 +60,22 @@ export const useToastStore = create<ToastState>((set) => ({
 
   pause: (id) => {
     set((s) => {
-      const toast = s.toasts.find(t => t.id === id)
+      const toast = s.toasts.find((t) => t.id === id)
       if (!toast || !toast.timerId) return s
       clearTimeout(toast.timerId)
       const elapsed = (toast.duration ?? 4000) - (toast.remaining ?? toast.duration ?? 4000)
       const remaining = Math.max(0, (toast.remaining ?? toast.duration ?? 4000) - elapsed)
-      return { toasts: s.toasts.map(t => t.id === id ? { ...t, timerId: null, remaining } : t) }
+      return { toasts: s.toasts.map((t) => (t.id === id ? { ...t, timerId: null, remaining } : t)) }
     })
   },
 
   resume: (id) => {
     set((s) => {
-      const toast = s.toasts.find(t => t.id === id)
+      const toast = s.toasts.find((t) => t.id === id)
       if (!toast || toast.timerId) return s
       const remaining = toast.remaining ?? toast.duration ?? 4000
       const timer = scheduleRemove(id, remaining, set)
-      return { toasts: s.toasts.map(t => t.id === id ? { ...t, timerId: timer, remaining } : t) }
+      return { toasts: s.toasts.map((t) => (t.id === id ? { ...t, timerId: timer, remaining } : t)) }
     })
   },
 
@@ -83,28 +83,36 @@ export const useToastStore = create<ToastState>((set) => ({
     const id = genToastId()
     const duration = 4000
     const timer = scheduleRemove(id, duration, set)
-    set((s) => ({ toasts: [...s.toasts, { id, type: 'success', message, action, duration, remaining: duration, timerId: timer }] }))
+    set((s) => ({
+      toasts: [...s.toasts, { id, type: 'success', message, action, duration, remaining: duration, timerId: timer }]
+    }))
   },
 
   error: (message, action) => {
     const id = genToastId()
     const duration = 6000
     const timer = scheduleRemove(id, duration, set)
-    set((s) => ({ toasts: [...s.toasts, { id, type: 'error', message, action, duration, remaining: duration, timerId: timer }] }))
+    set((s) => ({
+      toasts: [...s.toasts, { id, type: 'error', message, action, duration, remaining: duration, timerId: timer }]
+    }))
   },
 
   info: (message, action) => {
     const id = genToastId()
     const duration = 3500
     const timer = scheduleRemove(id, duration, set)
-    set((s) => ({ toasts: [...s.toasts, { id, type: 'info', message, action, duration, remaining: duration, timerId: timer }] }))
+    set((s) => ({
+      toasts: [...s.toasts, { id, type: 'info', message, action, duration, remaining: duration, timerId: timer }]
+    }))
   },
 
   warning: (message, action) => {
     const id = genToastId()
     const duration = 5000
     const timer = scheduleRemove(id, duration, set)
-    set((s) => ({ toasts: [...s.toasts, { id, type: 'warning', message, action, duration, remaining: duration, timerId: timer }] }))
+    set((s) => ({
+      toasts: [...s.toasts, { id, type: 'warning', message, action, duration, remaining: duration, timerId: timer }]
+    }))
   }
 }))
 

@@ -4,30 +4,53 @@ import { useChatStore } from '../../store/chat'
 import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
 import {
-  Terminal, FileText, FolderOpen, Wrench, CheckCircle, XCircle,
-  Loader, Pencil, Search, Users, Scale
+  Terminal,
+  FileText,
+  FolderOpen,
+  Wrench,
+  CheckCircle,
+  XCircle,
+  Loader,
+  Pencil,
+  Search,
+  Users,
+  Scale
 } from 'lucide-react'
 import { getRoleName } from '@shared/agent-roles'
 
 function toolIcon(name: string) {
   switch (name) {
-    case 'file_read': case 'read_file': return <FileText size={11} className="text-blue-500" />
-    case 'file_write': case 'write_file': case 'apply_patch': return <Pencil size={11} className="text-amber-500" />
-    case 'file_list': case 'list_directory': return <FolderOpen size={11} className="text-indigo-500" />
-    case 'shell': case 'bash': case 'run_command': return <Terminal size={11} className="text-green-600" />
-    case 'web_search': return <Search size={11} className="text-purple-500" />
-    default: return <Wrench size={11} className="text-[var(--text-muted)]" />
+    case 'file_read':
+    case 'read_file':
+      return <FileText size={11} className="text-blue-500" />
+    case 'file_write':
+    case 'write_file':
+    case 'apply_patch':
+      return <Pencil size={11} className="text-amber-500" />
+    case 'file_list':
+    case 'list_directory':
+      return <FolderOpen size={11} className="text-indigo-500" />
+    case 'shell':
+    case 'bash':
+    case 'run_command':
+      return <Terminal size={11} className="text-green-600" />
+    case 'web_search':
+      return <Search size={11} className="text-purple-500" />
+    default:
+      return <Wrench size={11} className="text-[var(--text-muted)]" />
   }
 }
 
 function toolLabel(name: string, args?: Record<string, unknown>): string {
   const a = args || {}
   switch (name) {
-    case 'file_read': case 'read_file': {
+    case 'file_read':
+    case 'read_file': {
       const p = (a.path || a.file_path || '') as string
       return p.split('/').pop() || p || 'read file'
     }
-    case 'file_write': case 'write_file': {
+    case 'file_write':
+    case 'write_file': {
       const p = (a.path || a.file_path || '') as string
       return p.split('/').pop() || p || 'write file'
     }
@@ -35,16 +58,20 @@ function toolLabel(name: string, args?: Record<string, unknown>): string {
       const p = (a.path || '') as string
       return p.split('/').pop() || p || 'patch file'
     }
-    case 'file_list': case 'list_directory': {
+    case 'file_list':
+    case 'list_directory': {
       const p = (a.path || a.directory || '.') as string
       return p.split('/').pop() || p
     }
-    case 'shell': case 'bash': {
+    case 'shell':
+    case 'bash': {
       const cmd = (a.command || a.cmd || '') as string
       return cmd.slice(0, 50)
     }
-    case 'web_search': return (a.query || '') as string
-    default: return name.replace(/_/g, ' ')
+    case 'web_search':
+      return (a.query || '') as string
+    default:
+      return name.replace(/_/g, ' ')
   }
 }
 
@@ -77,7 +104,25 @@ function formatTokens(n?: number): string {
   return `${(n / 1_000_000).toFixed(2)}M`
 }
 
-function AgentProgressRow({ agent, provider, role }: { agent: { agentId: string; providerId: string; model?: string; status: string; error?: string; latencyMs?: number; inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number }; provider?: { name: string; model: string }; role?: string }) {
+function AgentProgressRow({
+  agent,
+  provider,
+  role
+}: {
+  agent: {
+    agentId: string
+    providerId: string
+    model?: string
+    status: string
+    error?: string
+    latencyMs?: number
+    inputTokens?: number
+    outputTokens?: number
+    estimatedCostUsd?: number
+  }
+  provider?: { name: string; model: string }
+  role?: string
+}) {
   const label = provider ? `${provider.name} · ${provider.model}` : agent.providerId
   const showMetrics = agent.status === 'done'
   return (
@@ -94,36 +139,36 @@ function AgentProgressRow({ agent, provider, role }: { agent: { agentId: string;
       </span>
       {role && (
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-muted)] capitalize">
-          {getRoleName(role as any)}
+          {getRoleName(role as string)}
         </span>
       )}
-      <span className="text-[11px] text-[var(--text-muted)] truncate">
-        {label}
-      </span>
+      <span className="text-[11px] text-[var(--text-muted)] truncate">{label}</span>
       {showMetrics && (
         <span className="text-[10px] text-[var(--text-muted)] ml-auto flex items-center gap-2 shrink-0">
-          {agent.latencyMs !== undefined && (
-            <span title="Latency">{formatLatency(agent.latencyMs)}</span>
-          )}
+          {agent.latencyMs !== undefined && <span title="Latency">{formatLatency(agent.latencyMs)}</span>}
           {(agent.inputTokens !== undefined || agent.outputTokens !== undefined) && (
             <span title={`Tokens: ${agent.inputTokens ?? 0} in / ${agent.outputTokens ?? 0} out`}>
               {formatTokens((agent.inputTokens ?? 0) + (agent.outputTokens ?? 0))}tok
             </span>
           )}
           {agent.estimatedCostUsd !== undefined && (
-            <span title="Estimated cost" className="text-[var(--text-secondary)]">{formatCost(agent.estimatedCostUsd)}</span>
+            <span title="Estimated cost" className="text-[var(--text-secondary)]">
+              {formatCost(agent.estimatedCostUsd)}
+            </span>
           )}
         </span>
       )}
-      {agent.error && (
-        <span className="text-[10px] text-red-500 truncate ml-auto">{agent.error}</span>
-      )}
+      {agent.error && <span className="text-[10px] text-red-500 truncate ml-auto">{agent.error}</span>}
     </div>
   )
 }
 
 export default function AgentActivityBar() {
-  const { messages, streaming, mode, activeRunId, ensembleRuns } = useChatStore()
+  const messages = useChatStore((state) => state.messages)
+  const streaming = useChatStore((state) => state.streaming)
+  const mode = useChatStore((state) => state.mode)
+  const activeRunId = useChatStore((state) => state.activeRunId)
+  const ensembleRuns = useChatStore((state) => state.ensembleRuns)
   const { settings } = useSettingsStore()
   const { activeThread: getActiveThread } = useWorkspaceStore()
   const activeThread = getActiveThread()
@@ -142,7 +187,7 @@ export default function AgentActivityBar() {
         })
       } else if (msg.kind === 'tool_result') {
         // Mark the last running step as done/error
-        const last = [...result].reverse().find(s => s.status === 'running')
+        const last = [...result].reverse().find((s) => s.status === 'running')
         if (last) {
           last.status = msg.metadata?.isError ? 'error' : 'done'
         }
@@ -152,11 +197,14 @@ export default function AgentActivityBar() {
   }, [messages])
 
   const activeRun = activeRunId ? ensembleRuns[activeRunId] : null
-  const agents = activeRun ? Object.values(activeRun.agents) : []
+  const agents = useMemo(() => (activeRun ? Object.values(activeRun.agents) : []), [activeRun])
 
   // Aggregate metrics for the ensemble header
   const totals = useMemo(() => {
-    let totalIn = 0, totalOut = 0, totalCost = 0, maxLatency = 0
+    let totalIn = 0,
+      totalOut = 0,
+      totalCost = 0,
+      maxLatency = 0
     for (const a of agents) {
       totalIn += a.inputTokens ?? 0
       totalOut += a.outputTokens ?? 0
@@ -183,7 +231,7 @@ export default function AgentActivityBar() {
           })
         } else if (msg.kind === 'tool_result') {
           const name = (msg.metadata?.toolName as string) || 'tool'
-          const last = [...result].reverse().find(s => s.status === 'running' && s.name === name)
+          const last = [...result].reverse().find((s) => s.status === 'running' && s.name === name)
           if (last) {
             last.status = msg.metadata?.isError ? 'error' : 'done'
           }
@@ -195,7 +243,7 @@ export default function AgentActivityBar() {
 
   // Show ensemble progress when in ensemble mode and actively streaming
   if ((mode === 'ensemble' || mode === 'agent' || mode === 'compare') && streaming && activeRun) {
-    const doneCount = agents.filter(a => a.status === 'done').length
+    const doneCount = agents.filter((a) => a.status === 'done').length
     const totalCount = agents.length
     const isArbitrating = activeRun.status === 'arbitrating'
     const showSharedTools = ensembleSteps.length > 0
@@ -216,24 +264,26 @@ export default function AgentActivityBar() {
             {doneCount === totalCount && totalCount > 0 && (
               <span className="ml-auto text-[10px] text-[var(--text-muted)] flex items-center gap-2">
                 {totals.maxLatency > 0 && <span>⏱ {formatLatency(totals.maxLatency)}</span>}
-                {(totals.totalIn + totals.totalOut) > 0 && (
+                {totals.totalIn + totals.totalOut > 0 && (
                   <span>∑ {formatTokens(totals.totalIn + totals.totalOut)}tok</span>
                 )}
-                {totals.totalCost > 0 && <span className="text-[var(--text-secondary)]">{formatCost(totals.totalCost)}</span>}
+                {totals.totalCost > 0 && (
+                  <span className="text-[var(--text-secondary)]">{formatCost(totals.totalCost)}</span>
+                )}
               </span>
             )}
           </div>
           <div className="flex flex-col divide-y divide-[var(--border)]/40">
             <AnimatePresence initial={false}>
-              {agents.map((agent, i) => {
-                const provider = settings.providers.find(p => p.id === agent.providerId)
+              {agents.map((agent) => {
                 const roleName = roleAssignments[agent.providerId]
+                const provider = settings.providers.find((p) => p.id === agent.providerId)
                 return (
                   <motion.div
                     key={agent.agentId}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.15, delay: i * 0.03 }}
+                    transition={{ duration: 0.15 }}
                   >
                     <AgentProgressRow agent={agent} provider={provider} role={roleName} />
                   </motion.div>
@@ -249,7 +299,7 @@ export default function AgentActivityBar() {
                     Shared tools
                   </div>
                   <div className="flex flex-col gap-1">
-                    {ensembleSteps.map((step, i) => (
+                    {ensembleSteps.map((step) => (
                       <div key={step.id} className="flex items-center gap-2">
                         {step.status === 'running' ? (
                           <Loader size={11} className="text-[var(--accent)] animate-spin shrink-0" />
@@ -305,7 +355,7 @@ export default function AgentActivityBar() {
         <div className="px-3 py-2 flex items-center gap-2 border-b border-[var(--border)]/60">
           <Loader size={11} className="text-[var(--accent)] animate-spin" />
           <span className="text-[11px] font-medium text-[var(--text-muted)]">
-            Agent · {steps.filter(s => s.status === 'done').length}/{steps.length} steps
+            Agent · {steps.filter((s) => s.status === 'done').length}/{steps.length} steps
           </span>
         </div>
         <div className="flex flex-col divide-y divide-[var(--border)]/40">

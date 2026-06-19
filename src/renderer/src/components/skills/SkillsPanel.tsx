@@ -7,9 +7,19 @@ import SkillDetailModal from './SkillDetailModal'
 import SkillImportModal from './SkillImportModal'
 import EmptyState from '../ui/EmptyState'
 import {
-  Search, Filter, ArrowUpDown, Download, Plus, X,
-  Globe, FolderOpen, Code2, Bot, Store, Box,
-  Wand2, GitBranch, FilePlus, Loader2
+  Search,
+  Filter,
+  Download,
+  Plus,
+  X,
+  Globe,
+  FolderOpen,
+  Code2,
+  Bot,
+  Store,
+  Box,
+  FilePlus,
+  Loader2
 } from 'lucide-react'
 
 const SOURCE_OPTIONS = [
@@ -70,7 +80,10 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
   async function handleCreateSkill() {
     if (!createName.trim() || !createDesc.trim()) return
     setCreating(true)
-    const tags = createTags.split(',').map((t) => t.trim()).filter(Boolean)
+    const tags = createTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
     const result = await createSkill(createName.trim(), createDesc.trim(), tags)
     setCreating(false)
     setCreateOpen(false)
@@ -209,12 +222,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
       </div>
 
       {/* Detail modal */}
-      {detailSkillId && (
-        <SkillDetailModal
-          skillId={detailSkillId}
-          onClose={() => setDetailSkillId(null)}
-        />
-      )}
+      {detailSkillId && <SkillDetailModal skillId={detailSkillId} onClose={() => setDetailSkillId(null)} />}
 
       {/* Import modal */}
       {importOpen && (
@@ -244,9 +252,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
               exit={{ opacity: 0, y: 10, scale: 0.97 }}
               transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
             >
-              <h3 className="text-base font-semibold text-[var(--text-primary)] mb-4">
-                Create New Skill
-              </h3>
+              <h3 className="text-base font-semibold text-[var(--text-primary)] mb-4">Create New Skill</h3>
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1 block">

@@ -52,8 +52,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
 
     toggleTheme: () => {
       const current = get().theme
-      const next: 'dark' | 'light' | 'system' =
-        current === 'dark' ? 'light' : current === 'light' ? 'system' : 'dark'
+      const next: 'dark' | 'light' | 'system' = current === 'dark' ? 'light' : current === 'light' ? 'system' : 'dark'
       get().setTheme(next)
     }
   }
