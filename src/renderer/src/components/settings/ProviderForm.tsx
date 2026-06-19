@@ -92,18 +92,11 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
   async function handleFetchModels() {
     if (!apiKey && type !== 'ollama') return
     setFetchingModels(true)
+    setFetchedModels([])
     try {
-      // Use the testProvider's internal fetch or a dedicated endpoint
-      const ok = await testProvider(type, model, apiKey, baseUrl || undefined)
-      if (ok) {
-        // Mock fetched models for demo; in real app, call dedicated endpoint
-        const presets = TYPE_PRESETS[type].models
-        if (presets.length > 0) {
-          setFetchedModels(presets.map((id) => ({ id, displayName: id })))
-        } else {
-          // Try to fetch via settings API if available
-          setFetchedModels([])
-        }
+      const models = await window.api.settings.fetchModels(type, apiKey || undefined, baseUrl || undefined)
+      if (models && models.length > 0) {
+        setFetchedModels(models)
       }
     } catch (e) {
       console.error('Failed to fetch models:', e)

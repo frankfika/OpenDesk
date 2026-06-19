@@ -123,7 +123,7 @@ function AgentProgressRow({ agent, provider, role }: { agent: { agentId: string;
 }
 
 export default function AgentActivityBar() {
-  const { messages, streaming, ensembleMode, activeRunId, ensembleRuns } = useChatStore()
+  const { messages, streaming, mode, activeRunId, ensembleRuns } = useChatStore()
   const { settings } = useSettingsStore()
   const { activeThread: getActiveThread } = useWorkspaceStore()
   const activeThread = getActiveThread()
@@ -194,7 +194,7 @@ export default function AgentActivityBar() {
   }, [agents])
 
   // Show ensemble progress when in ensemble mode and actively streaming
-  if (ensembleMode && streaming && activeRun) {
+  if ((mode === 'ensemble' || mode === 'agent' || mode === 'compare') && streaming && activeRun) {
     const doneCount = agents.filter(a => a.status === 'done').length
     const totalCount = agents.length
     const isArbitrating = activeRun.status === 'arbitrating'

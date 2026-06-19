@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { AppSettings, ProviderConfig, ModelInfo, MCPServerConfig, MCPTool, AgentRole, AgentRoleConfig } from '@shared/types'
 
+let healthListenerRegistered = false
+
 const AGENT_ROLES: AgentRoleConfig[] = [
   { id: 'generalist', name: 'Generalist', prompt: 'You are a helpful general-purpose assistant. Provide a balanced, accurate answer.' },
   { id: 'coder', name: 'Coder', prompt: 'You are an expert software engineer. Focus on code correctness, best practices, and edge cases. Always reason through the code carefully.' },
@@ -43,7 +45,7 @@ const defaultSettings: AppSettings = {
   startupBehavior: 'restore',
   autoUpdate: true,
   desktopEnabled: false,
-  approvalMode: 'suggest',
+  approvalMode: 'ask',
   showThinking: true,
   ensembleProviderIds: [],
   arbitratorProviderId: null,
@@ -70,6 +72,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ settings: merged, loaded: true })
       // Load MCP tools
       get().refreshMCPTools()
+      // Listen for provider health changes from main process (only once)
+      if (window.api?.app?.onHealthChanged && !healthListenerRegistered) {
+        healthListenerRegistered = true
+        window.api.app.onHealthChanged(({ providerId, result }) => {
+          const providers = get().settings.providers.map(p =>
+            p.id === providerId ? { ...p, lastTestResult: result, lastTestedAt: Date.now() } : p
+          )
+          set(s => ({ settings: { ...s.settings, providers } }))
+        })
+      }
     } catch (e) {
       console.error('Failed to load settings:', e)
       set({ loaded: true })

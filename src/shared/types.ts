@@ -24,6 +24,7 @@ export interface Workspace {
   id: string
   folderPath: string
   name: string
+  icon?: string
   createdAt: number
   updatedAt: number
   description?: string
@@ -238,6 +239,7 @@ export interface WorkspaceCreatePayload {
 
 export interface WorkspaceUpdatePayload {
   name?: string
+  icon?: string
   description?: string
   defaultProviderId?: string
   defaultModel?: string
@@ -281,6 +283,14 @@ export interface FileAttachment {
   size: number
   mimeType: string
   content?: string
+  file?: {
+    readonly name: string
+    readonly type: string
+    readonly size: number
+    text(): Promise<string>
+    arrayBuffer(): Promise<ArrayBuffer>
+  }
+  type?: 'text' | 'image' | 'code' | 'pdf'
 }
 
 export interface ModelInfo {
@@ -330,4 +340,16 @@ export interface ToolCall {
   id: string
   name: string
   arguments: Record<string, unknown>
+}
+
+export interface MemoryEntry {
+  content: string
+  timestamp: number
+  source: string
+}
+
+export interface MemoryStore {
+  load(category: 'user' | 'identity' | 'soul'): string
+  save(category: 'user' | 'identity' | 'soul', content: string): void
+  append(category: 'user' | 'identity' | 'soul', entry: MemoryEntry): void
 }

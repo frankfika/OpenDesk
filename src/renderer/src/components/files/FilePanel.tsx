@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useWorkspaceStore } from '../../store/workspace'
-import { Folder, FileText, Save, X, RefreshCw, MessageSquarePlus } from 'lucide-react'
+import { Folder, FileText, Save, X, RefreshCw, MessageSquarePlus, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface FileEntry {
   name: string
@@ -11,14 +11,141 @@ interface FileEntry {
   mtime: number
 }
 
+interface DirectoryNode {
+  name: string
+  path: string
+  isDirectory: boolean
+  children?: DirectoryNode[]
+  expanded?: boolean
+}
+
 interface FilePanelProps {
   onClose: () => void
 }
 
+const MAX_DEPTH = 3
+const MAX_FILES = 200
+
+async function buildTreeRecursively(
+  path: string,
+  depth: number,
+  countRef: { value: number }
+): Promise<DirectoryNode[]> {
+  if (depth > MAX_DEPTH || countRef.value > MAX_FILES) return []
+  if (!window.api?.tools?.listDirectory) return []
+
+  try {
+    const result = await window.api.tools.listDirectory(path)
+    if (!result.success || !result.entries) return []
+
+    const sorted = result.entries.sort((a: FileEntry, b: FileEntry) =>
+      a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1
+    )
+
+    const nodes: DirectoryNode[] = []
+
+    for (const entry of sorted) {
+      if (!entry.isDirectory) {
+        countRef.value++
+        if (countRef.value > MAX_FILES) break
+      }
+
+      const node: DirectoryNode = {
+        name: entry.name,
+        path: entry.path,
+        isDirectory: entry.isDirectory,
+        expanded: depth === 0
+      }
+
+      if (entry.isDirectory && depth < MAX_DEPTH) {
+        node.children = await buildTreeRecursively(entry.path, depth + 1, countRef)
+      }
+
+      nodes.push(node)
+    }
+
+    return nodes
+  } catch (e) {
+    return []
+  }
+}
+
+function TreeNode({
+  node,
+  depth,
+  selectedFile,
+  onSelectFile,
+  expandedPaths,
+  onToggleExpand
+}: {
+  node: DirectoryNode
+  depth: number
+  selectedFile: string | null
+  onSelectFile: (path: string) => void
+  expandedPaths: Set<string>
+  onToggleExpand: (path: string) => void
+}) {
+  const isExpanded = expandedPaths.has(node.path)
+  const paddingLeft = depth * 16 + 12
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          if (node.isDirectory) {
+            onToggleExpand(node.path)
+          } else {
+            onSelectFile(node.path)
+          }
+        }}
+        className={`flex items-center gap-2 w-full py-2 text-left text-[13px] transition-colors ${
+          selectedFile === node.path
+            ? 'bg-[var(--accent)]/10 text-[var(--text-primary)]'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)]'
+        }`}
+        style={{ paddingLeft }}
+      >
+        {node.isDirectory ? (
+          <span
+            onClick={(e) => { e.stopPropagation(); onToggleExpand(node.path) }}
+            className="shrink-0 text-[var(--text-muted)] cursor-pointer"
+          >
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </span>
+        ) : (
+          <span className="w-[14px] shrink-0" />
+        )}
+        {node.isDirectory ? (
+          <Folder size={14} className="text-[var(--text-muted)] shrink-0" />
+        ) : (
+          <FileText size={14} className="text-[var(--text-muted)] shrink-0" />
+        )}
+        <span className="truncate">{node.name}</span>
+      </button>
+      {node.isDirectory && isExpanded && node.children && (
+        <div>
+          {node.children.map((child) => (
+            <TreeNode
+              key={child.path}
+              node={child}
+              depth={depth + 1}
+              selectedFile={selectedFile}
+              onSelectFile={onSelectFile}
+              expandedPaths={expandedPaths}
+              onToggleExpand={onToggleExpand}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FilePanel({ onClose }: FilePanelProps) {
-  const { activeWorkspace } = useWorkspaceStore()
-  const workspace = activeWorkspace()
-  const [entries, setEntries] = useState<FileEntry[]>([])
+  const workspace = useWorkspaceStore((state) => state.activeWorkspace())
+  const [treeRoot, setTreeRoot] = useState<DirectoryNode[]>([])
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const [totalFiles, setTotalFiles] = useState(0)
   const [currentPath, setCurrentPath] = useState(workspace?.folderPath || '')
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [fileContent, setFileContent] = useState('')
@@ -26,30 +153,41 @@ export default function FilePanel({ onClose }: FilePanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-  const listFiles = useCallback(async (path: string) => {
-    if (!window.api?.tools?.listDirectory) return
+  const loadTree = useCallback(async () => {
+    if (!workspace?.folderPath) return
     setLoading(true)
     setError(null)
     try {
-      const result = await window.api.tools.listDirectory(path)
-      if (result.success && result.entries) {
-        setEntries(result.entries.sort((a, b) => (a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1)))
-        setCurrentPath(path)
-      } else {
-        setError(result.error || 'Failed to list directory')
+      const countRef = { value: 0 }
+      const nodes = await buildTreeRecursively(workspace.folderPath, 0, countRef)
+      setTreeRoot(nodes)
+      setTotalFiles(countRef.value)
+      setCurrentPath(workspace.folderPath)
+
+      // Auto-expand all directories that have children
+      const paths = new Set<string>()
+      function collectDirPaths(nodes: DirectoryNode[]) {
+        for (const n of nodes) {
+          if (n.isDirectory && n.children && n.children.length > 0) {
+            paths.add(n.path)
+            collectDirPaths(n.children)
+          }
+        }
       }
+      collectDirPaths(nodes)
+      setExpandedPaths(paths)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [workspace?.folderPath])
 
   useEffect(() => {
     if (workspace?.folderPath) {
-      listFiles(workspace.folderPath)
+      loadTree()
     }
-  }, [workspace?.folderPath, listFiles])
+  }, [workspace?.folderPath, loadTree])
 
   async function handleReadFile(path: string) {
     if (!window.api?.tools?.readFile) return
@@ -96,26 +234,17 @@ export default function FilePanel({ onClose }: FilePanelProps) {
     onClose()
   }
 
-  function handleEntryClick(entry: FileEntry) {
-    if (entry.isDirectory) {
-      listFiles(entry.path)
-      setSelectedFile(null)
-      setFileContent('')
-    } else {
-      handleReadFile(entry.path)
-    }
-  }
-
-  function navigateUp() {
-    const parts = currentPath.split('/')
-    parts.pop()
-    const parent = parts.join('/') || '/'
-    if (workspace && parent.startsWith(workspace.folderPath)) {
-      listFiles(parent)
-    } else if (workspace) {
-      listFiles(workspace.folderPath)
-    }
-  }
+  const toggleExpand = useCallback((path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) {
+        next.delete(path)
+      } else {
+        next.add(path)
+      }
+      return next
+    })
+  }, [])
 
   if (!workspace) {
     return (
@@ -152,7 +281,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => listFiles(currentPath)}
+            onClick={loadTree}
             className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]"
             title="Refresh"
           >
@@ -164,17 +293,6 @@ export default function FilePanel({ onClose }: FilePanelProps) {
         </div>
       </div>
 
-      {/* Breadcrumb / up */}
-      <div className="flex items-center gap-2 px-5 py-2 border-b border-[var(--border)] shrink-0">
-        <button
-          onClick={navigateUp}
-          disabled={currentPath === workspace.folderPath}
-          className="text-[11px] px-2 py-1 rounded bg-[var(--bg-sidebar)] text-[var(--text-secondary)] disabled:opacity-40 hover:text-[var(--text-primary)]"
-        >
-          ↑ Up
-        </button>
-      </div>
-
       {/* Error */}
       {error && (
         <div className="px-5 py-2 bg-red-50/50 dark:bg-red-950/20 text-red-600 text-xs shrink-0">
@@ -184,32 +302,30 @@ export default function FilePanel({ onClose }: FilePanelProps) {
 
       {/* Main content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* File list */}
+        {/* Tree view */}
         <div className="w-1/3 min-w-[240px] border-r border-[var(--border)] overflow-y-auto">
           {loading ? (
             <div className="p-4 text-[var(--text-muted)] text-xs">Loading…</div>
-          ) : entries.length === 0 ? (
+          ) : treeRoot.length === 0 ? (
             <div className="p-4 text-[var(--text-muted)] text-xs">Empty directory</div>
           ) : (
             <div className="flex flex-col">
-              {entries.map((entry) => (
-                <button
-                  key={entry.path}
-                  onClick={() => handleEntryClick(entry)}
-                  className={`flex items-center gap-2 px-4 py-2 text-left text-[13px] transition-colors ${
-                    selectedFile === entry.path
-                      ? 'bg-[var(--accent)]/10 text-[var(--text-primary)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)]'
-                  }`}
-                >
-                  {entry.isDirectory ? (
-                    <Folder size={14} className="text-[var(--text-muted)] shrink-0" />
-                  ) : (
-                    <FileText size={14} className="text-[var(--text-muted)] shrink-0" />
-                  )}
-                  <span className="truncate">{entry.name}</span>
-                </button>
+              {treeRoot.map((node) => (
+                <TreeNode
+                  key={node.path}
+                  node={node}
+                  depth={0}
+                  selectedFile={selectedFile}
+                  onSelectFile={handleReadFile}
+                  expandedPaths={expandedPaths}
+                  onToggleExpand={toggleExpand}
+                />
               ))}
+              {totalFiles >= MAX_FILES && (
+                <div className="px-4 py-2 text-[11px] text-[var(--text-muted)]">
+                  Showing up to {MAX_FILES} files. Deep directories truncated.
+                </div>
+              )}
             </div>
           )}
         </div>

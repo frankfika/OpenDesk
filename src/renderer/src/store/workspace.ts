@@ -83,7 +83,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           const threadExists = get().threads.find(t => t.id === activeThreadId)
           if (threadExists) {
             useChatStore.getState().switchThread(activeThreadId)
-            useChatStore.getState().setEnsembleMode(threadExists.mode === 'ensemble')
+            useChatStore.getState().setMode(threadExists.mode || 'single')
           }
         }
       } else if (workspaces.length > 0) {
@@ -271,10 +271,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (id) {
       useChatStore.getState().switchThread(id)
       const thread = get().threads.find(t => t.id === id)
-      useChatStore.getState().setEnsembleMode(thread?.mode === 'ensemble')
+      useChatStore.getState().setMode(thread?.mode || 'single')
     } else {
       useChatStore.getState().switchThread(null)
-      useChatStore.getState().setEnsembleMode(false)
+      useChatStore.getState().setMode('single')
     }
   },
 

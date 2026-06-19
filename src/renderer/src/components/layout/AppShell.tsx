@@ -4,6 +4,7 @@ import Sidebar from './Sidebar'
 import ChatPanel from '../chat/ChatPanel'
 import SkillsPanel from '../skills/SkillsPanel'
 import FilePanel from '../files/FilePanel'
+import MemoryPanel from '../memory/MemoryPanel'
 import SettingsModal from '../settings/SettingsModal'
 import OnboardingModal from '../onboarding/OnboardingModal'
 import CommandPalette from '../ui/CommandPalette'
@@ -57,12 +58,14 @@ export default function AppShell() {
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [skillsPanelOpen, setSkillsPanelOpen] = useState(false)
   const [filePanelOpen, setFilePanelOpen] = useState(false)
+  const [memoryPanelOpen, setMemoryPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { newThread } = useChatStore()
   const { createThread, activeWorkspace, loadWorkspaces, workspaces } = useWorkspaceStore()
   const { settings, load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
-  const { setTheme } = useThemeStore()
+  const { setTheme, toggleTheme } = useThemeStore()
 
   // Check if first launch (no workspaces and no providers)
   useEffect(() => {
@@ -76,6 +79,24 @@ export default function AppShell() {
     }
     loadWorkspaces()
   }, [settingsLoaded, loadSettings, loadWorkspaces, setTheme])
+
+  // Listen for global shortcuts from main process
+  useEffect(() => {
+    const offSidebar = window.api?.app?.onToggleSidebar
+      ? window.api.app.onToggleSidebar(() => setSidebarCollapsed(v => !v))
+      : () => {}
+    const offTheme = window.api?.app?.onToggleTheme
+      ? window.api.app.onToggleTheme(() => toggleTheme())
+      : () => {}
+    const offFocusModel = window.api?.app?.onFocusModel
+      ? window.api.app.onFocusModel(() => window.dispatchEvent(new CustomEvent('opendesk:focus-model')))
+      : () => {}
+    return () => {
+      offSidebar()
+      offTheme()
+      offFocusModel()
+    }
+  }, [toggleTheme])
 
   // Show onboarding only if settings loaded AND no providers configured
   // Don't block on workspaces — default workspace is created automatically
@@ -137,13 +158,16 @@ export default function AppShell() {
   return (
     <ErrorBoundary>
       <div className="flex h-screen w-screen overflow-hidden text-[var(--text-primary)] bg-transparent">
-        <Sidebar
-          onOpenSettings={() => setSettingsOpen(true)}
-          onNewThread={handleNewThread}
-          onOpenSkills={() => setSkillsPanelOpen(true)}
-          onOpenFiles={() => setFilePanelOpen(true)}
-        />
-        <main className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]">
+        {!sidebarCollapsed && (
+          <Sidebar
+            onOpenSettings={() => setSettingsOpen(true)}
+            onNewThread={handleNewThread}
+            onOpenSkills={() => setSkillsPanelOpen(true)}
+            onOpenFiles={() => setFilePanelOpen(true)}
+            onOpenMemory={() => setMemoryPanelOpen(true)}
+          />
+        )}
+        <main role="main" aria-label="Chat" className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]">
           <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
         </main>
 
@@ -166,6 +190,13 @@ export default function AppShell() {
         <AnimatePresence>
           {filePanelOpen && (
             <FilePanel onClose={() => setFilePanelOpen(false)} />
+          )}
+        </AnimatePresence>
+
+        {/* MemoryPanel with slide-in animation */}
+        <AnimatePresence>
+          {memoryPanelOpen && (
+            <MemoryPanel onClose={() => setMemoryPanelOpen(false)} />
           )}
         </AnimatePresence>
 

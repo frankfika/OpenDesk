@@ -1,4 +1,4 @@
-import type { AppSettings, ChatSendPayload, Skill, SkillLoadLevel, SkillLoadResult, SkillImportResult, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool, ArbitrationResult } from '@shared/types'
+import type { AppSettings, ChatSendPayload, Skill, SkillLoadLevel, SkillLoadResult, SkillImportResult, Workspace, Thread, Message, DoctorReport, FileAttachment, ModelInfo, WorkspaceCreatePayload, WorkspaceUpdatePayload, ThreadCreatePayload, ThreadUpdatePayload, AgentsMdInfo, MCPServerConfig, MCPTool, ArbitrationResult, AgentRole } from '@shared/types'
 
 interface ChatAPI {
   send: (payload: ChatSendPayload) => void
@@ -17,7 +17,7 @@ interface ChatAPI {
   onAgentToolResult: (cb: (payload: { runId: string; agentId: string; providerId: string; toolResult: { toolCallId: string; name: string; content: string; isError?: boolean } }) => void) => () => void
   onArbitrationToken: (cb: (payload: { runId: string; token: string }) => void) => () => void
   onArbitrationDone: (cb: (payload: { runId: string; result: ArbitrationResult }) => void) => () => void
-  onEnsembleDone: (cb: (payload: { runId: string; threadId?: string; workspaceId?: string }) => void) => () => void
+  onEnsembleDone: (cb: (payload: { runId: string; threadId?: string; workspaceId?: string; agentAnswers?: Array<{ agentId: string; providerId: string; model?: string; role?: AgentRole; content: string; timestamp: number }>; arbitrationMode?: string }) => void) => () => void
 }
 
 interface SettingsAPI {
@@ -92,6 +92,13 @@ interface ToolsAPI {
   applyPatch: (path: string, patch: string) => Promise<{ success: boolean; error?: string }>
 }
 
+interface MemoryAPI {
+  load: (category: 'user' | 'identity' | 'soul') => Promise<string>
+  save: (category: 'user' | 'identity' | 'soul', content: string) => Promise<void>
+  append: (entries: Array<{ content: string; timestamp: number; source: string }>) => Promise<void>
+  extract: (messages: Array<{ role: string; content: string }>) => Promise<Array<{ content: string; timestamp: number; source: string }>>
+}
+
 declare global {
   interface Window {
     api: {
@@ -105,11 +112,16 @@ declare global {
       desktop: DesktopAPI
       doctor: DoctorAPI
       tools: ToolsAPI
+      memory: MemoryAPI
       app: {
         onNewChat: (cb: () => void) => () => void
         onOpenSettings: (cb: () => void) => () => void
         onFocusInput: (cb: () => void) => () => void
         onEmergencyStop: (cb: () => void) => () => void
+        onToggleSidebar: (cb: () => void) => () => void
+        onToggleTheme: (cb: () => void) => () => void
+        onFocusModel: (cb: () => void) => () => void
+        onHealthChanged: (cb: (payload: { providerId: string; result: boolean }) => void) => () => void
       }
     }
     electron?: {

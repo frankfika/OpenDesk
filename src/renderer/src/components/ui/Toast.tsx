@@ -31,7 +31,7 @@ const toastConfig: Record<ToastType, { icon: typeof CheckCircle2; color: string;
   }
 }
 
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+function ToastItem({ toast, onRemove, onPause, onResume }: { toast: Toast; onRemove: (id: string) => void; onPause: (id: string) => void; onResume: (id: string) => void }) {
   const config = toastConfig[toast.type]
   const Icon = config.icon
 
@@ -42,6 +42,8 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 40, scale: 0.95 }}
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
+      onMouseEnter={() => onPause(toast.id)}
+      onMouseLeave={() => onResume(toast.id)}
       className={cn(
         'flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg',
         'min-w-[280px] max-w-[400px]',
@@ -79,14 +81,14 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 }
 
 export function ToastContainer() {
-  const { toasts, remove } = useToastStore()
+  const { toasts, remove, pause, resume } = useToastStore()
 
   return (
     <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <div key={toast.id} className="pointer-events-auto">
-            <ToastItem toast={toast} onRemove={remove} />
+            <ToastItem toast={toast} onRemove={remove} onPause={pause} onResume={resume} />
           </div>
         ))}
       </AnimatePresence>

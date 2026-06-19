@@ -81,6 +81,8 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
   const { artifacts, panelOpen, setPanelOpen } = useArtifactsStore()
   const toast = useToast()
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
   const [showWorkspacePicker, setShowWorkspacePicker] = useState(false)
@@ -116,6 +118,23 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [lastContent])
+
+  // Scroll-to-bottom button visibility
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const nearBottom = scrollHeight - scrollTop - clientHeight < 200
+      setShowScrollButton(!nearBottom && streaming)
+    }
+    container.addEventListener('scroll', onScroll, { passive: true })
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [streaming])
+
+  function scrollToBottom() {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   // Fill input bar with a prompt text
   function fillInput(text: string) {
@@ -361,7 +380,7 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Message list */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto scroll-smooth">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scroll-smooth relative">
             {messages.length === 0 && !provider && (
               <div className="flex flex-col items-center justify-center h-full px-8">
                 <EmptyState
@@ -539,6 +558,22 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
                 )}
 
                 <div ref={bottomRef} className="h-4" />
+
+                {/* Scroll to bottom button */}
+                <AnimatePresence>
+                  {showScrollButton && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      onClick={scrollToBottom}
+                      className="fixed bottom-28 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-lg transition-colors"
+                    >
+                      <ChevronDown size={14} />
+                      Scroll to bottom
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>

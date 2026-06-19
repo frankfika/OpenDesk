@@ -62,8 +62,11 @@ function findMatches(text: string, query: string): [number, number][] {
   return ranges
 }
 
+import { useDebounce } from '../../lib/utils'
+
 export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebounce(query, 150)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -74,7 +77,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
   const { toggleTheme } = useThemeStore()
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     if (!q) return []
 
     const allResults: SearchResult[] = []

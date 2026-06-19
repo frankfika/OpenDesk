@@ -49,6 +49,14 @@ function isComplexTask(content: string): boolean {
   return complexKeywords.some(k => lower.includes(k.toLowerCase()))
 }
 
+function determineFileType(file: File): 'text' | 'image' | 'code' | 'pdf' {
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type === 'application/pdf') return 'pdf'
+  const codeExts = ['.js', '.ts', '.tsx', '.jsx', '.py', '.css', '.html', '.xml', '.yaml', '.yml', '.json', '.java', '.cpp', '.c', '.h', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.sh', '.bash', '.zsh', '.ps1', '.sql', '.dockerfile', '.dockerignore', '.gitignore', '.env', '.ini', '.cfg', '.conf', '.toml', '.lock', '.gradle', '.maven', '.sbt']
+  if (codeExts.some(ext => file.name.toLowerCase().endsWith(ext))) return 'code'
+  return 'text'
+}
+
 export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, onWebSearch }: InputBarProps) {
   const [text, setText] = useState('')
   const [showApproval, setShowApproval] = useState(false)
@@ -80,6 +88,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const workspace = activeWorkspace()
   const [fetchedModels, setFetchedModels] = useState<string[]>([])
   const [showModelSearch, setShowModelSearch] = useState(false)
+  const inputBarRef = useRef<HTMLDivElement>(null)
 
   // Listen for fill-input event from suggestion cards / quick actions
   useEffect(() => {
@@ -90,6 +99,16 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     }
     window.addEventListener('opendesk:fill-input', handler)
     return () => window.removeEventListener('opendesk:fill-input', handler)
+  }, [])
+
+  // Listen for focus-model event from global shortcut
+  useEffect(() => {
+    const handler = () => {
+      setShowModelPicker(true)
+      setTimeout(() => textareaRef.current?.focus(), 50)
+    }
+    window.addEventListener('opendesk:focus-model', handler)
+    return () => window.removeEventListener('opendesk:focus-model', handler)
   }, [])
 
   // Listen for file reference from FilePanel
@@ -248,7 +267,17 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   }, [appendToken, addToolCall, addToolResult, setStreaming, setError, appendAgentToken, setAgentRunStatus, setAgentMetrics, addAgentToolCall, addAgentToolResult, startArbitration, appendArbitrationToken, finalizeArbitration, completeEnsembleRun])
 
   useEffect(() => {
-    function handler() { setShowApproval(false); setShowModelPicker(false); setShowSkillPicker(false); setShowModelSearch(false); setPopoverType(null) }
+    function handler(event: MouseEvent) {
+      const target = event.target as Node
+      if (inputBarRef.current && inputBarRef.current.contains(target)) {
+        return
+      }
+      setShowApproval(false)
+      setShowModelPicker(false)
+      setShowSkillPicker(false)
+      setShowModelSearch(false)
+      setPopoverType(null)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -527,6 +556,22 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       processedContent = processedContent + '\n\n[Context: ' + mentions.join(', ') + ']'
     }
 
+    // Process attachments
+    let attachmentContent = ''
+    for (const att of attachments) {
+      if (!att.file) continue
+      if (att.type === 'text' || att.type === 'code') {
+        const text = await att.file.text()
+        attachmentContent += `\n\n[Attachment: ${att.file.name}]\n\`\`\`\n${text}\n\`\`\`\n`
+      } else if (att.type === 'image') {
+        // For now, just note the image name
+        attachmentContent += `\n\n[Image attached: ${att.file.name}]\n`
+      }
+    }
+    if (attachmentContent) {
+      processedContent += attachmentContent
+    }
+
     // Ensure we have an active thread
     let threadId = activeThreadId
     if (!threadId && workspace) {
@@ -609,6 +654,12 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     setStreaming(false)
   }
 
+  // Approval mode popover
+  const approvalMode = settings.approvalMode
+  const handleSetApprovalMode = (value: string) => {
+    update({ approvalMode: value as 'ask' | 'auto-edits' | 'auto-all' | 'bypass' })
+  }
+
   const currentMode = APPROVAL_MODES.find(m => m.value === approvalMode)!
 
   // Drag & drop handlers
@@ -635,7 +686,9 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
         name: file.name,
         path: file.name,
         size: file.size,
-        mimeType: file.type || 'application/octet-stream'
+        mimeType: file.type || 'application/octet-stream',
+        file,
+        type: determineFileType(file)
       }
       addAttachment(attachment)
     })
@@ -653,7 +706,9 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
             name: file.name || 'pasted-image.png',
             path: file.name || 'pasted-image.png',
             size: file.size,
-            mimeType: file.type
+            mimeType: file.type,
+            file,
+            type: 'image'
           }
           addAttachment(attachment)
         }
@@ -672,13 +727,16 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
       const blob = new Blob([byteArr], { type: 'image/png' })
       const url = URL.createObjectURL(blob)
+      const file = new File([byteArr], `screenshot-${Date.now()}.png`, { type: 'image/png' })
       const attachment: FileAttachment = {
         id: genId(),
-        name: `screenshot-${Date.now()}.png`,
+        name: file.name,
         path: url,
         size: byteArr.length,
         mimeType: 'image/png',
-        content: base64
+        content: base64,
+        file,
+        type: 'image'
       }
       addAttachment(attachment)
     } catch (e) {
@@ -725,7 +783,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const filteredModels = fetchedModels.filter((m) => m.toLowerCase().includes(modelSearch.toLowerCase()))
 
   return (
-    <div className="shrink-0 px-6 pb-8 pt-2 max-w-3xl w-full mx-auto relative">
+    <div ref={inputBarRef} className="shrink-0 px-6 pb-8 pt-2 max-w-3xl w-full mx-auto relative">
       {error && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm bg-red-50/80 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm">
           <div className="flex items-start gap-2">
@@ -1053,7 +1111,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
                 {APPROVAL_MODES.map(mode => (
                   <button
                     key={mode.value}
-                    onClick={() => { setApprovalMode(mode.value); setShowApproval(false) }}
+                    onClick={() => { handleSetApprovalMode(mode.value); setShowApproval(false) }}
                     className={`w-full px-3 py-2 text-left transition-colors flex items-start gap-2 ${
                       mode.value === approvalMode ? "bg-[var(--bg-sidebar)]" : "hover:bg-[var(--bg-sidebar)]"
                     }`}

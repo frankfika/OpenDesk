@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Message, Thread, ProviderConfig } from '@shared/types'
@@ -354,19 +354,23 @@ function AgentAnswersPanel({ runId, activeThread, settings, mdComponents }: {
 
 // ─── Main MessageRow ─────────────────────────────────────────────────────────
 
-export default function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTimestamp }: MessageProps) {
+function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTimestamp }: MessageProps) {
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
   const [expanded, setExpanded] = useState(true)
   const [showTimeTooltip, setShowTimeTooltip] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const { editMessage, deleteMessage, regenerateLast } = useChatStore()
-  const { activeProvider, settings } = useSettingsStore()
-  const { activeThread: getActiveThread } = useWorkspaceStore()
+  const editMessage = useChatStore((state) => state.editMessage)
+  const deleteMessage = useChatStore((state) => state.deleteMessage)
+  const regenerateLast = useChatStore((state) => state.regenerateLast)
+  const forkThread = useChatStore((state) => state.forkThread)
+  const activeProvider = useSettingsStore((state) => state.activeProvider)
+  const settings = useSettingsStore((state) => state.settings)
+  const getActiveThread = useWorkspaceStore((state) => state.activeThread)
   const activeThread = getActiveThread()
-  const { addArtifact } = useArtifactsStore()
+  const addArtifact = useArtifactsStore((state) => state.addArtifact)
   const provider = message.sourceProviderId
-    ? settings.providers.find(p => p.id === message.sourceProviderId)
+    ? settings.providers.find((p) => p.id === message.sourceProviderId)
     : activeProvider()
 
   const handleCopy = useCallback(() => {
@@ -382,6 +386,10 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
 
   const handleDelete = useCallback(() => deleteMessage(message.id), [message.id, deleteMessage])
   const handleRegenerate = useCallback(() => regenerateLast(), [regenerateLast])
+
+  const handleFork = useCallback(() => {
+    forkThread(message.id).catch(console.error)
+  }, [message.id, forkThread])
 
   const handleReplyTo = useCallback(() => {
     const quote = message.content.split('\n').slice(0, 3).map(l => '> ' + l).join('\n')
@@ -546,6 +554,7 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
                     onDelete={handleDelete}
                     onReplyTo={handleReplyTo}
                     onAddToFavorites={handleAddToFavorites}
+                    onFork={handleFork}
                   />
                 )}
               </div>
@@ -639,3 +648,5 @@ export default function MessageRow({ message, isStreaming, showDateDivider, date
     </>
   )
 }
+
+export default memo(MessageRow)

@@ -33,7 +33,7 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const { newThread } = useChatStore()
+  const { newThread, messages } = useChatStore()
   const {
     workspaces, activeWorkspaceId, setActiveWorkspace,
     threads, setActiveThread, createThread
@@ -146,7 +146,19 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills }: Command
       label: 'Export current thread',
       action: () => {
         setOpen(false)
-        // Export logic would go here
+        const msgs = messages
+        if (!msgs.length) return
+        const markdown = msgs.map(m => {
+          const role = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'Assistant' : m.role
+          return `### ${role}\n\n${m.content}\n`
+        }).join('\n---\n\n')
+        const blob = new Blob([markdown], { type: 'text/markdown' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `thread-export-${new Date().toISOString().slice(0,10)}.md`
+        a.click()
+        URL.revokeObjectURL(url)
       }
     })
 

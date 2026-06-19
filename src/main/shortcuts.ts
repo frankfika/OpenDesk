@@ -41,6 +41,30 @@ export function registerShortcuts(win: BrowserWindow): void {
     win.focus()
     win.webContents.send('app:open-settings')
   })
+
+  // Toggle sidebar
+  const toggleSidebarKey = process.platform === 'darwin' ? 'Command+Shift+.' : 'Control+Shift+.'
+  globalShortcut.register(toggleSidebarKey, () => {
+    if (!win.isVisible()) win.show()
+    win.focus()
+    win.webContents.send('app:toggle-sidebar')
+  })
+
+  // Toggle theme
+  const toggleThemeKey = process.platform === 'darwin' ? 'Command+Shift+T' : 'Control+Shift+T'
+  globalShortcut.register(toggleThemeKey, () => {
+    if (!win.isVisible()) win.show()
+    win.focus()
+    win.webContents.send('app:toggle-theme')
+  })
+
+  // Focus model picker
+  const focusModelKey = process.platform === 'darwin' ? 'Command+Shift+M' : 'Control+Shift+M'
+  globalShortcut.register(focusModelKey, () => {
+    if (!win.isVisible()) win.show()
+    win.focus()
+    win.webContents.send('app:focus-model')
+  })
 }
 
 export function unregisterShortcuts(): void {

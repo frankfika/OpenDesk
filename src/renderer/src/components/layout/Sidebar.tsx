@@ -6,7 +6,7 @@ import { useThemeStore } from '../../store/theme'
 import {
   MessageSquare, Library, Folder, Settings, Plus, Hexagon,
   FolderOpen, Sun, Moon, Pencil, Copy, Smile, CheckCircle2,
-  FolderInput, Trash2, ChevronRight, MoreHorizontal
+  FolderInput, Trash2, ChevronRight, MoreHorizontal, Brain
 } from 'lucide-react'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -17,17 +17,19 @@ interface SidebarProps {
   onNewThread: () => void
   onOpenSkills: () => void
   onOpenFiles: () => void
+  onOpenMemory: () => void
 }
 
 const NAV_ITEMS = [
   { icon: MessageSquare, label: 'Chats' },
   { icon: Library, label: 'Skills' },
+  { icon: Brain, label: 'Memory' },
   { icon: Folder, label: 'Files' }
 ]
 
 const EMOJI_ICONS = ['📁', '💼', '📂', '🗂️', '📊', '📈', '📉', '💻', '🔧', '🎨', '📝', '🔬', '🚀', '🏠', '🌐', '⚙️', '🔒', '🔑', '📦', '📚']
 
-export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onOpenFiles }: SidebarProps) {
+export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onOpenFiles, onOpenMemory }: SidebarProps) {
   const {
     workspaces, activeWorkspaceId, threads, activeThreadId,
     setActiveWorkspace, removeWorkspace, updateWorkspace, relinkWorkspace, loadWorkspaces,
@@ -59,6 +61,10 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   function handleNavClick(label: string) {
     if (label === 'Skills') {
       onOpenSkills()
+      return
+    }
+    if (label === 'Memory') {
+      onOpenMemory()
       return
     }
     if (label === 'Files') {
@@ -137,12 +143,13 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
   }
 
   function handleChangeIcon(id: string, icon: string) {
-    updateWorkspace(id, { name: icon + ' ' + (workspaces.find(w => w.id === id)?.name || '') })
+    updateWorkspace(id, { icon })
     setShowIconPicker(null)
   }
 
   return (
     <aside
+      aria-label="Sidebar"
       className="flex flex-col shrink-0 h-screen bg-[var(--bg-sidebar)]"
       style={{ width: 'var(--sidebar-width)' }}
     >
@@ -197,6 +204,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
               onClick={handleOpenFolder}
               className="no-drag p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
               title="Open folder"
+              aria-label="Open folder"
             >
               <FolderOpen size={14} />
             </button>
@@ -231,6 +239,8 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleWorkspaceExpand(ws.id) }}
                           className="shrink-0 p-0.5 rounded hover:bg-[var(--border)] transition-colors"
+                          aria-label={isExpanded ? 'Collapse workspace' : 'Expand workspace'}
+                          aria-expanded={isExpanded}
                         >
                           <ChevronRight
                             size={12}
@@ -253,6 +263,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                           />
                         ) : (
                           <span className={`flex-1 min-w-0 text-sm truncate ${isActive ? 'font-medium text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                            {ws.icon ? <span className="mr-1.5">{ws.icon}</span> : null}
                             {ws.name || ws.folderPath.split('/').pop() || 'Untitled'}
                           </span>
                         )}
@@ -377,6 +388,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
                                       <button
                                         onClick={e => e.stopPropagation()}
                                         className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                                        aria-label="Thread actions"
                                       >
                                         <MoreHorizontal size={12} />
                                       </button>
@@ -425,6 +437,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
           <button
             className="no-drag flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
             onClick={onOpenSettings}
+            aria-label="Settings"
           >
             <Settings size={16} />
             Settings
@@ -434,6 +447,7 @@ export default function Sidebar({ onOpenSettings, onNewThread, onOpenSkills, onO
             onClick={toggleTheme}
             className="no-drag p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Toggle theme"
+            aria-label="Toggle theme"
           >
             {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>

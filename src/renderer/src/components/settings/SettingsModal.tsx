@@ -29,6 +29,42 @@ import {
   Loader2, Bot, Users, Scale
 } from 'lucide-react'
 
+function Switch({
+  checked,
+  onCheckedChange,
+  id,
+  'aria-label': ariaLabel
+}: {
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  id?: string
+  'aria-label'?: string
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      tabIndex={0}
+      onClick={() => onCheckedChange(!checked)}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault()
+          onCheckedChange(!checked)
+        }
+      }}
+      className={`relative inline-flex shrink-0 w-10 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ${checked ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
+    >
+      <span
+        className="inline-block w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
+        style={{ marginTop: 2, transform: checked ? 'translateX(16px)' : 'translateX(2px)' }}
+      />
+    </button>
+  )
+}
+
 interface SettingsModalProps {
   open: boolean
   onClose: () => void
@@ -110,6 +146,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
     try {
       const apiKey = await window.api?.settings?.getApiKey?.(providerId) ?? ''
       const result = await testProvider(p.type, p.model, apiKey, p.baseUrl)
+      await updateProvider(p.id, { lastTestResult: result, lastTestedAt: Date.now() })
       if (result) {
         toast.success(`${p.name} connected successfully`)
       } else {
@@ -122,6 +159,17 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       toast.error(`Failed to test ${p.name}`)
     } finally {
       setTestingProvider(null)
+    }
+  }
+
+  async function handleTestAllProviders() {
+    const enabledProviders = settings.providers.filter(p => p.enabled)
+    if (enabledProviders.length === 0) {
+      toast.info('No enabled providers to test')
+      return
+    }
+    for (const p of enabledProviders) {
+      await handleTestProvider(p.id)
     }
   }
 
@@ -273,12 +321,23 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <Tabs.Content value="providers" className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[13px] font-medium text-[var(--text-secondary)]">AI Providers</span>
-                    <button
-                      onClick={() => { setShowAddForm((v) => !v); setEditingProvider(null) }}
-                      className="text-xs px-3.5 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--accent)] text-white hover:opacity-90 shadow-sm hover:shadow"
-                    >
-                      {showAddForm ? 'Cancel' : '+ Add Provider'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {settings.providers.filter(p => p.enabled).length > 0 && (
+                        <button
+                          onClick={handleTestAllProviders}
+                          disabled={testingProvider !== null}
+                          className="text-xs px-3 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]"
+                        >
+                          {testingProvider !== null ? 'Testing…' : 'Test All'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setShowAddForm((v) => !v); setEditingProvider(null) }}
+                        className="text-xs px-3.5 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--accent)] text-white hover:opacity-90 shadow-sm hover:shadow"
+                      >
+                        {showAddForm ? 'Cancel' : '+ Add Provider'}
+                      </button>
+                    </div>
                   </div>
 
                   {showAddForm && (
@@ -336,12 +395,34 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {p.lastTestResult === true && <CheckCircle2 size={14} className="text-green-500" />}
-                            {p.lastTestResult === false && <XCircle size={14} className="text-red-500" />}
-                            {p.lastTestResult === undefined && <AlertTriangle size={14} className="text-yellow-500" />}
-                            <div>
-                              <div className="text-sm font-medium">{p.name}</div>
-                              <div className="text-xs text-[var(--text-muted)]">{p.type} · {p.model}</div>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  p.lastTestResult === true
+                                    ? 'bg-green-500'
+                                    : p.lastTestResult === false
+                                    ? 'bg-red-500'
+                                    : 'bg-gray-400'
+                                }`}
+                                title={
+                                  p.lastTestResult === true
+                                    ? 'Healthy'
+                                    : p.lastTestResult === false
+                                    ? 'Unhealthy'
+                                    : 'Not tested'
+                                }
+                              />
+                              <div>
+                                <div className="text-sm font-medium">{p.name}</div>
+                                <div className="text-xs text-[var(--text-muted)]">
+                                  {p.type} · {p.model}
+                                  {p.lastTestedAt && (
+                                    <span className="ml-2 text-[10px] opacity-70">
+                                      Tested {new Date(p.lastTestedAt).toLocaleTimeString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -459,12 +540,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       <Users size={15} className="text-[var(--accent)]" />
                       <span className="text-[13px] font-medium text-[var(--text-secondary)]">Ensemble Mode</span>
                     </div>
-                    <button
-                      onClick={() => update({ ensembleModeDefault: !settings.ensembleModeDefault })}
-                      className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${settings.ensembleModeDefault ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
-                    >
-                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.ensembleModeDefault ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                    </button>
+                    <Switch
+                      checked={settings.ensembleModeDefault ?? false}
+                      onCheckedChange={(v) => update({ ensembleModeDefault: v })}
+                    />
                   </div>
                   <p className="text-[12px] text-[var(--text-muted)] leading-relaxed">
                     When enabled, each question is sent to multiple AI models in parallel. Their answers are then judged by an arbitrator model to produce a single, more reliable final answer.
@@ -475,12 +554,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       <div className="text-sm font-medium text-[var(--text-primary)]">Auto-enable for complex tasks</div>
                       <div className="text-[11px] text-[var(--text-muted)]">Automatically turn on Ensemble for code review, debugging, analysis, etc.</div>
                     </div>
-                    <button
-                      onClick={() => update({ autoEnsembleForComplexTasks: !settings.autoEnsembleForComplexTasks })}
-                      className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${settings.autoEnsembleForComplexTasks ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
-                    >
-                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.autoEnsembleForComplexTasks ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                    </button>
+                    <Switch
+                      checked={settings.autoEnsembleForComplexTasks ?? false}
+                      onCheckedChange={(v) => update({ autoEnsembleForComplexTasks: v })}
+                    />
                   </div>
 
                   <div className="border-t border-[var(--border)] pt-4">
@@ -854,10 +931,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                           <div className="text-[11px] text-[var(--text-muted)]">Screenshot, mouse, keyboard. Requires Screen Recording permission on macOS.</div>
                         </div>
                       </div>
-                      <button onClick={() => update({ desktopEnabled: !settings.desktopEnabled })}
-                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${settings.desktopEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}>
-                        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.desktopEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                      </button>
+                      <Switch
+                        checked={settings.desktopEnabled}
+                        onCheckedChange={(v) => update({ desktopEnabled: v })}
+                      />
                     </div>
                   </div>
 

@@ -194,6 +194,17 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('tools:applyPatch', path, patch)
   },
 
+  memory: {
+    load: (category: 'user' | 'identity' | 'soul'): Promise<string> =>
+      ipcRenderer.invoke('memory:load', category),
+    save: (category: 'user' | 'identity' | 'soul', content: string): Promise<void> =>
+      ipcRenderer.invoke('memory:save', category, content),
+    append: (entries: Array<{ content: string; timestamp: number; source: string }>): Promise<void> =>
+      ipcRenderer.invoke('memory:append', entries),
+    extract: (messages: Array<{ role: string; content: string }>): Promise<Array<{ content: string; timestamp: number; source: string }>> =>
+      ipcRenderer.invoke('memory:extract', messages)
+  },
+
   app: {
     onNewChat: (cb: () => void) => {
       const listener = (): void => cb()
@@ -210,10 +221,30 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.on('app:focus-input', listener)
       return () => ipcRenderer.removeListener('app:focus-input', listener)
     },
+    onToggleSidebar: (cb: () => void) => {
+      const listener = (): void => cb()
+      ipcRenderer.on('app:toggle-sidebar', listener)
+      return () => ipcRenderer.removeListener('app:toggle-sidebar', listener)
+    },
+    onToggleTheme: (cb: () => void) => {
+      const listener = (): void => cb()
+      ipcRenderer.on('app:toggle-theme', listener)
+      return () => ipcRenderer.removeListener('app:toggle-theme', listener)
+    },
+    onFocusModel: (cb: () => void) => {
+      const listener = (): void => cb()
+      ipcRenderer.on('app:focus-model', listener)
+      return () => ipcRenderer.removeListener('app:focus-model', listener)
+    },
     onEmergencyStop: (cb: () => void) => {
       const listener = (): void => cb()
       ipcRenderer.on('desktop:emergencyStop', listener)
       return () => ipcRenderer.removeListener('desktop:emergencyStop', listener)
+    },
+    onHealthChanged: (cb: (payload: { providerId: string; result: boolean }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void => cb(payload as { providerId: string; result: boolean })
+      ipcRenderer.on('provider:healthChanged', listener)
+      return () => ipcRenderer.removeListener('provider:healthChanged', listener)
     }
   }
 })

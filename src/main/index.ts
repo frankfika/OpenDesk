@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, globalShortcut } from 'electron'
+import { app, BrowserWindow, shell, globalShortcut, nativeTheme } from 'electron'
 import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
@@ -8,7 +8,9 @@ import { registerShortcuts, unregisterShortcuts } from './shortcuts'
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): BrowserWindow {
-  const isDark = true // TODO: read from settings
+  const settings = loadSettings()
+  const theme = settings.theme ?? 'system'
+  const isDark = theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
   const backgroundColor = isDark ? '#0f0f0f' : '#ffffff'
 
   const win = new BrowserWindow({

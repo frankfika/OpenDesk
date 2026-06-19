@@ -27,6 +27,7 @@ import type { Provider, Tool, ToolCall, ToolResult } from '../providers/base'
 import { AnthropicProvider } from '../providers/anthropic'
 import { OpenAIProvider } from '../providers/openai'
 import { buildProviderById } from '../providers/builder'
+import { startHealthChecks } from '../providers/health-checker'
 import {
   createWorkspace,
   listWorkspaces,
@@ -53,6 +54,9 @@ import {
 import { runEnsemble, createRunId } from '../orchestration/ensemble'
 import { abortRun } from '../orchestration/run-tracker'
 import { AGENT_ROLES, getRolePrompt } from '../../shared/agent-roles'
+import { createMemoryService } from '../memory/memory-service'
+
+const memoryService = createMemoryService()
 
 const defaultSettings: AppSettings = {
   activeProviderId: null,
@@ -65,7 +69,7 @@ const defaultSettings: AppSettings = {
   startupBehavior: 'restore',
   autoUpdate: false,
   desktopEnabled: false,
-  approvalMode: 'suggest',
+  approvalMode: 'ask',
   showThinking: false
 }
 
@@ -295,6 +299,23 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   for (const ch of channelsToRemove) {
     ipcMain.removeAllListeners(ch)
   }
+
+  /* ===== Memory ===== */
+  ipcMain.handle('memory:load', (_e, category: 'user' | 'identity' | 'soul') => {
+    return memoryService.getMemory()[category]
+  })
+
+  ipcMain.handle('memory:save', (_e, category: 'user' | 'identity' | 'soul', content: string) => {
+    memoryService.updateMemory(category, content)
+  })
+
+  ipcMain.handle('memory:append', (_e, entries: Array<{ content: string; timestamp: number; source: string }>) => {
+    memoryService.appendExtracted(entries)
+  })
+
+  ipcMain.handle('memory:extract', (_e, messages: Array<{ role: string; content: string }>) => {
+    return memoryService.extractFromMessages(messages as Message[])
+  })
 
   /* ===== Settings ===== */
   ipcMain.handle('settings:get', () => ({ ...settings }))
@@ -593,6 +614,22 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       combinedSystemPrompt += (combinedSystemPrompt ? '\n\n' : '') + `You are working inside the workspace: ${workspacePath}. You can read, write, list, and patch files within this workspace using the available tools. Always use absolute paths when calling file tools.`
     }
 
+    // Inject memory context into system prompt (up to ~2000 chars per category)
+    const memory = memoryService.getMemory()
+    const memorySections: string[] = []
+    if (memory.user.trim()) {
+      memorySections.push(`## User Preferences & Habits\n${memory.user.slice(0, 2000)}`)
+    }
+    if (memory.identity.trim()) {
+      memorySections.push(`## Workspace Identity & Conventions\n${memory.identity.slice(0, 2000)}`)
+    }
+    if (memory.soul.trim()) {
+      memorySections.push(`## Cross-Project Knowledge\n${memory.soul.slice(0, 2000)}`)
+    }
+    if (memorySections.length > 0) {
+      combinedSystemPrompt += (combinedSystemPrompt ? '\n\n' : '') + `---\n${memorySections.join('\n\n')}\n---`
+    }
+
     if (combinedSystemPrompt) {
       finalMessages = [
         { id: 'system', role: 'system', content: combinedSystemPrompt, timestamp: Date.now() },
@@ -677,6 +714,17 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       }
 
       win.webContents.send('chat:done', { regenerate, editIndex, workspaceId, threadId })
+
+      // After successful response, extract and append memory entries
+      try {
+        const recentMessages = messages.slice(-10)
+        const entries = memoryService.extractFromMessages(recentMessages)
+        if (entries.length > 0) {
+          memoryService.appendExtracted(entries)
+        }
+      } catch (memErr) {
+        console.error('[Memory] Extraction failed:', memErr)
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       let type: 'auth' | 'network' | 'model' | 'provider' | 'workspace' | 'ollama' | 'generic' = 'generic'
@@ -817,4 +865,15 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle('tools:writeFile', (_e, path: string, content: string) => writeFileTool(path, content))
   ipcMain.handle('tools:listDirectory', (_e, path: string) => listDirectory(path))
   ipcMain.handle('tools:applyPatch', (_e, path: string, patch: string) => applyPatch(path, patch))
+
+  /* ===== Health Checks ===== */
+  startHealthChecks(() => settings, (providerId, result) => {
+    const idx = settings.providers.findIndex(p => p.id === providerId)
+    if (idx !== -1) {
+      settings.providers[idx] = { ...settings.providers[idx], lastTestResult: result, lastTestedAt: Date.now() }
+      saveSettingsToDisk(settings)
+      // Notify renderer of health change
+      win.webContents.send('provider:healthChanged', { providerId, result })
+    }
+  })
 }

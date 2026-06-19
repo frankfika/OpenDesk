@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Message, FileAttachment, ChatSendPayload, ArbitrationResult, ChatMode, ArbitrationMode, AgentAnswerSnapshot } from '@shared/types'
 import { useSettingsStore } from './settings'
+import { useWorkspaceStore } from './workspace'
 
 export interface AgentStream {
   agentId: string
@@ -79,6 +80,7 @@ interface ChatState {
   regenerateLast: () => void
   editMessage: (messageId: string, newContent: string) => void
   deleteMessage: (messageId: string) => void
+  forkThread: (messageId: string) => Promise<void>
 
   // Attachments
   addAttachment: (file: FileAttachment) => void
@@ -339,6 +341,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (s.threadId) debouncedSave(s.threadId, messages)
       return { messages }
     })
+  },
+
+  forkThread: async (messageId) => {
+    const state = get()
+    const index = state.messages.findIndex(m => m.id === messageId)
+    if (index === -1) return
+
+    const forkedMessages = state.messages.slice(0, index + 1)
+    const workspace = useWorkspaceStore.getState().activeWorkspace()
+    if (!workspace) return
+
+    const titleSource = forkedMessages.find(m => m.role === 'user')?.content || 'Forked conversation'
+    const thread = await useWorkspaceStore.getState().createThread(workspace.id, titleSource.slice(0, 40))
+    if (!thread) return
+
+    if (window.api?.thread?.saveMessages) {
+      await window.api.thread.saveMessages(thread.id, forkedMessages)
+    }
+
+    await useWorkspaceStore.getState().setActiveThread(thread.id)
+    await get().loadThread(thread.id)
   },
 
   addAttachment: (file) =>
