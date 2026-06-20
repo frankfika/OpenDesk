@@ -74,5 +74,11 @@ jobs:
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-artifacts/**
+          files: |
+            dist-artifacts/*.dmg
+            dist-artifacts/*.zip
+            dist-artifacts/*.exe
+            dist-artifacts/*.AppImage
+            dist-artifacts/*.deb
+            dist-artifacts/*.yml
           generate_release_notes: true
