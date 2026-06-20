@@ -1,5 +1,12 @@
 # OpenDesk Changelog
 
+## v0.4.1 — 2026-06-20
+
+### 修复
+
+- **About 版本号**：Settings > About 现在正确显示当前版本号（从 `package.json` 读取），不再固定显示 `v0.2.0`。
+- **Windows arm64 支持**：NSIS 安装包不支持 arm64，改为 x64 提供 `.exe` 安装程序、arm64 提供原生 `.zip` 压缩包。
+
 ## v0.1.0 — 2026-06-12
 
 ### 🎉 首次发布（完整版）

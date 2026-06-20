@@ -5,6 +5,17 @@ All notable changes to OpenDesk will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-06-20
+
+### Fixed
+
+- **About 版本号**：Settings > About 现在从 `package.json` 动态读取版本号，不再硬编码显示 `v0.2.0`。
+- **Windows arm64 构建**：NSIS 安装程序不支持 arm64，改为 x64 使用 `.exe`（NSIS）安装包、arm64 使用原生 `.zip` 压缩包，确保 Windows on ARM 设备真正拿到 arm64 二进制。
+
+### Changed
+
+- 版本号提升至 `0.4.1`。
+
 ## [0.4.0] — 2026-06-20
 
 ### Security
@@ -22,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### CI/CD & 跨平台构建
-- GitHub Actions `release.yml`：三平台并行构建（macOS x64/arm64, Windows x64/arm64, Ubuntu x64）
+- GitHub Actions `release.yml`：三平台并行构建（macOS x64/arm64, Windows x64, Ubuntu x64）
 - 产物格式：macOS `.dmg` + `.zip`，Windows `.exe`（NSIS），Linux `.AppImage` + `.deb`
 - 可选代码签名配置：macOS（Apple ID + Team ID）和 Windows 证书支持
 - GitHub Actions `ci.yml`：Lint、Type Check、Unit Test、Build 四阶段质量门禁
