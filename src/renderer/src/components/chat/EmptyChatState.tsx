@@ -126,7 +126,7 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
         {QUICK_ACTIONS.map((action, i) => {
           const Icon = action.icon
           return (
-            <motion.button
+            <motion.button type="button"
               key={action.title}
               onClick={action.onClick({ onOpenSettings, handleConnectFiles, fillInput })}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-all"
@@ -156,7 +156,7 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
             </div>
             <div className="flex flex-col gap-1.5">
               {recentWorkspaces.map((ws, i) => (
-                <motion.button
+                <motion.button type="button"
                   key={ws.id}
                   onClick={() => setActiveWorkspace(ws.id)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-sidebar)]/50 border border-[var(--border)] hover:border-[var(--text-muted)] transition-all text-left"

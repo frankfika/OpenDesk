@@ -17,7 +17,7 @@ export default function AttachmentList({ attachments, onRemove }: AttachmentList
         >
           <Paperclip size={12} />
           <span className="max-w-[120px] truncate">{att.name}</span>
-          <button onClick={() => onRemove(att.id)} className="hover:text-red-500 transition-colors">
+          <button type="button" onClick={() => onRemove(att.id)} className="hover:text-[var(--error)] transition-colors">
             <X size={12} />
           </button>
         </div>

@@ -17,9 +17,9 @@ const STEPS = [
 ]
 
 const PROVIDER_TYPES = [
-  { type: 'openai' as const, label: 'OpenAI', icon: KeyRound, color: 'text-emerald-600' },
-  { type: 'anthropic' as const, label: 'Anthropic', icon: Bot, color: 'text-orange-600' },
-  { type: 'ollama' as const, label: 'Ollama', icon: Cpu, color: 'text-violet-600' }
+  { type: 'openai' as const, label: 'OpenAI', icon: KeyRound, color: 'text-[var(--success)]' },
+  { type: 'anthropic' as const, label: 'Anthropic', icon: Bot, color: 'text-[var(--warning)]' },
+  { type: 'ollama' as const, label: 'Ollama', icon: Cpu, color: 'text-[var(--info)]' }
 ]
 
 export default function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
@@ -83,6 +83,9 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
             style={{ width: 480, maxHeight: '80vh' }}
           >
             <Dialog.Title className="sr-only">Welcome to OpenDesk</Dialog.Title>
+            <Dialog.Description className="sr-only">
+              Set up your workspace and AI provider to get started with OpenDesk.
+            </Dialog.Description>
             {/* Step indicator */}
             <div className="flex items-center justify-center gap-2 pt-6 pb-2">
               {STEPS.map((s, i) => (
@@ -120,15 +123,19 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                   </div>
                   <div className="flex flex-col gap-3 w-full">
                     <button
+                      type="button"
                       onClick={() => setStep(1)}
                       className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity shadow-sm"
+                      aria-label="Start quick setup"
                     >
                       Quick Setup
                       <ArrowRight size={16} />
                     </button>
                     <button
+                      type="button"
                       onClick={handleSkip}
                       className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
+                      aria-label="Skip setup and start"
                     >
                       <SkipForward size={16} />
                       Start Without Setup
@@ -149,6 +156,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleOpenFolder}
                     className="w-full flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)]/30 hover:bg-[var(--bg-sidebar)]/50 transition-all"
                   >
@@ -163,12 +171,14 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
 
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => setStep(0)}
                       className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
                     >
                       Back
                     </button>
                     <button
+                      type="button"
                       onClick={() => setStep(2)}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
                     >
@@ -196,6 +206,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                       const isSelected = selectedProvider === p.type
                       return (
                         <button
+                          type="button"
                           key={p.type}
                           onClick={() => {
                             setSelectedProvider(p.type)
@@ -236,6 +247,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
 
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => setStep(1)}
                       className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
                     >
@@ -243,6 +255,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                     </button>
                     {selectedProvider && (selectedProvider === 'ollama' || apiKey) ? (
                       <button
+                        type="button"
                         onClick={handleAddProvider}
                         disabled={adding}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
@@ -256,6 +269,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={handleSkip}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] transition-colors"
                       >
@@ -267,6 +281,7 @@ export default function OnboardingModal({ open, onComplete }: OnboardingModalPro
 
                   {selectedProvider && (selectedProvider === 'ollama' || apiKey) && (
                     <button
+                      type="button"
                       onClick={handleSkip}
                       className="flex items-center justify-center gap-2 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >

@@ -93,6 +93,7 @@ ${content}
           {isReact ? 'React Component' : 'HTML Preview'}
         </span>
         <button
+          type="button"
           onClick={handleOpenBrowser}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
           title="Open in browser"
@@ -162,6 +163,7 @@ function MermaidArtifact({ content }: { content: string }) {
         </span>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => setScale((s) => Math.max(0.3, s - 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom out"
@@ -170,6 +172,7 @@ function MermaidArtifact({ content }: { content: string }) {
           </button>
           <span className="text-[11px] text-[var(--text-muted)] w-10 text-center">{Math.round(scale * 100)}%</span>
           <button
+            type="button"
             onClick={() => setScale((s) => Math.min(3, s + 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom in"
@@ -177,6 +180,7 @@ function MermaidArtifact({ content }: { content: string }) {
             <ZoomIn size={12} />
           </button>
           <button
+            type="button"
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] ml-1"
             title="Download SVG"
@@ -187,7 +191,7 @@ function MermaidArtifact({ content }: { content: string }) {
       </div>
       <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
         {error ? (
-          <div className="text-red-500 text-sm">{error}</div>
+          <div className="text-[var(--error)] text-sm">{error}</div>
         ) : svg ? (
           <div
             ref={containerRef}
@@ -229,6 +233,7 @@ function SvgArtifact({ content }: { content: string }) {
         <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">SVG Image</span>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => setScale((s) => Math.max(0.3, s - 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom out"
@@ -237,6 +242,7 @@ function SvgArtifact({ content }: { content: string }) {
           </button>
           <span className="text-[11px] text-[var(--text-muted)] w-10 text-center">{Math.round(scale * 100)}%</span>
           <button
+            type="button"
             onClick={() => setScale((s) => Math.min(3, s + 0.2))}
             className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Zoom in"
@@ -244,6 +250,7 @@ function SvgArtifact({ content }: { content: string }) {
             <ZoomIn size={12} />
           </button>
           <button
+            type="button"
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] ml-1"
             title="Download SVG"
@@ -297,14 +304,16 @@ function CodeArtifact({ content, language = 'text' }: { content: string; languag
         </span>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
             title="Copy code"
           >
-            {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-[var(--success)]" /> : <Copy size={12} />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
           <button
+            type="button"
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
             title="Download"
@@ -353,6 +362,7 @@ function MarkdownArtifact({ content }: { content: string }) {
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/50">
         <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide">Markdown</span>
         <button
+          type="button"
           onClick={handlePrint}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
           title="Print / Save as PDF"

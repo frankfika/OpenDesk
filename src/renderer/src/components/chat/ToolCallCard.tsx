@@ -24,7 +24,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
           label: 'Read file',
           summary: short,
           detail: path,
-          color: 'text-blue-600 bg-blue-500/8 border-blue-200/60'
+          color: 'text-[var(--info)] bg-[var(--info-bg)]/50 border-[var(--info-border)]/60'
         }
       }
       case 'file_write':
@@ -36,7 +36,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
           label: 'Write file',
           summary: short,
           detail: path,
-          color: 'text-amber-600 bg-amber-500/8 border-amber-200/60'
+          color: 'text-[var(--warning)] bg-amber-500/8 border-[var(--warning-border)]/60'
         }
       }
       case 'file_list':
@@ -48,7 +48,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
           label: 'List directory',
           summary: short,
           detail: path,
-          color: 'text-indigo-600 bg-indigo-500/8 border-indigo-200/60'
+          color: 'text-[var(--info)] bg-[var(--info-bg)]/50 border-[var(--info-border)]'
         }
       }
       case 'shell':
@@ -61,7 +61,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
           label: 'Shell',
           summary: short,
           detail: cmd,
-          color: 'text-green-700 bg-green-500/8 border-green-200/60'
+          color: 'text-[var(--success)] bg-[var(--success-bg)]/50 border-[var(--success-border)]/60'
         }
       }
       case 'apply_patch': {
@@ -72,7 +72,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
           label: 'Apply patch',
           summary: short,
           detail: path,
-          color: 'text-teal-600 bg-teal-500/8 border-teal-200/60'
+          color: 'text-[var(--accent)] bg-[var(--accent-hover)]/50 border-[var(--border-strong)]/60'
         }
       }
       default: {
@@ -96,18 +96,18 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
 
     return (
       <div
-        className={`my-1 rounded-lg border text-[12px] overflow-hidden ${isError ? 'bg-red-500/5 border-red-200/60' : 'bg-[var(--bg-sidebar)]/40 border-[var(--border)]'}`}
+        className={`my-1 rounded-lg border text-[12px] overflow-hidden ${isError ? 'bg-red-500/5 border-[var(--error-border)]/60' : 'bg-[var(--bg-sidebar)]/40 border-[var(--border)]'}`}
       >
         <button
           onClick={() => setExpanded((v) => !v)}
           className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--border)]/30 transition-colors"
         >
           {isError ? (
-            <XCircle size={12} className="text-red-500 shrink-0" />
+            <XCircle size={12} className="text-[var(--error)] shrink-0" />
           ) : (
-            <CheckCircle size={12} className="text-green-500 shrink-0" />
+            <CheckCircle size={12} className="text-[var(--success)] shrink-0" />
           )}
-          <span className={`text-[11px] font-medium ${isError ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
+          <span className={`text-[11px] font-medium ${isError ? 'text-[var(--error)]' : 'text-[var(--text-muted)]'}`}>
             {isError ? 'Error' : isFileWrite ? 'Written' : 'Result'} · {toolName.replace(/_/g, ' ')}
           </span>
           {content && !expanded && (
@@ -129,11 +129,11 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
               {content.split('\n').map((line, i) => {
                 const cls =
                   line.startsWith('+') && !line.startsWith('+++')
-                    ? 'bg-green-500/10 text-green-800 dark:text-green-300'
+                    ? 'bg-[var(--success-bg)]/50 text-[var(--success)] dark:text-[var(--success)]'
                     : line.startsWith('-') && !line.startsWith('---')
-                      ? 'bg-red-500/10 text-red-800 dark:text-red-300'
+                      ? 'bg-[var(--error-bg)]/50 text-[var(--error)] dark:text-[var(--error)]'
                       : line.startsWith('@@')
-                        ? 'text-blue-600 font-semibold'
+                        ? 'text-[var(--info)] font-semibold'
                         : 'text-[var(--text-muted)]'
                 return (
                   <div key={i} className={`px-3 py-px font-mono text-[11px] leading-5 ${cls}`}>
@@ -144,7 +144,7 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
             </div>
           ) : (
             <div
-              className={`px-3 pb-3 font-mono text-[12px] whitespace-pre-wrap max-h-[300px] overflow-y-auto leading-relaxed ${isError ? 'text-red-700' : 'text-[var(--text-secondary)]'}`}
+              className={`px-3 pb-3 font-mono text-[12px] whitespace-pre-wrap max-h-[300px] overflow-y-auto leading-relaxed ${isError ? 'text-[var(--error)]' : 'text-[var(--text-secondary)]'}`}
             >
               {content}
             </div>

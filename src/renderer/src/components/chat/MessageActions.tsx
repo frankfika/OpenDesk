@@ -45,9 +45,11 @@ export default function MessageActions({
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>
         <button
+          type="button"
           className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-md hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           style={{ width: 28, height: 28 }}
           title="Message actions"
+          aria-label="Message actions"
         >
           <MoreHorizontal size={14} />
         </button>
@@ -65,6 +67,7 @@ export default function MessageActions({
               onCopy()
               setOpen(false)
             }}
+            aria-label="Copy message"
           >
             <Copy size={13} />
             Copy
@@ -77,6 +80,7 @@ export default function MessageActions({
                 onCopyMarkdown()
                 setOpen(false)
               }}
+              aria-label="Copy as Markdown"
             >
               <FileCode size={13} />
               Copy as Markdown
@@ -90,6 +94,7 @@ export default function MessageActions({
                 onEdit()
                 setOpen(false)
               }}
+              aria-label="Edit message"
             >
               <Pencil size={13} />
               Edit
@@ -103,6 +108,7 @@ export default function MessageActions({
                 onRegenerate()
                 setOpen(false)
               }}
+              aria-label="Regenerate response"
             >
               <RefreshCw size={13} />
               Regenerate
@@ -116,6 +122,7 @@ export default function MessageActions({
                 onReplyTo()
                 setOpen(false)
               }}
+              aria-label="Reply to this message"
             >
               <MessageSquarePlus size={13} />
               Reply to this message
@@ -129,6 +136,7 @@ export default function MessageActions({
                 onAddToFavorites()
                 setOpen(false)
               }}
+              aria-label="Add to favorites"
             >
               <Star size={13} />
               Add to Favorites
@@ -144,6 +152,7 @@ export default function MessageActions({
                   onFork()
                   setOpen(false)
                 }}
+                aria-label="Fork thread"
               >
                 <GitBranch size={13} />
                 Fork thread
@@ -155,11 +164,12 @@ export default function MessageActions({
 
           {onDelete && (
             <DropdownMenu.Item
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50/10 cursor-pointer outline-none transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--error)] hover:bg-[var(--error-bg)]/10 cursor-pointer outline-none transition-colors"
               onSelect={() => {
                 onDelete()
                 setOpen(false)
               }}
+              aria-label="Delete message"
             >
               <Trash2 size={13} />
               Delete

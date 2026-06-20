@@ -22,20 +22,20 @@ function toolIcon(name: string) {
   switch (name) {
     case 'file_read':
     case 'read_file':
-      return <FileText size={11} className="text-blue-500" />
+      return <FileText size={11} className="text-[var(--info)]" />
     case 'file_write':
     case 'write_file':
     case 'apply_patch':
-      return <Pencil size={11} className="text-amber-500" />
+      return <Pencil size={11} className="text-[var(--warning)]" />
     case 'file_list':
     case 'list_directory':
-      return <FolderOpen size={11} className="text-indigo-500" />
+      return <FolderOpen size={11} className="text-[var(--info)]" />
     case 'shell':
     case 'bash':
     case 'run_command':
-      return <Terminal size={11} className="text-green-600" />
+      return <Terminal size={11} className="text-[var(--success)]" />
     case 'web_search':
-      return <Search size={11} className="text-purple-500" />
+      return <Search size={11} className="text-[var(--info)]" />
     default:
       return <Wrench size={11} className="text-[var(--text-muted)]" />
   }
@@ -130,9 +130,9 @@ function AgentProgressRow({
       {agent.status === 'running' ? (
         <Loader size={11} className="text-[var(--accent)] animate-spin shrink-0" />
       ) : agent.status === 'done' ? (
-        <CheckCircle size={11} className="text-green-500 shrink-0" />
+        <CheckCircle size={11} className="text-[var(--success)] shrink-0" />
       ) : (
-        <XCircle size={11} className="text-red-500 shrink-0" />
+        <XCircle size={11} className="text-[var(--error)] shrink-0" />
       )}
       <span className="text-[11px] font-medium text-[var(--text-secondary)] shrink-0">
         {agent.agentId.replace('agent-', 'Agent ')}
@@ -158,7 +158,7 @@ function AgentProgressRow({
           )}
         </span>
       )}
-      {agent.error && <span className="text-[10px] text-red-500 truncate ml-auto">{agent.error}</span>}
+      {agent.error && <span className="text-[10px] text-[var(--error)] truncate ml-auto">{agent.error}</span>}
     </div>
   )
 }
@@ -304,9 +304,9 @@ export default function AgentActivityBar() {
                         {step.status === 'running' ? (
                           <Loader size={11} className="text-[var(--accent)] animate-spin shrink-0" />
                         ) : step.status === 'done' ? (
-                          <CheckCircle size={11} className="text-green-500 shrink-0" />
+                          <CheckCircle size={11} className="text-[var(--success)] shrink-0" />
                         ) : (
-                          <XCircle size={11} className="text-red-500 shrink-0" />
+                          <XCircle size={11} className="text-[var(--error)] shrink-0" />
                         )}
                         <span className="shrink-0">{toolIcon(step.name)}</span>
                         <span className="text-[11px] font-medium text-[var(--text-secondary)] shrink-0">
@@ -371,9 +371,9 @@ export default function AgentActivityBar() {
                 {step.status === 'running' ? (
                   <Loader size={11} className="text-[var(--accent)] animate-spin shrink-0" />
                 ) : step.status === 'done' ? (
-                  <CheckCircle size={11} className="text-green-500 shrink-0" />
+                  <CheckCircle size={11} className="text-[var(--success)] shrink-0" />
                 ) : (
-                  <XCircle size={11} className="text-red-500 shrink-0" />
+                  <XCircle size={11} className="text-[var(--error)] shrink-0" />
                 )}
                 <span className="shrink-0">{toolIcon(step.name)}</span>
                 <span className="text-[11px] font-medium text-[var(--text-secondary)] shrink-0">

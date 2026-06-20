@@ -25,7 +25,8 @@ import {
 import { useChatStore } from '../../store/chat'
 import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
-import { useArtifactsStore, type ArtifactType } from '../../store/artifacts'
+import { useArtifactsStore } from '../../store/artifacts'
+import { formatTime, getProviderColor, detectArtifactType, artifactTitleFromLang } from '../../lib/chat-utils'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 
 interface MessageProps {
@@ -36,71 +37,16 @@ interface MessageProps {
   hideTimestamp?: boolean
 }
 
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function getProviderColor(providerType?: string): string {
-  switch (providerType) {
-    case 'openai':
-      return 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
-    case 'anthropic':
-      return 'bg-orange-500/10 text-orange-600 border-orange-200'
-    case 'ollama':
-      return 'bg-violet-500/10 text-violet-600 border-violet-200'
-    default:
-      return 'bg-[var(--accent)] text-white border-transparent'
-  }
-}
-
 function getProviderIcon(providerType?: string) {
   switch (providerType) {
     case 'openai':
-      return <Bot size={16} className="text-emerald-600" />
+      return <Bot size={16} className="text-[var(--success)]" />
     case 'anthropic':
-      return <Bot size={16} className="text-orange-600" />
+      return <Bot size={16} className="text-[var(--warning)]" />
     case 'ollama':
-      return <Bot size={16} className="text-violet-600" />
+      return <Bot size={16} className="text-[var(--info)]" />
     default:
       return <Bot size={16} />
-  }
-}
-
-function detectArtifactType(language: string): ArtifactType | null {
-  switch (language.toLowerCase()) {
-    case 'html':
-      return 'html'
-    case 'mermaid':
-      return 'mermaid'
-    case 'svg':
-      return 'svg'
-    case 'tsx':
-    case 'jsx':
-      return 'react'
-    case 'md':
-    case 'markdown':
-      return 'markdown'
-    default:
-      return null
-  }
-}
-
-function artifactTitleFromLang(language: string): string {
-  switch (language.toLowerCase()) {
-    case 'html':
-      return 'HTML Preview'
-    case 'mermaid':
-      return 'Diagram'
-    case 'svg':
-      return 'SVG Image'
-    case 'tsx':
-    case 'jsx':
-      return 'React Component'
-    case 'md':
-    case 'markdown':
-      return 'Markdown Doc'
-    default:
-      return 'Code Artifact'
   }
 }
 
@@ -180,6 +126,7 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
         </div>
         <div className="flex-1 min-w-0">
           <button
+            type="button"
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors mb-1"
           >
@@ -222,12 +169,12 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
   if (message.kind === 'error') {
     return (
       <div className="flex gap-5 py-3 w-full">
-        <div className="flex items-center justify-center shrink-0 rounded-lg w-8 h-8 bg-red-500/10 text-red-600 border border-red-200">
+        <div className="flex items-center justify-center shrink-0 rounded-lg w-8 h-8 bg-[var(--error-bg)]/50 text-[var(--error)] border border-[var(--error-border)]">
           <AlertCircle size={15} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-semibold text-red-600 mb-1">Error</div>
-          <div className="bg-red-50/60 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2.5 text-[13px] text-red-700 dark:text-red-400 leading-relaxed">
+          <div className="text-[12px] font-semibold text-[var(--error)] mb-1">Error</div>
+          <div className="bg-[var(--error-bg)]/60 dark:bg-red-950/20 border border-[var(--error-border)] dark:border-[var(--error-border)] rounded-lg px-3 py-2.5 text-[13px] text-[var(--error)] dark:text-red-400 leading-relaxed">
             {message.content}
           </div>
         </div>
@@ -353,7 +300,7 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
                         Arbitrated
                       </span>
                       {message.arbitrationConfidence !== undefined && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-500/10 text-green-600 border border-green-200/60">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--success-bg)]/50 text-[var(--success)] border border-[var(--success-border)]/60">
                           Confidence {Math.round(message.arbitrationConfidence * 100)}%
                         </span>
                       )}
@@ -420,7 +367,7 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
             <ContextMenu.Separator className="h-px bg-[var(--border)] my-1" />
             <ContextMenu.Item
               onSelect={handleDelete}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 outline-none cursor-pointer"
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--error)] hover:bg-[var(--error-bg)] dark:hover:bg-red-950/30 outline-none cursor-pointer"
             >
               <Trash2 size={13} />
               Delete

@@ -54,6 +54,7 @@ export default function ModelPicker({ onOpenSettings }: ModelPickerProps) {
   return (
     <div ref={containerRef} className="relative" onMouseDown={(e) => e.stopPropagation()}>
       <button
+        type="button"
         onClick={() => {
           setShowPicker((v) => !v)
           setShowSearch(false)
@@ -69,6 +70,7 @@ export default function ModelPicker({ onOpenSettings }: ModelPickerProps) {
         <div className="absolute bottom-full left-0 mb-2 rounded-lg overflow-hidden z-50 py-1 bg-[var(--bg-content)] border border-[var(--border)] shadow-lg min-w-[240px]">
           {settings.providers.length === 0 ? (
             <button
+              type="button"
               onClick={() => {
                 setShowPicker(false)
                 onOpenSettings()
@@ -81,6 +83,7 @@ export default function ModelPicker({ onOpenSettings }: ModelPickerProps) {
             <>
               {settings.providers.map((p) => (
                 <button
+                  type="button"
                   key={p.id}
                   onClick={() => {
                     update({ activeProviderId: p.id })
@@ -101,6 +104,7 @@ export default function ModelPicker({ onOpenSettings }: ModelPickerProps) {
               <div className="h-px bg-[var(--border)] my-1" />
               <div className="px-2 py-1">
                 <button
+                  type="button"
                   onClick={() => setShowSearch((v) => !v)}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-[var(--text-muted)] hover:bg-[var(--bg-sidebar)] transition-colors"
                 >
@@ -122,6 +126,7 @@ export default function ModelPicker({ onOpenSettings }: ModelPickerProps) {
                       <div className="mt-1 max-h-[120px] overflow-y-auto">
                         {filteredModels.map((m) => (
                           <button
+                            type="button"
                             key={m}
                             onClick={() => {
                               if (provider) {

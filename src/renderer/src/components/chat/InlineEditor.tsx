@@ -40,6 +40,7 @@ export default function InlineEditor({ content, onSave, onCancel }: InlineEditor
       />
       <div className="flex gap-2 mt-2">
         <button
+          type="button"
           onClick={() => {
             if (val.trim()) onSave(val.trim())
           }}
@@ -48,6 +49,7 @@ export default function InlineEditor({ content, onSave, onCancel }: InlineEditor
           Save
         </button>
         <button
+          type="button"
           onClick={onCancel}
           className="px-3 py-1 rounded-lg text-[12px] font-medium bg-[var(--bg-sidebar)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
         >

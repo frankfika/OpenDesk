@@ -180,7 +180,7 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
             <button
               onClick={handleRunShell}
               disabled={running}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-[var(--success)] hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
               title="Send to input"
             >
               <Play size={12} />
@@ -203,7 +203,7 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
               {copied ? (
                 <motion.span
                   key="ok"
-                  className="flex items-center gap-1 text-green-600"
+                  className="flex items-center gap-1 text-[var(--success)]"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

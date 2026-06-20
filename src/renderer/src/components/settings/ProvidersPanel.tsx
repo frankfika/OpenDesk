@@ -56,6 +56,7 @@ export default function ProvidersPanel({
         <div className="flex items-center gap-2">
           {settings.providers.filter((p) => p.enabled).length > 0 && (
             <button
+              type="button"
               onClick={onTestAll}
               disabled={testingProvider !== null}
               className="text-xs px-3 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]"
@@ -64,6 +65,7 @@ export default function ProvidersPanel({
             </button>
           )}
           <button
+            type="button"
             onClick={onToggleAddForm}
             className="text-xs px-3.5 py-2 rounded-lg font-medium transition-all duration-200 bg-[var(--accent)] text-white hover:opacity-90 shadow-sm hover:shadow"
           >
@@ -92,7 +94,7 @@ export default function ProvidersPanel({
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 w-full max-w-md">
             {PROVIDER_PRESETS.map((preset) => (
-              <motion.button
+              <motion.button type="button"
                 key={preset.id}
                 onClick={() => onPresetClick({ name: preset.name, baseUrl: preset.baseUrl, model: preset.model })}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium border border-[var(--border)] bg-[var(--bg-sidebar)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-content)] transition-all"
@@ -126,10 +128,10 @@ export default function ProvidersPanel({
                   <div
                     className={`w-2 h-2 rounded-full ${
                       p.lastTestResult === true
-                        ? 'bg-green-500'
+                        ? 'bg-[var(--success)]'
                         : p.lastTestResult === false
-                          ? 'bg-red-500'
-                          : 'bg-gray-400'
+                          ? 'bg-[var(--error)]'
+                          : 'bg-[var(--text-muted)]'
                     }`}
                     title={
                       p.lastTestResult === true ? 'Healthy' : p.lastTestResult === false ? 'Unhealthy' : 'Not tested'
@@ -151,6 +153,7 @@ export default function ProvidersPanel({
               <div className="flex items-center gap-2">
                 {settings.activeProviderId !== p.id && (
                   <button
+                    type="button"
                     onClick={() => onSetActive(p.id)}
                     className="text-xs px-3 py-1.5 rounded-lg transition-colors bg-[var(--bg-content)] border border-[var(--border)] hover:bg-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
@@ -163,8 +166,9 @@ export default function ProvidersPanel({
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={() => onRemove(p.id)}
-                  className="flex items-center justify-center rounded-lg transition-colors hover:bg-red-50 hover:text-red-600 text-[var(--text-muted)]"
+                  className="flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--error-bg)] hover:text-[var(--error)] text-[var(--text-muted)]"
                   style={{ width: 28, height: 28 }}
                 >
                   <Trash2 size={12} />
@@ -188,6 +192,7 @@ export default function ProvidersPanel({
                     }}
                   />
                   <button
+                    type="button"
                     onClick={() => onSaveApiKey(p.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--accent)] text-white"
                   >
@@ -197,12 +202,14 @@ export default function ProvidersPanel({
               ) : (
                 <>
                   <button
+                    type="button"
                     onClick={() => onStartEdit(p.id)}
                     className="text-[11px] px-2 py-1 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   >
                     Edit Token
                   </button>
                   <button
+                    type="button"
                     onClick={async () => {
                       const models = await onFetchModels(p.id)
                       if (models.length > 0) {
@@ -215,6 +222,7 @@ export default function ProvidersPanel({
                     Fetch Models
                   </button>
                   <button
+                    type="button"
                     onClick={() => onTestProvider(p.id)}
                     disabled={testingProvider === p.id}
                     className="text-[11px] px-2 py-1 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"

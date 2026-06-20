@@ -91,6 +91,7 @@ function TreeNode({
   return (
     <div>
       <button
+        type="button"
         onClick={() => {
           if (node.isDirectory) {
             onToggleExpand(node.path)
@@ -215,7 +216,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
     if (!selectedFile || !window.api?.tools?.writeFile) return
     setSaveStatus('saving')
     try {
-      const result = await window.api.tools.writeFile(selectedFile, fileContent)
+      const result = await window.api.tools.writeFile(selectedFile, fileContent, workspace.folderPath)
       if (result.success) {
         setSaveStatus('saved')
         setTimeout(() => setSaveStatus('idle'), 1500)
@@ -253,10 +254,14 @@ export default function FilePanel({ onClose }: FilePanelProps) {
 
   if (!workspace) {
     return (
-      <div className="fixed inset-0 z-50 bg-[var(--bg-content)]/95 flex flex-col">
+      <div className="flex flex-col h-full bg-[var(--bg-content)]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <h2 className="text-sm font-semibold">Files</h2>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]"
+          >
             <X size={16} />
           </button>
         </div>
@@ -269,7 +274,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 bg-[var(--bg-content)] flex flex-col"
+      className="flex flex-col h-full bg-[var(--bg-content)]"
       initial={{ x: '100%' }}
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
@@ -288,20 +293,25 @@ export default function FilePanel({ onClose }: FilePanelProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={loadTree}
             className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]"
             title="Refresh"
           >
             <RefreshCw size={16} />
           </button>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)]"
+          >
             <X size={16} />
           </button>
         </div>
       </div>
 
       {/* Error */}
-      {error && <div className="px-5 py-2 bg-red-50/50 dark:bg-red-950/20 text-red-600 text-xs shrink-0">{error}</div>}
+      {error && <div className="px-5 py-2 bg-[var(--error-bg)]/50 dark:bg-red-950/20 text-[var(--error)] text-xs shrink-0">{error}</div>}
 
       {/* Main content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -341,6 +351,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
                 <span className="text-xs text-[var(--text-muted)] truncate">{selectedFile}</span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleReferenceInChat}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] transition-colors"
                   >
@@ -348,6 +359,7 @@ export default function FilePanel({ onClose }: FilePanelProps) {
                     Reference
                   </button>
                   <button
+                    type="button"
                     onClick={handleSaveFile}
                     disabled={saveStatus === 'saving'}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-60"

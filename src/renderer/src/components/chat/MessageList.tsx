@@ -130,7 +130,7 @@ export default function MessageList({ messages, streaming }: MessageListProps) {
 
         <AnimatePresence>
           {showScrollButton && (
-            <motion.button
+            <motion.button type="button"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}

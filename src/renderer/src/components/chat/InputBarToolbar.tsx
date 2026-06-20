@@ -50,6 +50,7 @@ function InputBarToolbar({
   return (
     <div className="flex items-center px-4 pb-4 gap-2">
       <button
+        type="button"
         onClick={onScreenshot}
         className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
         title="Capture screenshot"
@@ -63,6 +64,7 @@ function InputBarToolbar({
       {isEnsembleMode && (
         <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
           <button
+            type="button"
             onClick={() => setShowEnsemblePicker((v) => !v)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20"
             title="Configure ensemble models"
@@ -94,8 +96,9 @@ function InputBarToolbar({
 
       {streaming ? (
         <button
+          type="button"
           onClick={onAbort}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors bg-red-100 text-red-600 hover:bg-red-200"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors bg-[var(--error-bg)] text-[var(--error)] hover:bg-[var(--error-border)]"
           title="Stop (Esc)"
         >
           <Square size={12} className="fill-current" />
@@ -104,6 +107,7 @@ function InputBarToolbar({
         </button>
       ) : (
         <button
+          type="button"
           onClick={onSend}
           disabled={!text.trim()}
           className={`flex items-center justify-center rounded-md transition-colors w-8 h-8 ${

@@ -249,9 +249,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
                 <Dialog.Title className="text-sm font-semibold">Settings</Dialog.Title>
+                <Dialog.Description className="sr-only">
+                  Configure AI providers, ensemble settings, workspaces, and app preferences.
+                </Dialog.Description>
                 <Dialog.Close
                   className="flex items-center justify-center rounded-md transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
                   style={{ width: 28, height: 28 }}
+                  aria-label="Close settings"
                 >
                   <X size={14} />
                 </Dialog.Close>

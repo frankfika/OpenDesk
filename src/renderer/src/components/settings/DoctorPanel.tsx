@@ -8,9 +8,9 @@ interface DoctorPanelProps {
 }
 
 function statusIcon(status: 'pass' | 'warn' | 'fail') {
-  if (status === 'pass') return <CheckCircle2 size={14} className="text-green-500" />
-  if (status === 'warn') return <AlertTriangle size={14} className="text-yellow-500" />
-  return <XCircle size={14} className="text-red-500" />
+  if (status === 'pass') return <CheckCircle2 size={14} className="text-[var(--success)]" />
+  if (status === 'warn') return <AlertTriangle size={14} className="text-[var(--warning)]" />
+  return <XCircle size={14} className="text-[var(--error)]" />
 }
 
 export default function DoctorPanel({ report, running, onRun }: DoctorPanelProps) {
@@ -22,6 +22,7 @@ export default function DoctorPanel({ report, running, onRun }: DoctorPanelProps
       <div className="flex items-center justify-between mb-3">
         <span className="text-[13px] font-medium">System Check</span>
         <button
+          type="button"
           onClick={onRun}
           disabled={running}
           className={`text-xs px-3.5 py-2 rounded-lg font-medium transition-all ${

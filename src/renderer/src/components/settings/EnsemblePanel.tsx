@@ -54,6 +54,7 @@ export default function EnsemblePanel({ settings, providers, onUpdate }: Ensembl
           <div className="flex gap-1.5">
             {[2, 3, 5].map((n) => (
               <button
+                type="button"
                 key={n}
                 onClick={() => {
                   const ids = providers

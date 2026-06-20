@@ -20,7 +20,7 @@ export default function SuggestionCard({
   index = 0
 }: SuggestionCardProps) {
   return (
-    <motion.button
+    <motion.button type="button"
       onClick={onClick}
       className={cn(
         'flex flex-col gap-3 p-5 rounded-2xl text-left transition-all duration-300',

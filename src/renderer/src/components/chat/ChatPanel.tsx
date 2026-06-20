@@ -42,7 +42,6 @@ export default function ChatPanel({ onOpenSettings, onOpenFiles }: ChatPanelProp
           <InputBar
             onOpenSettings={onOpenSettings}
             onClearChat={clearMessages}
-            onScreenshot={() => {}}
             onWebSearch={(query) => {
               toast.info(`Web search: ${query}`)
             }}

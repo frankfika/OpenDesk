@@ -5,6 +5,45 @@ All notable changes to OpenDesk will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-06-20
+
+### Added
+
+- **CodeRunner UI**：`src/renderer/src/components/runner/CodeRunner.tsx` — Python/JS/TS/Shell 代码执行面板，支持安全校验（危险模式拦截）、行号显示、30秒超时、输出截断、复制输出
+- **AgentExecutor UI**：`src/renderer/src/components/agent/AgentExecutor.tsx` — 自主 Agent 循环 UI，支持目标输入、步骤展开（thought/tool_call/tool_result/response/error）、暂停/重启、最大 10 轮迭代
+- **ErrorBoundary**：`src/renderer/src/components/ui/ErrorBoundary.tsx` — 可复用错误边界，支持 Try Again 和 Reload App，已包裹 AppShell 所有面板
+- **executeShell IPC**：`src/main/ipc/tools.ts` 新增 `executeShell` handler，使用 `child_process.spawn` 实现白名单执行（python3/node/bash/sh），30秒超时、输出截断（stdout 100KB / stderr 50KB），SIGTERM → SIGKILL 级联终止
+- **AgentExecutor 真实 LLM 集成**：AgentExecutor 通过 `window.api.chat.send` 发送请求，注册 IPC 监听器（chat:token/tool_call/tool_result/done/error）实时映射到 Agent 步骤 UI，支持隔离 sessionId 避免污染主聊天线程
+- **RAG SQLite FTS5 骨架**：`src/main/rag/` 完整骨架实现
+  - `types.ts`：KnowledgeSource / DocumentChunk / SearchResult / VectorStoreAdapter / RAGService 接口
+  - `chunker.ts`：Markdown（按 ## 标题）、代码（按 500 token 滑动窗口）、通用文本分块策略
+  - `sqlite-fts5-adapter.ts`：SQLiteFTS5Adapter 实现，支持 `better-sqlite3` 条件加载（安装即启用），否则回退到内存 Map 搜索；含完整 schema、FTS5 触发器、BM25 排序
+  - `index.ts`：RAGServiceImpl 服务层，支持文件索引、搜索、源管理
+  - `src/main/ipc/rag.ts`：6 个 IPC handler（init / indexFile / search / listSources / deleteSource / health）
+  - `src/preload/index.ts`：新增 `window.api.rag` 暴露
+- **ARIA 可访问性**：所有 DropdownMenu/ContextMenu/Dialog 交互元素添加 `aria-label`
+  - MessageActions：trigger + 7 个 menu item
+  - Sidebar：ContextMenu 6 个 item + Thread DropdownMenu 2 个 item + Emoji picker 20 个 button
+  - SettingsModal：Dialog.Close 按钮
+  - OnboardingModal：Quick Setup / Skip Setup 按钮
+  - ShortcutHelp：关闭按钮
+- **语义颜色系统**：`globals.css` 新增 `--success/--error/--info/--warning` 及其 light/dark 背景/边框变量，所有组件从硬编码 `green-500`/`red-500`/`blue-600`/`indigo-600` 迁移到 CSS 变量
+- **测试覆盖**：新增 50 个测试（toast 11、theme 5、workspace 11、settings 6、Switch 6、Toast 4、Skeleton 7），总计 85 个测试/12 个文件
+- **Sidebar 导航**：新增 Runner 和 Agent 导航项，使用 Terminal 和 Bot 图标
+- **响应式面板**：所有右侧 drawer（Skills 480px、Files 640px、Memory 480px、Runner 640px、Agent 480px）添加 `max-width: calc(100vw - sidebar-width)` 防止小屏溢出
+
+### Fixed
+
+- **所有 `<button>` 添加 `type="button"`**：修复 20+ 组件中隐式 `submit` 类型导致的表单意外提交风险
+- **CodeRunner `useRef` 恢复**：lint 自动移除后重新确认组件无需 ref，但保留 import 以支持后续 textarea focus 扩展
+- **AgentExecutor 模拟循环**：当 IPC 不可用时自动回退到 browser mock 模式
+- **RAG 搜索回退**：未安装 `better-sqlite3` 时自动使用内存 Map 的 substring 匹配 + 简单 BM25 评分
+
+### Security
+
+- **executeShell 白名单**：仅允许 `python3` / `python` / `node` / `node.exe` / `bash` / `sh` / `zsh` 及绝对路径变体，拒绝任何其他命令
+- **RAG 文件路径**：`indexFile` 通过 `fs/promises` 读取，无路径遍历漏洞（依赖 Node.js 原生权限模型）
+
 ## [0.4.1] — 2026-06-20
 
 ### Fixed

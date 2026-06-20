@@ -21,22 +21,30 @@ import {
   Trash2,
   ChevronRight,
   MoreHorizontal,
-  Brain
+  Brain,
+  Terminal,
+  Bot
 } from 'lucide-react'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface SidebarProps {
+  activeNav: string
+  setActiveNav: (nav: string) => void
   onOpenSettings: () => void
   onNewThread: () => void
   onOpenSkills: () => void
   onOpenFiles: () => void
   onOpenMemory: () => void
+  onOpenRunner: () => void
+  onOpenAgent: () => void
 }
 
 const NAV_ITEMS = [
   { icon: MessageSquare, label: 'Chats' },
+  { icon: Terminal, label: 'Runner' },
+  { icon: Bot, label: 'Agent' },
   { icon: Library, label: 'Skills' },
   { icon: Brain, label: 'Memory' },
   { icon: Folder, label: 'Files' }
@@ -66,11 +74,15 @@ const EMOJI_ICONS = [
 ]
 
 export default function Sidebar({
+  activeNav,
+  setActiveNav,
   onOpenSettings,
   onNewThread,
   onOpenSkills,
   onOpenFiles,
-  onOpenMemory
+  onOpenMemory,
+  onOpenRunner,
+  onOpenAgent
 }: SidebarProps) {
   const {
     workspaces,
@@ -89,7 +101,6 @@ export default function Sidebar({
   const { load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
   const { load: loadSkills, loaded: skillsLoaded } = useSkillsStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
-  const [activeNav, setActiveNav] = useState('Chats')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [showIconPicker, setShowIconPicker] = useState<string | null>(null)
@@ -120,6 +131,14 @@ export default function Sidebar({
     }
     if (label === 'Files') {
       onOpenFiles()
+      return
+    }
+    if (label === 'Runner') {
+      onOpenRunner()
+      return
+    }
+    if (label === 'Agent') {
+      onOpenAgent()
       return
     }
     setActiveNav(label)
@@ -218,6 +237,7 @@ export default function Sidebar({
       {/* New chat button */}
       <div className="px-4 pb-3 mt-2">
         <button
+          type="button"
           onClick={onNewThread}
           className="no-drag w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 bg-[var(--bg-content)]/80 hover:bg-[var(--border)] text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow"
         >
@@ -236,9 +256,10 @@ export default function Sidebar({
           const isActive = activeNav === item.label
           return (
             <button
+              type="button"
               key={item.label}
               onClick={() => handleNavClick(item.label)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`no-drag w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
                   ? 'bg-[var(--bg-content)] text-[var(--text-primary)] font-medium shadow-sm border border-[var(--border)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--border)] border border-transparent'
@@ -261,6 +282,7 @@ export default function Sidebar({
               Workspaces
             </span>
             <button
+              type="button"
               onClick={handleOpenFolder}
               className="no-drag p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
               title="Open folder"
@@ -272,6 +294,7 @@ export default function Sidebar({
 
           {workspaces.length === 0 ? (
             <button
+              type="button"
               onClick={handleOpenFolder}
               className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors border border-dashed border-[var(--border)]"
             >
@@ -299,11 +322,12 @@ export default function Sidebar({
                         }}
                       >
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             toggleWorkspaceExpand(ws.id)
                           }}
-                          className="shrink-0 p-0.5 rounded hover:bg-[var(--border)] transition-colors"
+                          className="no-drag shrink-0 p-0.5 rounded hover:bg-[var(--border)] transition-colors"
                           aria-label={isExpanded ? 'Collapse workspace' : 'Expand workspace'}
                           aria-expanded={isExpanded}
                         >
@@ -350,6 +374,7 @@ export default function Sidebar({
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => onOpenFiles()}
+                          aria-label="Browse files"
                         >
                           <FolderOpen size={13} />
                           Browse Files
@@ -357,6 +382,7 @@ export default function Sidebar({
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => handleCopyPath(ws.folderPath)}
+                          aria-label="Copy workspace path"
                         >
                           <Copy size={13} />
                           Copy Path
@@ -365,6 +391,7 @@ export default function Sidebar({
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => handleRename(ws.id)}
+                          aria-label="Rename workspace"
                         >
                           <Pencil size={13} />
                           Rename
@@ -372,6 +399,7 @@ export default function Sidebar({
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => setShowIconPicker(ws.id)}
+                          aria-label="Change workspace icon"
                         >
                           <Smile size={13} />
                           Change Icon
@@ -379,6 +407,7 @@ export default function Sidebar({
                         <ContextMenu.Item
                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none transition-colors"
                           onSelect={() => handleSetDefaultWorkspace(ws.id)}
+                          aria-label="Set as default workspace"
                         >
                           <CheckCircle2 size={13} />
                           Set as Default
@@ -389,14 +418,16 @@ export default function Sidebar({
                             const path = prompt('New folder path:', ws.folderPath)
                             if (path) relinkWorkspace(ws.id, path)
                           }}
+                          aria-label="Relink workspace folder"
                         >
                           <FolderInput size={13} />
                           Relink Folder
                         </ContextMenu.Item>
                         <ContextMenu.Separator className="h-px bg-[var(--border)] my-1" />
                         <ContextMenu.Item
-                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50/10 cursor-pointer outline-none transition-colors"
+                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--error)] hover:bg-[var(--error-bg)]/10 cursor-pointer outline-none transition-colors"
                           onSelect={() => handleRemoveWorkspace(ws.id)}
+                          aria-label="Remove workspace"
                         >
                           <Trash2 size={13} />
                           Remove
@@ -440,6 +471,7 @@ export default function Sidebar({
                                     />
                                   ) : (
                                     <button
+                                      type="button"
                                       onClick={() => {
                                         setActiveWorkspace(ws.id)
                                         setActiveThread(t.id)
@@ -458,8 +490,9 @@ export default function Sidebar({
                                   <DropdownMenu.Root>
                                     <DropdownMenu.Trigger asChild>
                                       <button
+                                        type="button"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                                        className="no-drag opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                                         aria-label="Thread actions"
                                       >
                                         <MoreHorizontal size={12} />
@@ -474,13 +507,15 @@ export default function Sidebar({
                                         <DropdownMenu.Item
                                           className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] cursor-pointer outline-none"
                                           onSelect={() => handleThreadRename(t.id)}
+                                          aria-label="Rename thread"
                                         >
                                           <Pencil size={12} />
                                           Rename
                                         </DropdownMenu.Item>
                                         <DropdownMenu.Item
-                                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50/10 cursor-pointer outline-none"
+                                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--error)] hover:bg-[var(--error-bg)]/10 cursor-pointer outline-none"
                                           onSelect={() => handleThreadDelete(t.id)}
+                                          aria-label="Delete thread"
                                         >
                                           <Trash2 size={12} />
                                           Delete
@@ -507,6 +542,7 @@ export default function Sidebar({
       <div className="shrink-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-sidebar)]/50">
         <div className="flex items-center gap-2">
           <button
+            type="button"
             className="no-drag flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)]"
             onClick={onOpenSettings}
             aria-label="Settings"
@@ -516,6 +552,7 @@ export default function Sidebar({
             <span className="ml-auto text-[var(--text-muted)] text-[11px] font-mono">⌘,</span>
           </button>
           <button
+            type="button"
             onClick={toggleTheme}
             className="no-drag p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Toggle theme"
@@ -547,9 +584,11 @@ export default function Sidebar({
               <div className="grid grid-cols-5 gap-2">
                 {EMOJI_ICONS.map((icon) => (
                   <button
+                    type="button"
                     key={icon}
                     onClick={() => handleChangeIcon(showIconPicker!, icon)}
                     className="w-10 h-10 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors flex items-center justify-center text-lg"
+                    aria-label={`Select icon ${icon}`}
                   >
                     {icon}
                   </button>

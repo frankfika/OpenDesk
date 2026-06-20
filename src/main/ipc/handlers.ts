@@ -11,6 +11,8 @@ import { registerThreadHandlers } from './thread'
 import { registerChatHandlers } from './chat'
 import { registerDesktopHandlers } from './desktop'
 import { registerDoctorHandlers } from './doctor'
+import { registerToolsHandlers } from './tools'
+import { registerRAGHandlers } from './rag'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Load persisted settings on startup
@@ -31,6 +33,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerChatHandlers(win)
   registerDesktopHandlers(win)
   registerDoctorHandlers(win)
+  registerToolsHandlers(win)
+  registerRAGHandlers(win)
 
   /* ===== Health Checks ===== */
   startHealthChecks(

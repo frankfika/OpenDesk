@@ -47,6 +47,7 @@ export default function GeneralPanel() {
             const Icon = t.icon
             return (
               <button
+                type="button"
                 key={t.value}
                 onClick={() => {
                   update({ theme: t.value })
@@ -108,6 +109,7 @@ export default function GeneralPanel() {
                 ] as const
               ).map((b) => (
                 <button
+                  type="button"
                   key={b.value}
                   onClick={() => update({ startupBehavior: b.value })}
                   className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
@@ -131,7 +133,7 @@ export default function GeneralPanel() {
         <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-content)]">
           <div className="flex items-center gap-3">
             {settings.desktopEnabled ? (
-              <ShieldCheck size={16} className="text-green-500" />
+              <ShieldCheck size={16} className="text-[var(--success)]" />
             ) : (
               <Shield size={16} className="text-[var(--text-muted)]" />
             )}

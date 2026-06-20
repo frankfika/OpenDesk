@@ -75,6 +75,7 @@ export default function WorkspaceMCPPanel({
         <div className="flex items-center justify-between mb-3">
           <span className="text-[13px] font-medium">Workspaces</span>
           <button
+            type="button"
             onClick={onAddWorkspace}
             className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
           >
@@ -101,9 +102,9 @@ export default function WorkspaceMCPPanel({
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
                       ws.status === 'active'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-[var(--success-bg)] text-[var(--success)]'
                         : ws.status === 'missing'
-                          ? 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-[var(--warning-bg)] text-[var(--warning)]'
                           : 'bg-[var(--border)] text-[var(--text-muted)]'
                     }`}
                   >
@@ -112,6 +113,7 @@ export default function WorkspaceMCPPanel({
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
                     onClick={() => onRelinkWorkspace(ws.id)}
                     className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
                     title="Relink folder"
@@ -119,8 +121,9 @@ export default function WorkspaceMCPPanel({
                     <FolderInput size={14} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => onRemoveWorkspace(ws.id)}
-                    className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-[var(--error-bg)] transition-colors"
                     title="Remove"
                   >
                     <Trash2 size={14} />
@@ -136,6 +139,7 @@ export default function WorkspaceMCPPanel({
         <div className="flex items-center justify-between mb-3">
           <span className="text-[13px] font-medium">MCP Servers</span>
           <button
+            type="button"
             onClick={onToggleAddMCP}
             className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
           >
@@ -149,6 +153,7 @@ export default function WorkspaceMCPPanel({
               const Icon = p.icon
               return (
                 <button
+                  type="button"
                   key={p.id}
                   onClick={() => onAddPresetMCP(p.id)}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all"
@@ -250,7 +255,7 @@ export default function WorkspaceMCPPanel({
                   <div className="flex items-center gap-2">
                     <Server
                       size={13}
-                      className={isConnected ? 'text-green-500' : isError ? 'text-red-500' : 'text-[var(--text-muted)]'}
+                      className={isConnected ? 'text-[var(--success)]' : isError ? 'text-[var(--error)]' : 'text-[var(--text-muted)]'}
                     />
                     <div>
                       <div className="text-sm font-medium">{s.name}</div>
@@ -264,15 +269,16 @@ export default function WorkspaceMCPPanel({
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                         isConnected
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-[var(--success-bg)] text-[var(--success)]'
                           : isError
-                            ? 'bg-red-100 text-red-700'
+                            ? 'bg-[var(--error-bg)] text-[var(--error)]'
                             : 'bg-[var(--border)] text-[var(--text-muted)]'
                       }`}
                     >
                       {status}
                     </span>
                     <button
+                      type="button"
                       onClick={() => onToggleMCPServer(s.name)}
                       className={`text-[11px] px-2 py-1 rounded-md border transition-colors ${
                         s.enabled
@@ -283,6 +289,7 @@ export default function WorkspaceMCPPanel({
                       {s.enabled ? 'On' : 'Off'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         onToggleViewTools(s.name)
                         onRefreshMCPTools()
@@ -293,8 +300,9 @@ export default function WorkspaceMCPPanel({
                       Tools
                     </button>
                     <button
+                      type="button"
                       onClick={() => onRemoveMCPServer(s.name)}
-                      className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-[var(--error-bg)] transition-colors"
                     >
                       <Trash2 size={12} />
                     </button>

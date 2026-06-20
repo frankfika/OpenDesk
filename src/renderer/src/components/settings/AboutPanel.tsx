@@ -14,6 +14,7 @@ export default function AboutPanel() {
       </div>
 
       <button
+        type="button"
         onClick={() => toast.info(`You are on the latest version (v${version})`)}
         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
       >

@@ -119,8 +119,10 @@ export default function ShortcutHelp({ open, onOpenChange }: ShortcutHelpProps) 
                 <h2 className="text-sm font-semibold text-[var(--text-primary)]">Keyboard Shortcuts</h2>
                 <div className="flex-1" />
                 <button
+                  type="button"
                   onClick={() => onOpenChange(false)}
                   className="p-1 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)] transition-colors"
+                  aria-label="Close keyboard shortcuts"
                 >
                   <X size={14} />
                 </button>

@@ -213,7 +213,7 @@ export default function SkillDetailModal({ skillId, onClose }: SkillDetailModalP
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--error-bg)] border border-red-100 text-[var(--error)] hover:bg-[var(--error-bg)] transition-all disabled:opacity-50"
               >
                 <Trash2 size={12} />
                 {deleting ? 'Deleting...' : 'Delete'}

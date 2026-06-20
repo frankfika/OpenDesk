@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
 import ChatPanel from '../chat/ChatPanel'
 import SkillsPanel from '../skills/SkillsPanel'
 import FilePanel from '../files/FilePanel'
 import MemoryPanel from '../memory/MemoryPanel'
+import CodeRunner from '../runner/CodeRunner'
+import AgentExecutor from '../agent/AgentExecutor'
 import SettingsModal from '../settings/SettingsModal'
 import OnboardingModal from '../onboarding/OnboardingModal'
 import CommandPalette from '../ui/CommandPalette'
 import GlobalSearch from '../search/GlobalSearch'
 import ShortcutHelp from '../ui/ShortcutHelp'
+import ErrorBoundary from '../ui/ErrorBoundary'
 import { ToastContainer } from '../ui/Toast'
 import { useChatStore } from '../../store/chat'
 import { useWorkspaceStore } from '../../store/workspace'
@@ -21,47 +24,18 @@ function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-// Simple error boundary
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error }
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen w-screen bg-[var(--bg-content)] text-[var(--text-primary)] p-8">
-          <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-          <pre className="text-xs text-[var(--text-muted)] bg-[var(--bg-sidebar)] p-4 rounded-lg max-w-lg overflow-auto">
-            {this.state.error?.message}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium"
-          >
-            Reload App
-          </button>
-        </div>
-      )
-    }
-    return this.props.children
-  }
-}
-
 export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [skillsPanelOpen, setSkillsPanelOpen] = useState(false)
   const [filePanelOpen, setFilePanelOpen] = useState(false)
   const [memoryPanelOpen, setMemoryPanelOpen] = useState(false)
+  const [runnerPanelOpen, setRunnerPanelOpen] = useState(false)
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [activeNav, setActiveNav] = useState('Chats')
   const newThread = useChatStore((state) => state.newThread)
   const { createThread, activeWorkspace, loadWorkspaces } = useWorkspaceStore()
   const { settings, load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
@@ -157,16 +131,58 @@ export default function AppShell() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  const closeSkillsPanel = () => {
+    setSkillsPanelOpen(false)
+    setActiveNav((current) => (current === 'Skills' ? 'Chats' : current))
+  }
+  const closeFilePanel = () => {
+    setFilePanelOpen(false)
+    setActiveNav((current) => (current === 'Files' ? 'Chats' : current))
+  }
+  const closeMemoryPanel = () => {
+    setMemoryPanelOpen(false)
+    setActiveNav((current) => (current === 'Memory' ? 'Chats' : current))
+  }
+  const closeRunnerPanel = () => {
+    setRunnerPanelOpen(false)
+    setActiveNav((current) => (current === 'Runner' ? 'Chats' : current))
+  }
+  const closeAgentPanel = () => {
+    setAgentPanelOpen(false)
+    setActiveNav((current) => (current === 'Agent' ? 'Chats' : current))
+  }
+
+  const anyPanelOpen = skillsPanelOpen || filePanelOpen || memoryPanelOpen || runnerPanelOpen || agentPanelOpen
+
   return (
     <ErrorBoundary>
       <div className="flex h-screen w-screen overflow-hidden text-[var(--text-primary)] bg-transparent">
         {!sidebarCollapsed && (
           <Sidebar
+            activeNav={activeNav}
+            setActiveNav={setActiveNav}
             onOpenSettings={() => setSettingsOpen(true)}
             onNewThread={handleNewThread}
-            onOpenSkills={() => setSkillsPanelOpen(true)}
-            onOpenFiles={() => setFilePanelOpen(true)}
-            onOpenMemory={() => setMemoryPanelOpen(true)}
+            onOpenSkills={() => {
+              setActiveNav('Skills')
+              setSkillsPanelOpen(true)
+            }}
+            onOpenFiles={() => {
+              setActiveNav('Files')
+              setFilePanelOpen(true)
+            }}
+            onOpenMemory={() => {
+              setActiveNav('Memory')
+              setMemoryPanelOpen(true)
+            }}
+            onOpenRunner={() => {
+              setActiveNav('Runner')
+              setRunnerPanelOpen(true)
+            }}
+            onOpenAgent={() => {
+              setActiveNav('Agent')
+              setAgentPanelOpen(true)
+            }}
           />
         )}
         <main
@@ -174,35 +190,124 @@ export default function AppShell() {
           aria-label="Chat"
           className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]"
         >
-          <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
+          <ErrorBoundary>
+            <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
+          </ErrorBoundary>
         </main>
 
-        {/* SkillsPanel with slide-in animation */}
+        {/* Backdrop for auxiliary panels */}
+        <AnimatePresence>
+          {anyPanelOpen && (
+            <motion.div
+              className="fixed inset-0 z-30 bg-black/10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => {
+                closeSkillsPanel()
+                closeFilePanel()
+                closeMemoryPanel()
+                closeRunnerPanel()
+                closeAgentPanel()
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Right-side panel drawers — responsive max width */}
         <AnimatePresence>
           {skillsPanelOpen && (
             <motion.div
-              className="fixed inset-0 z-40 bg-[var(--bg-content)]/95"
+              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
+              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
             >
-              <SkillsPanel onClose={() => setSkillsPanelOpen(false)} />
+              <ErrorBoundary>
+                <SkillsPanel onClose={closeSkillsPanel} />
+              </ErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* FilePanel with slide-in animation */}
-        <AnimatePresence>{filePanelOpen && <FilePanel onClose={() => setFilePanelOpen(false)} />}</AnimatePresence>
-
-        {/* MemoryPanel with slide-in animation */}
         <AnimatePresence>
-          {memoryPanelOpen && <MemoryPanel onClose={() => setMemoryPanelOpen(false)} />}
+          {filePanelOpen && (
+            <motion.div
+              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[640px]"
+              style={{ width: 640, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <ErrorBoundary>
+                <FilePanel onClose={closeFilePanel} />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {memoryPanelOpen && (
+            <motion.div
+              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
+              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <ErrorBoundary>
+                <MemoryPanel onClose={closeMemoryPanel} />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {runnerPanelOpen && (
+            <motion.div
+              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[640px]"
+              style={{ width: 640, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <ErrorBoundary>
+                <CodeRunner />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {agentPanelOpen && (
+            <motion.div
+              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
+              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <ErrorBoundary>
+                <AgentExecutor />
+              </ErrorBoundary>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Settings Modal with fade + slide */}
         <AnimatePresence>
-          {settingsOpen && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
+          {settingsOpen && (
+            <ErrorBoundary>
+              <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+            </ErrorBoundary>
+          )}
         </AnimatePresence>
 
         {/* Onboarding with fade + slide up */}

@@ -104,7 +104,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
           type: 'workspace',
           title: ws.name || ws.folderPath.split('/').pop() || 'Untitled',
           subtitle: ws.folderPath,
-          icon: <Folder size={16} className="text-blue-500" />,
+          icon: <Folder size={16} className="text-[var(--info)]" />,
           score: nameMatch.length ? 100 : 50,
           matchRanges: nameMatch.length ? nameMatch : pathMatch,
           onSelect: () => {
@@ -125,7 +125,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
           type: 'thread',
           title: t.title,
           subtitle: ws ? `in ${ws.name || ws.folderPath.split('/').pop()}` : '',
-          icon: <MessageSquare size={16} className="text-emerald-500" />,
+          icon: <MessageSquare size={16} className="text-[var(--success)]" />,
           score: 80,
           matchRanges: matches,
           onSelect: () => {
@@ -148,7 +148,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
           type: 'message',
           title: m.content.slice(0, 60) + (m.content.length > 60 ? '…' : ''),
           subtitle: m.role === 'user' ? 'You' : 'Assistant',
-          icon: <FileText size={16} className="text-amber-500" />,
+          icon: <FileText size={16} className="text-[var(--warning)]" />,
           score: 40,
           matchRanges: matches,
           onSelect: () => {
@@ -169,7 +169,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
           type: 'skill',
           title: s.name,
           subtitle: s.description.slice(0, 80),
-          icon: <Zap size={16} className="text-violet-500" />,
+          icon: <Zap size={16} className="text-[var(--accent)]" />,
           score: nameMatch.length ? 90 : 45,
           matchRanges: nameMatch.length ? nameMatch : descMatch,
           onSelect: () => {
@@ -361,6 +361,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                 />
                 {query && (
                   <button
+                    type="button"
                     onClick={() => setQuery('')}
                     className="p-1 rounded-md hover:bg-[var(--border)] text-[var(--text-muted)] transition-colors"
                   >
@@ -403,7 +404,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                             const globalIdx = flatResults.findIndex((r) => r.id === item.id)
                             const isSelected = globalIdx === selectedIndex
                             return (
-                              <motion.button
+                              <motion.button type="button"
                                 key={item.id}
                                 initial={{ opacity: 0, y: 4 }}
                                 animate={{ opacity: 1, y: 0 }}

@@ -42,13 +42,14 @@ export default function ChatStatusBar({ onOpenSettings }: ChatStatusBarProps) {
     <div className="shrink-0 flex items-center gap-4 px-6 py-2 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/30">
       {/* Provider health - clickable to switch */}
       <button
+        type="button"
         onClick={onOpenSettings}
         className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         title="Click to switch provider"
       >
-        {providerHealth === 'pass' && <CheckCircle2 size={12} className="text-green-500" />}
-        {providerHealth === 'fail' && <XCircle size={12} className="text-red-500" />}
-        {providerHealth === 'unknown' && <AlertCircle size={12} className="text-yellow-500" />}
+        {providerHealth === 'pass' && <CheckCircle2 size={12} className="text-[var(--success)]" />}
+        {providerHealth === 'fail' && <XCircle size={12} className="text-[var(--error)]" />}
+        {providerHealth === 'unknown' && <AlertCircle size={12} className="text-[var(--warning)]" />}
         <span>
           {provider
             ? providerHealth === 'pass'
@@ -63,6 +64,7 @@ export default function ChatStatusBar({ onOpenSettings }: ChatStatusBarProps) {
       {/* AGENTS.md status - clickable */}
       {agentsMd?.loaded && (
         <button
+          type="button"
           onClick={() => toast.info(`${agentsMd.paths.length} AGENTS.md loaded · ${agentsMd.tokenCount} rules`)}
           className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           title="View loaded AGENTS.md rules"
@@ -75,7 +77,7 @@ export default function ChatStatusBar({ onOpenSettings }: ChatStatusBarProps) {
       {/* Skill active status */}
       {activeSkill && (
         <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-          <Library size={12} className="text-indigo-500" />
+          <Library size={12} className="text-[var(--info)]" />
           <span>{activeSkill.name}</span>
         </div>
       )}
@@ -90,7 +92,7 @@ export default function ChatStatusBar({ onOpenSettings }: ChatStatusBarProps) {
 
       {/* Network status */}
       <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-        <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+        <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[var(--success)]' : 'bg-[var(--error)]'}`} />
         <span>{isOnline ? 'Online' : 'Offline'}</span>
       </div>
     </div>

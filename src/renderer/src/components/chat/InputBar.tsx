@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, KeyboardEvent, useCallback, DragEvent, useMemo } from 'react'
 import { useChatStore } from '../../store/chat'
+import { useToast } from '../../store/toast'
 import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
 import type { Message, AgentRole } from '@shared/types'
@@ -21,11 +22,10 @@ import {
 interface InputBarProps {
   onOpenSettings: () => void
   onClearChat?: () => void
-  onScreenshot?: () => void
   onWebSearch?: (query: string) => void
 }
 
-export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, onWebSearch }: InputBarProps) {
+export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: InputBarProps) {
   const [text, setText] = useState('')
   const [showEnsemblePicker, setShowEnsemblePicker] = useState(false)
   const [showSkillPicker, setShowSkillPicker] = useState(false)
@@ -63,6 +63,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
   const completeEnsembleRun = useChatStore((state) => state.completeEnsembleRun)
   const { settings, activeProvider, ensembleProviders, arbitratorProvider } = useSettingsStore()
   const { activeThreadId, activeWorkspace, createThread, updateThread, workspaces, threads } = useWorkspaceStore()
+  const toast = useToast()
   const activeThread = threads.find((t) => t.id === activeThreadId)
   const provider = activeProvider()
   const workspace = activeWorkspace()
@@ -315,15 +316,19 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
       setPopoverType(null)
       if (cmd.id === 'clear') onClearChat?.()
       else if (cmd.id === 'model' || cmd.id === 'provider') {
-        // ModelPicker opened by toolbar
-      } else if (cmd.id === 'screenshot') onScreenshot?.()
-      else if (cmd.id === 'search') {
+        window.dispatchEvent(new CustomEvent('opendesk:focus-model'))
+      } else if (cmd.id === 'screenshot') {
+        handleScreenshot()
+      } else if (cmd.id === 'search') {
         const query = text.replace(/.*\/search\s*/, '').trim()
         if (query) onWebSearch?.(query)
+        else toast.info('Enter a search query after /search')
+      } else if (cmd.id === 'workspace') {
+        toast.info('Switch workspace from the sidebar')
       }
       textareaRef.current?.focus()
     },
-    [onClearChat, onScreenshot, onWebSearch, text]
+    [onClearChat, onWebSearch, text, toast, handleScreenshot]
   )
 
   const mentionItems = useMemo(() => {
@@ -622,9 +627,26 @@ export default function InputBar({ onOpenSettings, onClearChat, onScreenshot, on
     }
   }, [addAttachment])
 
-  // Load workspace file list for @file mentions (placeholder)
+  // Load workspace file list for @file mentions
   useEffect(() => {
-    setWorkspaceFiles([])
+    if (!workspace?.folderPath) {
+      setWorkspaceFiles([])
+      return
+    }
+    async function loadFiles() {
+      try {
+        const result = await window.api.tools.listDirectory(workspace.folderPath)
+        if (result.success && result.entries) {
+          const files = result.entries.filter((e) => !e.isDirectory).map((e) => e.name)
+          setWorkspaceFiles(files)
+        } else {
+          setWorkspaceFiles([])
+        }
+      } catch {
+        setWorkspaceFiles([])
+      }
+    }
+    loadFiles()
   }, [workspace?.folderPath])
 
   const handleSelectPopover = useCallback(

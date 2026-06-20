@@ -110,6 +110,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setImportOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all"
             >
@@ -117,6 +118,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
               Import
             </button>
             <button
+              type="button"
               onClick={() => setCreateOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all"
             >
@@ -124,6 +126,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
               Create
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors ml-1"
             >
@@ -151,6 +154,7 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
               const isActive = sourceFilter === opt.value
               return (
                 <button
+                  type="button"
                   key={opt.value}
                   onClick={() => setSourceFilter(isActive ? 'all' : opt.value)}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
@@ -293,12 +297,14 @@ export default function SkillsPanel({ onClose }: SkillsPanelProps) {
               </div>
               <div className="flex items-center justify-end gap-2 mt-6">
                 <button
+                  type="button"
                   onClick={() => setCreateOpen(false)}
                   className="px-4 py-2 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleCreateSkill}
                   disabled={!createName.trim() || !createDesc.trim() || creating}
                   className="px-4 py-2 rounded-lg text-xs font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

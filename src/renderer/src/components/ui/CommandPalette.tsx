@@ -354,6 +354,7 @@ export default function CommandPalette({ onOpenSettings }: CommandPaletteProps) 
                         const idx = flatIndex++
                         return (
                           <button
+                            type="button"
                             key={item.id}
                             data-index={idx}
                             onClick={() => {

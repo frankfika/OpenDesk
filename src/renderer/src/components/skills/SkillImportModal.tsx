@@ -50,6 +50,7 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-base font-semibold text-[var(--text-primary)]">Import Skill</h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
           >
@@ -60,6 +61,7 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
         {/* Tabs */}
         <div className="px-6 pt-4 flex items-center gap-2">
           <button
+            type="button"
             onClick={() => {
               setTab('folder')
               setResult(null)
@@ -74,6 +76,7 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
             From Folder
           </button>
           <button
+            type="button"
             onClick={() => {
               setTab('github')
               setResult(null)
@@ -145,8 +148,8 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
             <div
               className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${
                 result.success
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  : 'bg-red-50 text-red-700 border border-red-100'
+                  ? 'bg-[var(--success-bg)] text-emerald-700 border border-[var(--success-border)]'
+                  : 'bg-[var(--error-bg)] text-[var(--error)] border border-red-100'
               }`}
             >
               {result.success ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
@@ -158,12 +161,14 @@ export default function SkillImportModal({ onClose, onSuccess }: SkillImportModa
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[var(--border)] flex items-center justify-end gap-2">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={tab === 'folder' ? handleImportFolder : handleImportGitHub}
             disabled={loading || (tab === 'folder' ? !folderPath.trim() : !githubUrl.trim())}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

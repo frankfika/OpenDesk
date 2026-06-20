@@ -45,7 +45,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
 
   if (!panelOpen) {
     return (
-      <motion.button
+      <motion.button type="button"
         onClick={() => setPanelOpen(true)}
         className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-md border border-[var(--border)] bg-[var(--bg-sidebar)]/50 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-all ${className}`}
         title="Show artifacts"
@@ -90,6 +90,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
         </div>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={togglePanel}
             className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
             title="Hide panel"
@@ -104,6 +105,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
         <div className="shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-[var(--border)] bg-[var(--bg-sidebar)]/20 overflow-x-auto">
           {artifacts.map((art) => (
             <button
+              type="button"
               key={art.id}
               onClick={() => handleSetActive(art.id)}
               className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all border ${
@@ -119,7 +121,7 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
                   e.stopPropagation()
                   removeArtifact(art.id)
                 }}
-                className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-500 transition-all"
+                className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--error-bg)] hover:text-[var(--error)] transition-all"
               >
                 <X size={10} />
               </span>

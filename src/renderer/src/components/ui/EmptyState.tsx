@@ -77,7 +77,7 @@ export default function EmptyState({
             const isPrimary = action.variant === 'primary'
             const isGhost = action.variant === 'ghost'
             return (
-              <motion.button
+              <motion.button type="button"
                 key={i}
                 onClick={action.onClick}
                 className={cn(

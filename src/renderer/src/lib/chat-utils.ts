@@ -95,7 +95,7 @@ export function formatTime(ts: number): string {
 export function getProviderColor(providerType?: string): string {
   switch (providerType) {
     case 'openai':
-      return 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+      return 'bg-emerald-500/10 text-[var(--success)] border-emerald-200'
     case 'anthropic':
       return 'bg-orange-500/10 text-orange-600 border-orange-200'
     case 'ollama':
@@ -140,9 +140,9 @@ export function artifactTitleFromLang(language: string): string {
       return 'React Component'
     case 'md':
     case 'markdown':
-      return 'Markdown'
+      return 'Markdown Doc'
     default:
-      return 'Code'
+      return 'Code Artifact'
   }
 }
 

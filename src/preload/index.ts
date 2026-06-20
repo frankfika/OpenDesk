@@ -242,6 +242,45 @@ contextBridge.exposeInMainWorld('api', {
     run: (): Promise<DoctorReport> => ipcRenderer.invoke('doctor:run')
   },
 
+  tools: {
+    listDirectory: (
+      path: string
+    ): Promise<{
+      success: boolean
+      entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>
+      error?: string
+    }> => ipcRenderer.invoke('tools:listDirectory', path),
+    readFile: (path: string): Promise<{ success: boolean; content?: string; error?: string }> =>
+      ipcRenderer.invoke('tools:readFile', path),
+    writeFile: (path: string, content: string, workspacePath?: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('tools:writeFile', path, content, workspacePath),
+    executeShell: (
+      command: string,
+      args: string[],
+      options?: { timeout?: number; cwd?: string; env?: Record<string, string> }
+    ): Promise<{ success: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }> =>
+      ipcRenderer.invoke('tools:executeShell', command, args, options)
+  },
+
+  rag: {
+    init: (workspaceId: string): Promise<{ success: boolean; adapterName?: string; status?: string; error?: string }> =>
+      ipcRenderer.invoke('rag:init', workspaceId),
+    indexFile: (workspaceId: string, filePath: string): Promise<{ success: boolean; source?: unknown; error?: string }> =>
+      ipcRenderer.invoke('rag:indexFile', workspaceId, filePath),
+    search: (
+      workspaceId: string,
+      query: string,
+      topK?: number
+    ): Promise<{ success: boolean; results?: Array<{ id: string; content: string; score: number; metadata: unknown }>; error?: string }> =>
+      ipcRenderer.invoke('rag:search', workspaceId, query, topK),
+    listSources: (workspaceId: string): Promise<{ success: boolean; sources?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('rag:listSources', workspaceId),
+    deleteSource: (workspaceId: string, sourceId: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('rag:deleteSource', workspaceId, sourceId),
+    health: (): Promise<{ success: boolean; healthy?: boolean; status?: string; name?: string; error?: string }> =>
+      ipcRenderer.invoke('rag:health')
+  },
+
   memory: {
     load: (category: 'user' | 'identity' | 'soul'): Promise<string> => ipcRenderer.invoke('memory:load', category),
     save: (category: 'user' | 'identity' | 'soul', content: string): Promise<void> =>

@@ -69,7 +69,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 bg-[var(--bg-content)] flex flex-col"
+      className="flex flex-col h-full bg-[var(--bg-content)]"
       initial={{ x: '100%' }}
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
@@ -90,6 +90,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleManualSave}
             disabled={saving}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
@@ -107,6 +108,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
             )}
           </button>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
           >
@@ -122,6 +124,7 @@ export default function MemoryPanel({ onClose }: MemoryPanelProps) {
           const isActive = activeTab === tab.key
           return (
             <button
+              type="button"
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all border ${

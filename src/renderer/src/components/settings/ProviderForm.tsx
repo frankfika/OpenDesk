@@ -131,6 +131,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(TYPE_PRESETS) as ProviderType[]).map((t) => (
             <button
+              type="button"
               key={t}
               onClick={() => handleTypeChange(t)}
               className={`px-3 py-2.5 rounded-xl text-xs font-medium text-center transition-all duration-200 border ${
@@ -188,6 +189,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
           />
           {canFetch && (
             <button
+              type="button"
               onClick={handleFetchModels}
               disabled={fetchingModels}
               className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all duration-200 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] disabled:opacity-50"
@@ -203,6 +205,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
           <div className="flex flex-wrap gap-1.5 mt-2">
             {TYPE_PRESETS[type].models.map((m) => (
               <button
+                type="button"
                 key={m}
                 onClick={() => setModel(m)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
@@ -251,6 +254,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
       {/* Actions */}
       <div className="flex items-center gap-3 pt-3 mt-1 border-t border-[var(--border)]">
         <button
+          type="button"
           onClick={handleTest}
           disabled={testing || !canSave}
           className={`px-4 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 border ${
@@ -264,7 +268,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
 
         {testResult !== null && (
           <span
-            className={`text-[13px] font-medium flex items-center gap-1 ${testResult ? 'text-green-600' : 'text-red-600'}`}
+            className={`text-[13px] font-medium flex items-center gap-1 ${testResult ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}
           >
             {testResult ? <Check size={14} /> : <X size={14} />}
             {testResult ? 'Connected' : 'Failed'}
@@ -274,6 +278,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
         <div className="flex-1" />
 
         <button
+          type="button"
           onClick={handleSave}
           disabled={!canSave}
           className={`px-5 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 shadow-sm ${

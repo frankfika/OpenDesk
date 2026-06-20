@@ -6,27 +6,27 @@ import { useToastStore, type Toast, type ToastType } from '../../store/toast'
 const toastConfig: Record<ToastType, { icon: typeof CheckCircle2; color: string; bg: string; border: string }> = {
   success: {
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bg: 'bg-green-50/80 dark:bg-green-950/30',
-    border: 'border-green-200 dark:border-green-900'
+    color: 'text-[var(--success)]',
+    bg: 'bg-[var(--success-bg)]/80',
+    border: 'border-[var(--success-border)]'
   },
   error: {
     icon: AlertCircle,
-    color: 'text-red-600',
-    bg: 'bg-red-50/80 dark:bg-red-950/30',
-    border: 'border-red-200 dark:border-red-900'
+    color: 'text-[var(--error)]',
+    bg: 'bg-[var(--error-bg)]/80',
+    border: 'border-[var(--error-border)]'
   },
   info: {
     icon: Info,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50/80 dark:bg-blue-950/30',
-    border: 'border-blue-200 dark:border-blue-900'
+    color: 'text-[var(--info)]',
+    bg: 'bg-[var(--info-bg)]/80',
+    border: 'border-[var(--info-border)]'
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50/80 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-900'
+    color: 'text-[var(--warning)]',
+    bg: 'bg-[var(--warning-bg)]/80',
+    border: 'border-[var(--warning-border)]'
   }
 }
 
@@ -53,6 +53,8 @@ function ToastItem({
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
       onMouseEnter={() => onPause(toast.id)}
       onMouseLeave={() => onResume(toast.id)}
+      role="alert"
+      aria-live="polite"
       className={cn(
         'flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg',
         'min-w-[280px] max-w-[400px]',
@@ -77,6 +79,8 @@ function ToastItem({
         )}
       </div>
       <button
+        type="button"
+        aria-label="Dismiss notification"
         onClick={() => onRemove(toast.id)}
         className="shrink-0 p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
       >

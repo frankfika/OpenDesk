@@ -55,8 +55,9 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
         {workspace ? (
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowWorkspacePicker((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
+              className="no-drag flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
             >
               <FolderSymlink size={12} />
               {workspace.name || workspace.folderPath.split('/').pop()}
@@ -72,6 +73,7 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
                 </div>
                 {workspaces.map((ws) => (
                   <button
+                    type="button"
                     key={ws.id}
                     onClick={() => {
                       setActiveWorkspace(ws.id)
@@ -115,13 +117,14 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
           />
         ) : (
           <button
+            type="button"
             onClick={() => {
               if (thread) {
                 setTitleValue(thread.title)
                 setEditingTitle(true)
               }
             }}
-            className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-2 py-1 rounded hover:bg-[var(--bg-sidebar)]"
+            className="no-drag text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-2 py-1 rounded hover:bg-[var(--bg-sidebar)]"
           >
             {thread?.title || 'New conversation'}
           </button>
@@ -131,13 +134,13 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
       {/* Right: Tags */}
       <div className="no-drag flex items-center gap-2 flex-1 justify-end">
         {activeSkill && (
-          <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-100 mt-1">
+          <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--info-bg)] text-[var(--info)] border border-[var(--info-border)] mt-1">
             <Library size={12} />
             {activeSkill.name}
           </span>
         )}
         {agentsMd?.loaded && (
-          <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-600 border border-emerald-100 mt-1">
+          <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-border)] mt-1">
             <FileText size={12} />
             {agentsMd.tokenCount} rules
           </span>
@@ -147,8 +150,9 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
         </span>
         {artifacts.length > 0 && (
           <button
+            type="button"
             onClick={() => setPanelOpen(!panelOpen)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors mt-1 ${
+            className={`no-drag flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors mt-1 ${
               panelOpen
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                 : 'bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-muted)]'
@@ -160,23 +164,26 @@ export default function ChatHeader({ onOpenSettings, onOpenFiles }: ChatHeaderPr
           </button>
         )}
         <button
+          type="button"
           onClick={onOpenFiles}
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors mt-1 bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-muted)]"
+          className="no-drag flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors mt-1 bg-[var(--bg-sidebar)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-muted)]"
           title="Browse workspace files"
         >
           <FolderOpen size={12} />
           <span>Files</span>
         </button>
         <button
+          type="button"
           onClick={toggleTheme}
-          className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mt-1"
+          className="no-drag p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mt-1"
           title="Toggle theme"
         >
           {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
         <button
+          type="button"
           onClick={onOpenSettings}
-          className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mt-1"
+          className="no-drag p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors mt-1"
           title="Settings"
         >
           <Settings size={14} />
