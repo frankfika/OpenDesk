@@ -5,7 +5,73 @@ All notable changes to OpenDesk will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] — 2025-06-20
+## [0.4.0] — 2026-06-20
+
+### Security
+
+#### P0 Critical Fixes
+- **Renderer Sandbox**: `sandbox: true` 启用，renderer 进程不再拥有无限制的 Node.js 访问
+- **IPC 文件工具移除**：移除 `tools:readFile/writeFile/listDirectory/applyPatch` 的 IPC 暴露，文件工具仅通过 Tool Registry executor（主进程）访问
+- **Shell 白名单收紧**：从 `SHELL_WHITELIST` 移除 `bash`, `sh`, `python`, `node`, `eval`, `exec` 等危险命令
+- **XSS 加固**：Artifact Renderer iframe sandbox 改为 `sandbox="allow-scripts allow-same-origin"`，配合 CSP 限制
+- **MCP 命令验证**：`spawn` 前增加路径遍历检查（`..`）、绝对路径存在性验证
+- **Desktop 工具守卫**：`desktop:capture`, `desktop:openPath` 等 handler 增加 `desktopEnabled` 开关检查
+- **API Key 防泄露**：移除 `settings:getApiKey` IPC，renderer 永不获取明文 key；`fetchModels`/`testProvider` 改为接受 `providerId` 由主进程加载 key
+- **Base URL 验证**：`fetchModels` 和 `testProvider` 增加 `http`/`https` 协议检查，防止 SSRF/key exfiltration
+
+### Added
+
+#### CI/CD & 跨平台构建
+- GitHub Actions `release.yml`：三平台并行构建（macOS x64/arm64, Windows x64/arm64, Ubuntu x64）
+- 产物格式：macOS `.dmg` + `.zip`，Windows `.exe`（NSIS），Linux `.AppImage` + `.deb`
+- 可选代码签名配置：macOS（Apple ID + Team ID）和 Windows 证书支持
+- GitHub Actions `ci.yml`：Lint、Type Check、Unit Test、Build 四阶段质量门禁
+- 代码产物上传：仅打包安装文件（`.dmg`, `.exe`, `.AppImage`, `.deb`）到 Release
+
+#### 测试框架
+- Vitest 单元测试框架 + jsdom 环境
+- `@testing-library/react` + `@testing-library/jest-dom` 组件测试
+- Playwright E2E 测试框架（配置就绪）
+- 初始测试覆盖：file-tools（5 用例）、utils（3 用例）、EmptyState（2 用例）
+
+#### ESLint & Prettier
+- ESLint 9 配置（TypeScript + React + React Hooks + React Refresh）
+- Prettier 格式化配置
+- `lint`, `lint:fix`, `format`, `format:check` 脚本
+
+### Changed
+
+- `useChatStore` selector 优化：全组件改用 `useChatStore((state) => state.field)` 模式，避免 streaming token 更新导致全局重渲染
+- Dark mode 修复：`.dark :root` 非法选择器改为 `.dark` 直接选择器 + `prefers-color-scheme` 媒体查询
+- `InputBar` popover 修复：点击 popover 内部不再意外关闭
+- 全局快捷键：补齐 `Cmd+Shift+.`（切换侧边栏）、`Cmd+Shift+T`（切换主题）、`Cmd+Shift+M`（聚焦模型选择器）
+- `AgentActivityBar` 修复：`ensembleMode` 改为 `mode`，消除 undefined 崩溃
+- `Message Fork` 实现：从消息分叉为新 thread 并自动切换
+- `ProviderForm` Fetch Models：按钮真正调用 `fetchModels` API，支持 OpenAI/Anthropic/Ollama/自定义端点
+- `desktopEnabled` 功能开关：执行 `shell` 和 `desktop_*` 工具前检查 approvalMode
+
+### Fixed
+
+- 启动时窗口背景色跟随主题（dark/light/system），消除冷启动白闪
+- 大量图标按钮补充 `aria-label`
+- 侧边栏 `aside`、主区域 `main role="main"` 等基础可访问性地标
+- `Workspace` 类型新增 `icon?: string` 字段，emoji 与名称分离
+- `Toast` 类型新增 `remaining` 和 `timerId` 支持悬停暂停
+
+---
+
+## [0.3.0] — 2026-06-18
+
+### Changed
+
+- **拆分超大组件**：`InputBar.tsx`（>1100 行）、`SettingsModal.tsx`（>1000 行）逻辑拆分，降低维护复杂度
+- **重构 IPC Handlers**：`src/main/ipc/handlers.ts` 拆分为 domain-specific 模块（`chat.ts`, `settings.ts`, `workspace.ts`, `desktop.ts`, `doctor.ts`, `mcp.ts`, `skills.ts`, `thread.ts`）
+- **代码格式化**：全库 Prettier 格式化，统一代码风格
+- **Lint 修复**：消除所有 ESLint warning 和 error
+
+---
+
+## [0.2.0] — 2026-06-12
 
 ### Added
 
@@ -56,7 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InputBar 的 `document.addEventListener('mousedown', ...)` 无条件关闭所有 popover
 - 大量图标按钮缺少 `aria-label`
 
-## [0.1.0] — 2025-06-01
+## [0.1.0] — 2026-06-01
 
 ### Added
 - Electron + Vite + React + Tailwind CSS 基础架构
