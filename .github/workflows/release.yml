@@ -33,18 +33,25 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Configure code signing (optional)
+        shell: bash
+        run: |
+          # Only export signing env vars if the corresponding secrets are set.
+          # Empty env vars cause electron-builder to fail on macOS.
+          if [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then
+            echo "CSC_LINK=${{ secrets.MAC_CSC_LINK }}" >> "$GITHUB_ENV"
+            echo "CSC_KEY_PASSWORD=${{ secrets.MAC_CSC_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
+            echo "APPLE_APP_SPECIFIC_PASSWORD=${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ secrets.WIN_CSC_LINK }}" ]; then
+            echo "WIN_CSC_LINK=${{ secrets.WIN_CSC_LINK }}" >> "$GITHUB_ENV"
+            echo "WIN_CSC_KEY_PASSWORD=${{ secrets.WIN_CSC_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Package application
         run: npx electron-builder --publish never
-        env:
-          # macOS code signing & notarization (optional)
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows code signing (optional)
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

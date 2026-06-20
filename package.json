@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "description": "An AI desktop assistant that can use any AI model",
   "main": "./out/main/index.js",
-  "author": "OpenDesk",
+  "author": "OpenDesk <team@opendesk.app>",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "electron-vite dev",
