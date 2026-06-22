@@ -1,7 +1,7 @@
 import { app, safeStorage } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
-import type { AppSettings, Message, Thread } from '../../shared/types'
+import type { AppSettings, Message, Thread } from '../shared/types'
 import { settings, setSettings, defaultSettings } from './app-state'
 
 export function getConfigDir(): string {
@@ -36,7 +36,18 @@ export function loadSettingsFromDisk(): AppSettings {
   const p = getSettingsPath()
   if (!existsSync(p)) return { ...defaultSettings }
   try {
-    return JSON.parse(readFileSync(p, 'utf-8')) as AppSettings
+    const saved = JSON.parse(readFileSync(p, 'utf-8')) as AppSettings
+    const validModes: Array<AppSettings['approvalMode']> = ['ask', 'auto-edits', 'auto-all', 'bypass']
+    // Migrate legacy approval mode: old 'ask' blocks shell/file tools by default.
+    // Modern default is 'auto-edits' which auto-approves tools within allowed directories.
+    if ((saved as AppSettings & { approvalMode?: string }).approvalMode === 'ask') {
+      saved.approvalMode = 'auto-edits'
+    }
+    // Guard against invalid/missing approvalMode values (e.g. stale stubs, manual edits)
+    if (!validModes.includes(saved.approvalMode)) {
+      saved.approvalMode = 'auto-edits'
+    }
+    return { ...defaultSettings, ...saved }
   } catch {
     return { ...defaultSettings }
   }
@@ -114,5 +125,8 @@ export function saveMessages(threadId: string, messages: Message[]): void {
 }
 
 export function initSettings(): void {
-  setSettings(loadSettingsFromDisk())
+  const migrated = loadSettingsFromDisk()
+  setSettings(migrated)
+  // Persist any migrated values (e.g. approvalMode) so the migration happens only once
+  saveSettingsToDisk(migrated)
 }

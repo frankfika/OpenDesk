@@ -6,7 +6,9 @@ import { OLLAMA_BASE_URL, ANTHROPIC_BASE_URL, DEFAULT_OPENAI_BASE_URL } from '@s
 
 interface ProviderFormProps {
   onSave: (config: ProviderConfig, apiKey: string) => void
+  onCancel?: () => void
   initialValues?: { name?: string; baseUrl?: string; model?: string }
+  editingProvider?: ProviderConfig
 }
 
 type ProviderType = ProviderConfig['type']
@@ -55,7 +57,7 @@ function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-export default function ProviderForm({ onSave, initialValues }: ProviderFormProps) {
+export default function ProviderForm({ onSave, onCancel, initialValues, editingProvider }: ProviderFormProps) {
   // Infer type from baseUrl: anthropic → 'anthropic', localhost → 'ollama', else 'openai-compatible'
   function inferType(baseUrl?: string): ProviderType {
     if (!baseUrl) return 'openai-compatible'
@@ -64,15 +66,21 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
     return 'openai-compatible'
   }
 
-  const [type, setType] = useState<ProviderType>(() => inferType(initialValues?.baseUrl))
-  const [name, setName] = useState(initialValues?.name ?? '')
-  const [model, setModel] = useState(initialValues?.model ?? '')
+  const isEditing = !!editingProvider
+  const [type, setType] = useState<ProviderType>(
+    () => editingProvider?.type ?? inferType(initialValues?.baseUrl)
+  )
+  const [name, setName] = useState(editingProvider?.name ?? initialValues?.name ?? '')
+  const [model, setModel] = useState(editingProvider?.model ?? initialValues?.model ?? '')
   const [apiKey, setApiKey] = useState('')
-  const [baseUrl, setBaseUrl] = useState(initialValues?.baseUrl ?? '')
+  const [baseUrl, setBaseUrl] = useState(editingProvider?.baseUrl ?? initialValues?.baseUrl ?? '')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
+  const [testError, setTestError] = useState<string | null>(null)
   const [fetchingModels, setFetchingModels] = useState(false)
-  const [fetchedModels, setFetchedModels] = useState<ModelInfo[]>([])
+  const [fetchedModels, setFetchedModels] = useState<ModelInfo[]>(
+    editingProvider?.models?.map((id) => ({ id, displayName: id })) ?? []
+  )
   const { testProvider } = useSettingsStore()
 
   function handleTypeChange(t: ProviderType) {
@@ -86,8 +94,14 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
   async function handleTest() {
     setTesting(true)
     setTestResult(null)
-    const ok = await testProvider(type, model, apiKey, baseUrl || undefined)
-    setTestResult(ok)
+    setTestError(null)
+    try {
+      const ok = await testProvider('', type, model, baseUrl || undefined, apiKey)
+      setTestResult(ok)
+    } catch (e) {
+      setTestResult(false)
+      setTestError(e instanceof Error ? e.message : String(e))
+    }
     setTesting(false)
   }
 
@@ -96,9 +110,13 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
     setFetchingModels(true)
     setFetchedModels([])
     try {
-      const models = await window.api.settings.fetchModels(type, apiKey || undefined, baseUrl || undefined)
+      const models = await window.api.settings.fetchModels('', type, baseUrl || undefined, apiKey || undefined)
       if (models && models.length > 0) {
         setFetchedModels(models)
+        // Auto-select the first available model if nothing is entered yet
+        if (!model.trim()) {
+          setModel(models[0].id)
+        }
       }
     } catch (e) {
       console.error('Failed to fetch models:', e)
@@ -108,19 +126,22 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
 
   function handleSave() {
     const config: ProviderConfig = {
-      id: genId(),
+      id: isEditing ? editingProvider!.id : genId(),
       name: name || TYPE_PRESETS[type].label,
       type,
       model,
       baseUrl: baseUrl || undefined,
-      enabled: true,
-      models: fetchedModels.length > 0 ? fetchedModels.map((m) => m.id) : undefined
+      enabled: isEditing ? editingProvider!.enabled : true,
+      models: fetchedModels.length > 0 ? fetchedModels.map((m) => m.id) : undefined,
+      lastTestedAt: isEditing ? editingProvider!.lastTestedAt : undefined,
+      lastTestResult: isEditing ? editingProvider!.lastTestResult : undefined
     }
     onSave(config, apiKey)
   }
 
   const needsKey = type !== 'ollama'
-  const canSave = model && (!needsKey || apiKey)
+  // When editing, API key is optional (leave blank to keep existing key)
+  const canSave = model && (isEditing || !needsKey || apiKey)
   const canFetch = (needsKey && apiKey) || type === 'ollama'
 
   return (
@@ -163,11 +184,16 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
       {/* API Key */}
       {needsKey && (
         <div>
-          <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">API Key</label>
+          <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">
+            API Key
+            {isEditing && (
+              <span className="text-[var(--text-muted)] font-normal ml-1">(leave blank to keep existing)</span>
+            )}
+          </label>
           <input
             type="password"
             className="w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none selectable font-mono bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--text-muted)] focus:bg-[var(--bg-content)] focus:shadow-sm transition-all duration-200"
-            placeholder="sk-..."
+            placeholder={isEditing ? '•••••••• (enter new key to update)' : 'sk-...'}
             value={apiKey}
             onChange={(e) => {
               setApiKey(e.target.value)
@@ -220,21 +246,27 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
           </div>
         )}
 
-        {/* Fetched models dropdown */}
+        {/* Fetched models */}
         {fetchedModels.length > 0 && (
           <div className="mt-2">
             <label className="block text-[11px] text-[var(--text-muted)] mb-1">Available models</label>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-[12px] bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-            >
+            <div className="flex flex-wrap gap-1.5">
               {fetchedModels.map((m) => (
-                <option key={m.id} value={m.id}>
+                <button
+                  type="button"
+                  key={m.id}
+                  onClick={() => setModel(m.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                    model === m.id
+                      ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30 text-[var(--accent)]'
+                      : 'bg-[var(--bg-sidebar)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
+                  }`}
+                  title={m.displayName || m.id}
+                >
                   {m.displayName || m.id}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         )}
       </div>
@@ -275,7 +307,23 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
           </span>
         )}
 
+        {testError && (
+          <span className="text-[12px] text-[var(--error)] truncate max-w-[200px]" title={testError}>
+            {testError}
+          </span>
+        )}
+
         <div className="flex-1" />
+
+        {isEditing && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] hover:text-[var(--text-primary)]"
+          >
+            Cancel
+          </button>
+        )}
 
         <button
           type="button"
@@ -287,7 +335,7 @@ export default function ProviderForm({ onSave, initialValues }: ProviderFormProp
               : 'bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed shadow-none'
           }`}
         >
-          Save Provider
+          {isEditing ? 'Save Changes' : 'Save Provider'}
         </button>
       </div>
     </div>

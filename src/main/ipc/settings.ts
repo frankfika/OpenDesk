@@ -91,8 +91,9 @@ export function registerSettingsHandlers(_win: BrowserWindow): void {
 
   ipcMain.handle(
     'settings:testProvider',
-    async (_e, providerId: string, type: string, model: string, baseUrl?: string) => {
-      const apiKey = loadKeys()[providerId] ?? ''
+    async (_e, providerId: string, type: string, model: string, baseUrl?: string, apiKey?: string) => {
+      const keyFromStore = loadKeys()[providerId] ?? ''
+      const effectiveKey = apiKey ?? keyFromStore
       if (baseUrl) {
         try {
           const url = new URL(baseUrl)
@@ -105,17 +106,18 @@ export function registerSettingsHandlers(_win: BrowserWindow): void {
       }
       let provider: Provider | null = null
       if (type === 'anthropic') {
-        provider = new AnthropicProvider(apiKey, model)
+        provider = new AnthropicProvider(effectiveKey, model)
       } else {
         const url = baseUrl || (type === 'ollama' ? OLLAMA_BASE_URL : DEFAULT_OPENAI_BASE_URL)
-        const key = apiKey || (type === 'ollama' ? 'ollama' : '')
+        const key = effectiveKey || (type === 'ollama' ? 'ollama' : '')
         provider = new OpenAIProvider(key, model, url)
       }
       try {
         if (!provider) return false
         return await provider.test()
-      } catch {
-        return false
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e)
+        throw new Error(`Provider test failed: ${message}`)
       }
     }
   )
@@ -126,7 +128,7 @@ export function registerSettingsHandlers(_win: BrowserWindow): void {
     return true
   })
 
-  ipcMain.handle('settings:fetchModels', async (_e, providerId: string, type: string, baseUrl?: string) => {
+  ipcMain.handle('settings:fetchModels', async (_e, providerId: string, type: string, baseUrl?: string, apiKey?: string) => {
     if (baseUrl) {
       try {
         const url = new URL(baseUrl)
@@ -137,7 +139,8 @@ export function registerSettingsHandlers(_win: BrowserWindow): void {
         throw new Error('Invalid baseUrl provided')
       }
     }
-    const apiKey = loadKeys()[providerId] ?? ''
-    return fetchModels(type, baseUrl, apiKey)
+    const keyFromStore = loadKeys()[providerId] ?? ''
+    const effectiveKey = apiKey ?? keyFromStore
+    return fetchModels(type, baseUrl, effectiveKey)
   })
 }

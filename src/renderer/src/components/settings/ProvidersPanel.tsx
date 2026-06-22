@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { Bot, Plug, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import EmptyState from '../ui/EmptyState'
 import ProviderForm from './ProviderForm'
-import type { ProviderConfig } from '@shared/types'
+import type { ProviderConfig, ModelInfo } from '@shared/types'
 import { PROVIDER_PRESETS } from '@shared/providers'
 import type { AppSettings } from '@shared/types'
 
@@ -11,7 +11,6 @@ interface ProvidersPanelProps {
   showAddForm: boolean
   addFormPreset: { name: string; baseUrl: string; model: string } | null
   editingProvider: string | null
-  editApiKey: string
   testingProvider: string | null
   onToggleAddForm: () => void
   onPresetClick: (preset: { name: string; baseUrl: string; model: string }) => void
@@ -22,9 +21,8 @@ interface ProvidersPanelProps {
   onRemove: (id: string) => void
   onStartEdit: (id: string) => void
   onCancelEdit: () => void
-  onEditApiKeyChange: (value: string) => void
-  onSaveApiKey: (providerId: string) => void
-  onFetchModels: (providerId: string) => void
+  onEditSave: (config: ProviderConfig, apiKey: string) => void
+  onFetchModels: (providerId: string) => Promise<ModelInfo[]>
   onUpdateProvider: (id: string, patch: Partial<ProviderConfig>) => void
 }
 
@@ -33,7 +31,6 @@ export default function ProvidersPanel({
   showAddForm,
   addFormPreset,
   editingProvider,
-  editApiKey,
   testingProvider,
   onToggleAddForm,
   onPresetClick,
@@ -44,8 +41,7 @@ export default function ProvidersPanel({
   onRemove,
   onStartEdit,
   onCancelEdit,
-  onEditApiKeyChange,
-  onSaveApiKey,
+  onEditSave,
   onFetchModels,
   onUpdateProvider
 }: ProvidersPanelProps) {
@@ -178,26 +174,12 @@ export default function ProvidersPanel({
 
             <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
               {editingProvider === p.id ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <input
-                    type="password"
-                    autoFocus
-                    placeholder="New API Key"
-                    className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] outline-none focus:border-[var(--text-muted)]"
-                    value={editApiKey}
-                    onChange={(e) => onEditApiKeyChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onSaveApiKey(p.id)
-                      if (e.key === 'Escape') onCancelEdit()
-                    }}
+                <div className="flex-1 py-2">
+                  <ProviderForm
+                    editingProvider={p}
+                    onSave={onEditSave}
+                    onCancel={onCancelEdit}
                   />
-                  <button
-                    type="button"
-                    onClick={() => onSaveApiKey(p.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--accent)] text-white"
-                  >
-                    Save
-                  </button>
                 </div>
               ) : (
                 <>
@@ -206,7 +188,7 @@ export default function ProvidersPanel({
                     onClick={() => onStartEdit(p.id)}
                     className="text-[11px] px-2 py-1 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   >
-                    Edit Token
+                    Edit
                   </button>
                   <button
                     type="button"

@@ -11,12 +11,7 @@ export class OpenAIProvider implements Provider {
     this.model = model
   }
 
-  private formatMessages(messages: Message[]): Array<{
-    role: 'system' | 'user' | 'assistant' | 'tool'
-    content: string
-    tool_call_id?: string
-    tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]
-  }> {
+  private formatMessages(messages: Message[]): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     return messages.map((m) => {
       if (m.role === 'tool') {
         return {
@@ -29,7 +24,7 @@ export class OpenAIProvider implements Provider {
         const toolCalls = m.metadata.toolCalls as unknown as ToolCall[]
         return {
           role: 'assistant' as const,
-          content: m.content,
+          content: m.content || null,
           tool_calls: toolCalls.map((tc) => ({
             id: tc.id,
             type: 'function',
@@ -126,15 +121,11 @@ export class OpenAIProvider implements Provider {
   }
 
   async test(): Promise<boolean> {
-    try {
-      await this.client.chat.completions.create({
-        model: this.model,
-        messages: [{ role: 'user', content: 'hi' }],
-        max_tokens: 1
-      })
-      return true
-    } catch {
-      return false
-    }
+    await this.client.chat.completions.create({
+      model: this.model,
+      messages: [{ role: 'user', content: 'hi' }],
+      max_tokens: 1
+    })
+    return true
   }
 }

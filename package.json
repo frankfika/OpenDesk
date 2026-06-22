@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "electron-vite build && node scripts/copy-skills.js",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder --publish never",
     "package:publish": "npm run build && electron-builder --publish always",
@@ -17,7 +17,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "postinstall": "bash scripts/patch-ox-tempo.sh"
   },
   "overrides": {
     "esbuild": "^0.28.1"
@@ -31,6 +32,9 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@reown/appkit": "^1.8.20",
+    "@reown/appkit-adapter-wagmi": "^1.8.20",
+    "@tanstack/react-query": "^5.101.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "highlight.js": "^11.11.1",
@@ -42,6 +46,8 @@
     "react-markdown": "^9.0.1",
     "remark-gfm": "^4.0.0",
     "tailwind-merge": "^3.6.0",
+    "viem": "^2.53.1",
+    "wagmi": "^3.6.17",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
@@ -106,11 +112,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ]
     },

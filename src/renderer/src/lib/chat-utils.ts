@@ -38,9 +38,53 @@ export function isComplexTask(content: string): boolean {
 }
 
 // ─── File Type Detection ───
-export function determineFileType(file: File): 'text' | 'image' | 'code' | 'pdf' {
+const BINARY_DOC_EXTS = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.odt',
+  '.ods',
+  '.odp',
+  '.pages',
+  '.numbers',
+  '.key',
+  '.epub',
+  '.mobi',
+  '.zip',
+  '.rar',
+  '.7z',
+  '.tar',
+  '.gz',
+  '.bz2',
+  '.exe',
+  '.dmg',
+  '.pkg',
+  '.deb',
+  '.rpm',
+  '.apk',
+  '.ipa',
+  '.mp3',
+  '.mp4',
+  '.mov',
+  '.avi',
+  '.mkv',
+  '.wav',
+  '.flac',
+  '.ogg'
+]
+
+export function determineFileType(file: File): 'text' | 'image' | 'code' | 'pdf' | 'pptx' | 'binary' {
   if (file.type.startsWith('image/')) return 'image'
   if (file.type === 'application/pdf') return 'pdf'
+  const lowerName = file.name.toLowerCase()
+  if (lowerName.endsWith('.pptx') || file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+    return 'pptx'
+  }
+  if (BINARY_DOC_EXTS.some((ext) => lowerName.endsWith(ext))) return 'binary'
   const codeExts = [
     '.js',
     '.ts',
@@ -149,6 +193,7 @@ export function artifactTitleFromLang(language: string): string {
 // ─── Quick Commands ───
 export const QUICK_COMMANDS = [
   { id: 'clear', label: '/clear', desc: 'Clear current conversation', icon: '✨' },
+  { id: 'memory', label: '/memory', desc: 'Open Memory panel', icon: '🧠' },
   { id: 'model', label: '/model', desc: 'Switch model quickly', icon: '🤖' },
   { id: 'provider', label: '/provider', desc: 'Switch AI provider', icon: '🔌' },
   { id: 'workspace', label: '/workspace', desc: 'Switch workspace', icon: '📁' },
@@ -159,25 +204,20 @@ export const QUICK_COMMANDS = [
 export type QuickCommand = (typeof QUICK_COMMANDS)[number]
 
 // ─── Mention Popover Helpers ───
-export function detectTrigger(val: string, cursorPos: number): 'mention' | 'thread' | 'command' | null {
+export function detectTrigger(val: string, cursorPos: number): 'mention' | 'thread' | null {
   if (cursorPos === 0) return null
   const before = val.slice(0, cursorPos)
   const lastAt = before.lastIndexOf('@')
   const lastHash = before.lastIndexOf('#')
-  const lastSlash = before.lastIndexOf('/')
   const lastSpace = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n'))
 
-  if (lastAt > lastSpace && lastAt > lastHash && lastAt > lastSlash) {
+  if (lastAt > lastSpace && lastAt > lastHash) {
     const afterAt = before.slice(lastAt + 1)
     if (!afterAt.includes(' ')) return 'mention'
   }
-  if (lastHash > lastSpace && lastHash > lastAt && lastHash > lastSlash) {
+  if (lastHash > lastSpace && lastHash > lastAt) {
     const afterHash = before.slice(lastHash + 1)
     if (!afterHash.includes(' ')) return 'thread'
-  }
-  if (lastSlash > lastSpace && lastSlash > lastAt && lastSlash > lastHash) {
-    const afterSlash = before.slice(lastSlash + 1)
-    if (!afterSlash.includes(' ')) return 'command'
   }
   return null
 }
@@ -186,9 +226,8 @@ export function getTriggerQuery(val: string, cursorPos: number): string {
   const before = val.slice(0, cursorPos)
   const lastAt = before.lastIndexOf('@')
   const lastHash = before.lastIndexOf('#')
-  const lastSlash = before.lastIndexOf('/')
   const lastSpace = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n'))
-  const lastTrigger = Math.max(lastAt, lastHash, lastSlash)
+  const lastTrigger = Math.max(lastAt, lastHash)
   if (lastTrigger > lastSpace) {
     return before.slice(lastTrigger + 1)
   }

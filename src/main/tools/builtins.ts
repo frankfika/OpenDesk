@@ -9,6 +9,7 @@ import {
   desktopWindows,
   desktopActivate
 } from './desktop-tools'
+import { registerWeb3Tools } from './web3-tools'
 
 /* ---------- Shell security ---------- */
 
@@ -525,6 +526,15 @@ function validateShellCommand(command: string): { valid: boolean; error?: string
     return { valid: false, error: 'Command contains blocked characters (; & ` $)' }
   }
 
+  // Block heredocs (<<) because incomplete ones hang the shell waiting for stdin.
+  // Use echo or printf to write multi-line content instead.
+  if (/<<[-]?/.test(command)) {
+    return {
+      valid: false,
+      error: 'Heredocs (<<) are not allowed because they can hang the shell waiting for input. Use echo or printf to write content instead.'
+    }
+  }
+
   // Block dangerous patterns
   for (const pattern of DANGEROUS_PATTERNS) {
     if (pattern.test(command)) {
@@ -772,7 +782,7 @@ function decodeHtmlEntities(str: string): string {
 
 export const webSearchTool: ToolDefinition = {
   name: 'web_search',
-  description: 'Search the web using DuckDuckGo',
+  description: 'Search the web using DuckDuckGo (with Bing fallback)',
   parameters: {
     type: 'object',
     properties: {
@@ -782,47 +792,106 @@ export const webSearchTool: ToolDefinition = {
   },
   handler: async (args) => {
     const query = args.query as string
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+    const userAgent =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    async function fetchHtml(url: string, timeoutMs = 15000): Promise<string> {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': userAgent },
+          signal: controller.signal
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return await res.text()
+      } finally {
+        clearTimeout(timer)
       }
-    })
-
-    if (!res.ok) throw new Error(`Search failed: ${res.status}`)
-
-    const html = await res.text()
-
-    // Extract results using regex
-    const results: Array<{ title: string; url: string; snippet: string }> = []
-
-    // DuckDuckGo HTML result pattern
-    const resultRegex =
-      /<a rel="nofollow" class="result__a" href="([^"]+)">([^<]+)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g
-    let match
-    while ((match = resultRegex.exec(html)) !== null && results.length < 10) {
-      results.push({
-        title: decodeHtmlEntities(match[2]),
-        url: match[1],
-        snippet: decodeHtmlEntities(match[3].replace(/<[^>]+>/g, '').trim())
-      })
     }
 
-    if (results.length === 0) {
-      // Try alternative pattern
-      const altRegex = /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g
-      while ((match = altRegex.exec(html)) !== null && results.length < 10) {
+    function parseDuckDuckGo(html: string) {
+      const results: Array<{ title: string; url: string; snippet: string }> = []
+      const regex =
+        /<a rel="nofollow" class="result__a" href="([^"]+)">([^<]+)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g
+      let match
+      while ((match = regex.exec(html)) !== null && results.length < 10) {
         results.push({
           title: decodeHtmlEntities(match[2]),
           url: match[1],
-          snippet: ''
+          snippet: decodeHtmlEntities(match[3].replace(/<[^>]+>/g, '').trim())
         })
       }
+      if (results.length === 0) {
+        const altRegex = /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g
+        while ((match = altRegex.exec(html)) !== null && results.length < 10) {
+          results.push({ title: decodeHtmlEntities(match[2]), url: match[1], snippet: '' })
+        }
+      }
+      return results
     }
 
-    return JSON.stringify(results, null, 2)
+    function parseBing(html: string) {
+      const results: Array<{ title: string; url: string; snippet: string }> = []
+      // Bing wraps each result in <li class="b_algo">
+      const blockRegex = /<li class="b_algo"[^>]*>([\s\S]*?)<\/li>/g
+      let blockMatch
+      while ((blockMatch = blockRegex.exec(html)) !== null && results.length < 10) {
+        const block = blockMatch[1]
+        const titleMatch = /<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i.exec(block)
+        const snippetMatch = /<p[^>]*>([\s\S]*?)<\/p>/i.exec(block)
+        if (titleMatch) {
+          results.push({
+            title: decodeHtmlEntities(titleMatch[2].replace(/<[^>]+>/g, '').trim()),
+            url: decodeHtmlEntities(titleMatch[1]),
+            snippet: snippetMatch
+              ? decodeHtmlEntities(snippetMatch[1].replace(/<[^>]+>/g, '').trim())
+              : ''
+          })
+        }
+      }
+      return results
+    }
+
+    async function trySearch(
+      url: string,
+      parser: (html: string) => Array<{ title: string; url: string; snippet: string }>,
+      retries = 2
+    ) {
+      let lastErr = ''
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const html = await fetchHtml(url)
+          const results = parser(html)
+          if (results.length > 0) return results
+          lastErr = 'No results parsed from response'
+        } catch (e) {
+          lastErr = e instanceof Error ? e.message : String(e)
+        }
+        if (i < retries) await new Promise((r) => setTimeout(r, 1000 * (i + 1)))
+      }
+      throw new Error(lastErr || 'Search failed')
+    }
+
+    const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+    const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`
+
+    let errors: string[] = []
+    try {
+      const results = await trySearch(ddgUrl, parseDuckDuckGo)
+      return JSON.stringify(results, null, 2)
+    } catch (e) {
+      errors.push(`DuckDuckGo: ${e instanceof Error ? e.message : String(e)}`)
+    }
+
+    try {
+      const results = await trySearch(bingUrl, parseBing)
+      return JSON.stringify(results, null, 2)
+    } catch (e) {
+      errors.push(`Bing: ${e instanceof Error ? e.message : String(e)}`)
+    }
+
+    throw new Error(`Web search failed. ${errors.join(' | ')}`)
   }
 }
 
@@ -841,4 +910,6 @@ export function registerBuiltins(registry: import('./registry').ToolRegistry): v
   registry.register(desktopActivateTool)
   registry.register(shellTool)
   registry.register(webSearchTool)
+  // Web3 read-only tools (signing happens in renderer via Reown AppKit)
+  registerWeb3Tools(registry)
 }

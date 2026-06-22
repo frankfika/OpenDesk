@@ -9,7 +9,6 @@ export type MessageKind =
   | 'error'
   | 'desktop_action'
   | 'screenshot'
-  | 'compare_results'
 
 export interface Message {
   id: string
@@ -43,7 +42,7 @@ export interface Workspace {
   status: 'active' | 'missing' | 'archived'
 }
 
-export type ChatMode = 'single' | 'agent' | 'ensemble' | 'compare'
+export type ChatMode = 'single' | 'agent' | 'ensemble'
 
 export type ArbitrationMode = 'auto' | 'manual'
 
@@ -61,7 +60,7 @@ export interface Thread {
   totalOutputTokens: number
   status: 'active' | 'archived'
   skillId?: string
-  // Chat / ensemble / compare mode fields
+  // Chat / ensemble mode fields
   mode?: ChatMode
   ensembleProviderIds?: string[]
   arbitratorProviderId?: string
@@ -134,6 +133,7 @@ export interface ChatSendPayload {
   workspaceId?: string
   threadId?: string
   sessionId?: string
+  activeSkillIds?: string[]
 }
 
 export type SkillSource = 'global' | 'workspace' | 'codex' | 'claude' | 'marketplace' | 'github' | 'builtin'
@@ -299,7 +299,7 @@ export interface FileAttachment {
     text(): Promise<string>
     arrayBuffer(): Promise<ArrayBuffer>
   }
-  type?: 'text' | 'image' | 'code' | 'pdf'
+  type?: 'text' | 'image' | 'code' | 'pdf' | 'pptx' | 'binary'
 }
 
 export interface ModelInfo {

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import type {
+  ApprovalMode,
   Message,
   AgentRun,
   ArbitrationResult,
@@ -14,6 +15,7 @@ import { runAgentIteration, createToolResultMessages } from './agent-run'
 import { executeSharedTools } from './tool-coordinator'
 import { arbitrate } from './arbitrator'
 import { registerRun, registerAgent, completeRun, isRunAborted } from './run-tracker'
+import { normalizeToolMessages } from './message-utils'
 
 export interface EnsembleCallbacks {
   onAgentToken?: (payload: { runId: string; agentId: string; providerId: string; token: string }) => void
@@ -35,7 +37,12 @@ export interface EnsembleCallbacks {
   onAgentError?: (payload: { runId: string; agentId: string; providerId: string; error: string }) => void
   onArbitrationToken?: (payload: { runId: string; token: string }) => void
   onArbitrationDone?: (payload: { runId: string; result: ArbitrationResult }) => void
-  onEnsembleDone?: (payload: { runId: string; threadId?: string; workspaceId?: string }) => void
+  onEnsembleDone?: (payload: {
+    runId: string
+    threadId?: string
+    workspaceId?: string
+    agentAnswers?: { agentId: string; providerId: string; model?: string; role?: AgentRole; content: string }[]
+  }) => void
   onError?: (payload: { runId: string; error: string }) => void
 }
 
@@ -46,7 +53,7 @@ export interface EnsembleContext {
   apiKeys: Record<string, string>
   callbacks: EnsembleCallbacks
   desktopEnabled?: boolean
-  approvalMode?: string
+  approvalMode?: ApprovalMode
   agentRoleAssignments?: Record<string, AgentRole>
   rolePrompts?: Record<AgentRole, string>
 }
@@ -79,7 +86,16 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     agentRoleAssignments,
     rolePrompts
   } = context
-  const { messages, providerIds = [], arbitratorProviderId, systemPrompt, workspaceId, threadId } = payload
+  const {
+    messages,
+    providerIds = [],
+    arbitratorProviderId,
+    systemPrompt,
+    workspaceId,
+    threadId
+  } = payload
+
+  const normalizedMessages = normalizeToolMessages(messages)
 
   const controller = new AbortController()
   registerRun(runId, controller)
@@ -121,8 +137,8 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     }
 
     const agentMessages: Message[] = combinedSystemPrompt
-      ? [{ id: `system-${agentId}`, role: 'system', content: combinedSystemPrompt, timestamp: Date.now() }, ...messages]
-      : [...messages]
+      ? [{ id: `system-${agentId}`, role: 'system', content: combinedSystemPrompt, timestamp: Date.now() }, ...normalizedMessages]
+      : [...normalizedMessages]
 
     agentContexts.push({
       agentId,
@@ -251,7 +267,17 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     }
   }
 
-  // Notify agent done for those that finished successfully
+  // Mark any agents still running as errored (max iterations reached without finishing)
+  for (const ctx of agentContexts) {
+    if (ctx.status === 'running') {
+      ctx.status = 'error'
+      ctx.error = ctx.error || 'Max iterations reached without a final answer'
+      ctx.finishedAt = Date.now()
+      ctx.latencyMs = ctx.finishedAt - ctx.startedAt
+    }
+  }
+
+  // Notify agent done/error for each agent
   for (const ctx of agentContexts) {
     if (ctx.status === 'done') {
       // Rough token estimate from content length (placeholder; providers can supply exact counts later)
@@ -264,6 +290,13 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
         latencyMs: ctx.latencyMs,
         inputTokens,
         outputTokens
+      })
+    } else if (ctx.status === 'error') {
+      callbacks.onAgentError?.({
+        runId,
+        agentId: ctx.agentId,
+        providerId: ctx.providerId,
+        error: ctx.error || 'Agent failed'
       })
     }
   }
@@ -336,7 +369,22 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
   }
 
   completeRun(runId)
-  callbacks.onEnsembleDone?.({ runId, threadId, workspaceId })
+  const now = Date.now()
+  callbacks.onEnsembleDone?.({
+    runId,
+    threadId,
+    workspaceId,
+    agentAnswers: agentRuns
+      .filter((r) => r.status === 'done' && r.content.trim().length > 0)
+      .map((r) => ({
+        agentId: r.agentId,
+        providerId: r.providerId,
+        model: r.model,
+        role: r.role,
+        content: r.content,
+        timestamp: now
+      }))
+  })
   return arbitrationResult
 }
 

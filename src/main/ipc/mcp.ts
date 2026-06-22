@@ -23,16 +23,16 @@ export function registerMcpHandlers(_win: BrowserWindow): void {
   removeStaleListeners()
 
   ipcMain.handle('mcp:listServers', () => {
-    return settings.mcpServers.map((s) => ({
+    return settings.mcpServers.map((s: MCPServerConfig) => ({
       ...s,
       status: mcpBridge.getServerStatus(s.name)
     }))
   })
 
   ipcMain.handle('mcp:addServer', (_e, config: MCPServerConfig) => {
-    const exists = settings.mcpServers.find((s) => s.name === config.name)
+    const exists = settings.mcpServers.find((s: MCPServerConfig) => s.name === config.name)
     if (exists) return false
-    settings.mcpServers.push(config)
+    patchSettings({ mcpServers: [...settings.mcpServers, config] })
     saveSettingsToDisk()
     if (config.enabled) {
       mcpBridge.connectServer(config).catch((err) => {
@@ -44,18 +44,19 @@ export function registerMcpHandlers(_win: BrowserWindow): void {
 
   ipcMain.handle('mcp:removeServer', async (_e, name: string) => {
     await mcpBridge.disconnectServer(name)
-    patchSettings({ mcpServers: settings.mcpServers.filter((s) => s.name !== name) })
+    patchSettings({ mcpServers: settings.mcpServers.filter((s: MCPServerConfig) => s.name !== name) })
     saveSettingsToDisk()
     return true
   })
 
   ipcMain.handle('mcp:toggleServer', async (_e, name: string) => {
-    const server = settings.mcpServers.find((s) => s.name === name)
+    const server = settings.mcpServers.find((s: MCPServerConfig) => s.name === name)
     if (!server) return false
-    server.enabled = !server.enabled
+    const toggled = { ...server, enabled: !server.enabled }
+    patchSettings({ mcpServers: settings.mcpServers.map((s: MCPServerConfig) => (s.name === name ? toggled : s)) })
     saveSettingsToDisk()
-    if (server.enabled) {
-      await mcpBridge.connectServer(server).catch((err) => {
+    if (toggled.enabled) {
+      await mcpBridge.connectServer(toggled).catch((err) => {
         console.error(`Failed to connect MCP server ${name}:`, err)
       })
     } else {

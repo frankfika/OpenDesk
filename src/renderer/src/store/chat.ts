@@ -5,8 +5,7 @@ import type {
   ChatSendPayload,
   ArbitrationResult,
   ChatMode,
-  ArbitrationMode,
-  AgentAnswerSnapshot
+  ArbitrationMode
 } from '@shared/types'
 import { useSettingsStore } from './settings'
 import { useWorkspaceStore } from './workspace'
@@ -52,6 +51,10 @@ interface ChatState {
   ensembleRuns: Record<string, EnsembleRunState>
   activeRunId: string | null
 
+  // Active stream tracking (prevents cross-thread message mixing)
+  activeSessionId: string | null
+  activeSessionThreadId: string | null
+
   // Message actions
   addMessage: (msg: Message) => void
   appendToken: (token: string) => void
@@ -93,9 +96,10 @@ interface ChatState {
   startArbitration: (runId: string) => void
   appendArbitrationToken: (runId: string, token: string) => void
   finalizeArbitration: (runId: string, result: ArbitrationResult) => void
-  finalizeManualEnsemble: (runId: string, agentAnswers: AgentAnswerSnapshot[]) => void
-  selectManualAnswer: (runId: string, agentId: string) => void
   completeEnsembleRun: (runId: string) => void
+
+  // Session tracking
+  setActiveSession: (sessionId: string | null, threadId: string | null) => void
 
   // Thread management
   loadThread: (threadId: string) => Promise<void>
@@ -143,6 +147,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   arbitrationMode: 'auto',
   ensembleRuns: {},
   activeRunId: null,
+  activeSessionId: null,
+  activeSessionThreadId: null,
 
   addMessage: (msg) => {
     set((s) => {
@@ -154,19 +160,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addToolCall: (toolCall) => {
     set((s) => {
-      const messages: Message[] = [
-        ...s.messages,
-        {
-          id: genId(),
-          role: 'assistant' as const,
-          content: '',
-          timestamp: Date.now(),
-          kind: 'tool_call' as const,
-          metadata: { toolName: toolCall.name, params: toolCall.arguments }
+      const msgs = [...s.messages]
+      msgs.push({
+        id: genId(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        kind: 'tool_call',
+        metadata: {
+          toolName: toolCall.name,
+          params: toolCall.arguments,
+          toolCallId: toolCall.id
         }
-      ]
-      if (s.threadId) debouncedSave(s.threadId, messages)
-      return { messages }
+      })
+      if (s.threadId) debouncedSave(s.threadId, msgs)
+      return { messages: msgs }
     })
   },
 
@@ -324,7 +332,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (threadId && window.api?.chat?.regenerate) {
       const settings = useSettingsStore.getState()
-      if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
+      if (mode === 'ensemble' || mode === 'agent') {
         const providerIds = settings.ensembleProviders().map((p) => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
@@ -333,7 +341,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             providerIds,
             arbitratorProviderId: arbitrator?.id,
             arbitrationMode: get().arbitrationMode,
-            mode: mode === 'compare' ? 'compare' : 'ensemble',
+            mode: 'ensemble',
             threadId
           })
           return
@@ -367,7 +375,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (threadId && window.api?.chat?.send) {
       // Re-send from the edit point — use send with the truncated messages
       const settings = useSettingsStore.getState()
-      if (mode === 'ensemble' || mode === 'compare' || mode === 'agent') {
+      if (mode === 'ensemble' || mode === 'agent') {
         const providerIds = settings.ensembleProviders().map((p) => p.id)
         const arbitrator = settings.arbitratorProvider()
         if (providerIds.length > 0) {
@@ -376,7 +384,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             providerIds,
             arbitratorProviderId: arbitrator?.id,
             arbitrationMode: get().arbitrationMode,
-            mode: mode === 'compare' ? 'compare' : 'ensemble',
+            mode: 'ensemble',
             threadId
           })
           return
@@ -427,6 +435,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Mode actions
   setMode: (mode) => set({ mode }),
   setArbitrationMode: (arbitrationMode) => set({ arbitrationMode }),
+
+  // Session tracking
+  setActiveSession: (sessionId, threadId) => set({ activeSessionId: sessionId, activeSessionThreadId: threadId }),
 
   // Ensemble actions
   startEnsembleRun: (runId, providerIds, arbitratorProviderId) => {
@@ -684,63 +695,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           [runId]: { ...run, status: 'done' }
         }
       }
-    })
-  },
-
-  finalizeManualEnsemble: (runId, _agentAnswers) => {
-    set((s) => {
-      const run = s.ensembleRuns[runId]
-      if (!run) return s
-
-      const compareMessage: Message = {
-        id: genId(),
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        kind: 'compare_results',
-        runId
-      }
-
-      const messages = [...s.messages, compareMessage]
-      if (s.threadId) debouncedSave(s.threadId, messages)
-
-      return {
-        messages,
-        streaming: false,
-        ensembleRuns: {
-          ...s.ensembleRuns,
-          [runId]: { ...run, status: 'done' }
-        }
-      }
-    })
-  },
-
-  selectManualAnswer: (runId, agentId) => {
-    set((s) => {
-      const run = s.ensembleRuns[runId]
-      if (!run) return s
-      const agent = run.agents[agentId]
-      if (!agent) return s
-
-      const finalMessage: Message = {
-        id: genId(),
-        role: 'assistant',
-        content:
-          agent.messages
-            .filter((m) => m.role === 'assistant' && m.kind === 'assistant_message')
-            .map((m) => m.content)
-            .join('') || '',
-        timestamp: Date.now(),
-        kind: 'assistant_message',
-        sourceProviderId: agent.providerId,
-        agentId,
-        runId
-      }
-
-      const messages = [...s.messages, finalMessage]
-      if (s.threadId) debouncedSave(s.threadId, messages)
-
-      return { messages }
     })
   },
 

@@ -36,8 +36,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
   mediaQuery.addEventListener('change', listener)
 
   return {
-    theme: 'system',
-    resolvedTheme: getSystemTheme(),
+    theme: 'dark',
+    resolvedTheme: 'dark' as 'dark' | 'light',
 
     setTheme: (theme) => {
       const resolved = resolveTheme(theme)

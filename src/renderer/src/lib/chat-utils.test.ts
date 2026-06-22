@@ -80,8 +80,8 @@ describe('chat-utils', () => {
       expect(detectTrigger('See #thread', 10)).toBe('thread')
     })
 
-    it('should detect / command', () => {
-      expect(detectTrigger('Type /clear', 10)).toBe('command')
+    it('should not treat / as a command trigger', () => {
+      expect(detectTrigger('Type /clear', 10)).toBe(null)
     })
 
     it('should return null at position 0', () => {
@@ -97,7 +97,10 @@ describe('chat-utils', () => {
     it('should extract query after trigger', () => {
       expect(getTriggerQuery('Hello @world', 12)).toBe('world')
       expect(getTriggerQuery('Check #topic', 12)).toBe('topic')
-      expect(getTriggerQuery('Run /clear', 10)).toBe('clear')
+    })
+
+    it('should return empty string for slash input', () => {
+      expect(getTriggerQuery('Run /clear', 10)).toBe('')
     })
 
     it('should return empty string when no trigger', () => {

@@ -22,9 +22,19 @@ function isSafePath(filePath: string, allowedBase?: string): { safe: boolean; er
   return { safe: true }
 }
 
-export function readFile(path: string): { success: boolean; content?: string; error?: string } {
+export function readFile(
+  path: string,
+  maxSizeBytes = 5 * 1024 * 1024
+): { success: boolean; content?: string; error?: string } {
   try {
     if (!existsSync(path)) return { success: false, error: 'File not found' }
+    const stats = statSync(path)
+    if (stats.size > maxSizeBytes) {
+      return {
+        success: false,
+        error: `File too large (${(stats.size / 1024 / 1024).toFixed(1)} MB). Max allowed is ${(maxSizeBytes / 1024 / 1024).toFixed(0)} MB.`
+      }
+    }
     const content = readFileSync(path, 'utf-8')
     return { success: true, content }
   } catch (err) {

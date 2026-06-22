@@ -3,7 +3,9 @@ import { useChatStore } from '../../store/chat'
 import { useToast } from '../../store/toast'
 import { useSettingsStore } from '../../store/settings'
 import { useWorkspaceStore } from '../../store/workspace'
+import { useSkillsStore } from '../../store/skills'
 import type { Message, AgentRole } from '@shared/types'
+import type { MentionItem } from './MentionPopover'
 import { Folder, FileText, MessageSquare } from 'lucide-react'
 import AttachmentList from './AttachmentList'
 import ErrorBanner from './ErrorBanner'
@@ -18,6 +20,10 @@ import {
   getMentionPrefix,
   type QuickCommand
 } from '../../lib/chat-utils'
+
+const MAX_TEXT_ATTACHMENT_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_IMAGE_ATTACHMENT_SIZE = 20 * 1024 * 1024 // 20MB
+const MAX_TEXT_ATTACHMENT_CHARS = 100000
 
 interface InputBarProps {
   onOpenSettings: () => void
@@ -50,6 +56,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
   const clearAttachments = useChatStore((state) => state.clearAttachments)
   const mode = useChatStore((state) => state.mode)
   const setMode = useChatStore((state) => state.setMode)
+  const setActiveSession = useChatStore((state) => state.setActiveSession)
   const startEnsembleRun = useChatStore((state) => state.startEnsembleRun)
   const appendAgentToken = useChatStore((state) => state.appendAgentToken)
   const setAgentRunStatus = useChatStore((state) => state.setAgentRunStatus)
@@ -59,15 +66,66 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
   const startArbitration = useChatStore((state) => state.startArbitration)
   const appendArbitrationToken = useChatStore((state) => state.appendArbitrationToken)
   const finalizeArbitration = useChatStore((state) => state.finalizeArbitration)
-  const finalizeManualEnsemble = useChatStore((state) => state.finalizeManualEnsemble)
   const completeEnsembleRun = useChatStore((state) => state.completeEnsembleRun)
   const { settings, activeProvider, ensembleProviders, arbitratorProvider } = useSettingsStore()
   const { activeThreadId, activeWorkspace, createThread, updateThread, workspaces, threads } = useWorkspaceStore()
+  const { activeSkillIds } = useSkillsStore()
   const toast = useToast()
   const activeThread = threads.find((t) => t.id === activeThreadId)
   const provider = activeProvider()
   const workspace = activeWorkspace()
   const inputBarRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const previousThreadIdRef = useRef<string | null>(activeThreadId)
+
+  // Abort any active stream when the user switches threads.
+  // send() already aborts the previous session before creating a new thread, so
+  // this only fires for user-initiated thread switches while a stream is running.
+  useEffect(() => {
+    if (previousThreadIdRef.current && previousThreadIdRef.current !== activeThreadId) {
+      const { activeSessionId, activeSessionThreadId } = useChatStore.getState()
+      if (activeSessionId && activeSessionThreadId && activeSessionThreadId !== activeThreadId) {
+        window.api?.chat?.abort?.(activeSessionId)
+        setActiveSession(null, null)
+        setStreaming(false)
+      }
+    }
+    previousThreadIdRef.current = activeThreadId
+  }, [activeThreadId, setActiveSession, setStreaming])
+
+  const addFilesFromFileList = useCallback(
+    (files: FileList | null) => {
+      if (!files) return
+      Array.from(files).forEach((file) => {
+        let filePath = file.name
+        try {
+          if (window.api?.tools?.getPathForFile) {
+            filePath = window.api.tools.getPathForFile(file)
+          }
+        } catch {
+          // Fallback to name if getPathForFile is unavailable
+        }
+        addAttachment({
+          id: genId(),
+          name: file.name,
+          path: filePath,
+          size: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          file,
+          type: determineFileType(file)
+        })
+      })
+    },
+    [addAttachment]
+  )
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      addFilesFromFileList(e.target.files)
+      e.target.value = ''
+    },
+    [addFilesFromFileList]
+  )
 
   // Ensemble picker state
   const [selectedEnsembleIds, setSelectedEnsembleIds] = useState<string[]>([])
@@ -106,20 +164,22 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     if (settings.ensembleModeDefault) setMode('ensemble')
   }, [settings.ensembleModeDefault, setMode])
 
-  // Sync ensemble state from thread or settings
+  // Sync ensemble state from thread or settings. Only re-sync when the active thread id changes,
+  // so the user can temporarily switch modes for the current conversation without being reset.
   useEffect(() => {
+    const defaultProviders = ensembleProviders().map((p) => p.id)
     if (activeThread) {
-      setSelectedEnsembleIds(activeThread.ensembleProviderIds || [])
-      setEnsembleArbitratorId(activeThread.arbitratorProviderId || null)
-      setEnsembleRoleAssignments(activeThread.agentRoleAssignments || {})
+      setSelectedEnsembleIds(activeThread.ensembleProviderIds ?? defaultProviders)
+      setEnsembleArbitratorId(activeThread.arbitratorProviderId ?? arbitratorProvider()?.id ?? null)
+      setEnsembleRoleAssignments(activeThread.agentRoleAssignments ?? settings.agentRoleAssignments ?? {})
       if (activeThread.mode) setMode(activeThread.mode)
     } else {
-      const defaultProviders = ensembleProviders().map((p) => p.id)
       setSelectedEnsembleIds(defaultProviders)
       setEnsembleArbitratorId(arbitratorProvider()?.id || null)
       setEnsembleRoleAssignments(settings.agentRoleAssignments || {})
     }
-  }, [activeThread, settings.agentRoleAssignments, ensembleProviders, arbitratorProvider, setMode])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeThread?.id, settings.agentRoleAssignments, ensembleProviders, arbitratorProvider, setMode])
 
   // Draft auto-save and restore
   useEffect(() => {
@@ -154,13 +214,30 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
   useEffect(() => {
     const chat = window.api?.chat
     if (!chat) return
-    const offToken = chat.onToken?.((token) => appendToken(token)) || (() => {})
-    const offToolCall = chat.onToolCall?.((toolCall) => addToolCall(toolCall)) || (() => {})
-    const offToolResult = chat.onToolResult?.((result) => addToolResult(result)) || (() => {})
-    const offDone = chat.onDone?.(() => setStreaming(false)) || (() => {})
+    const offToken = chat.onToken?.(({ token, threadId }) => {
+      // Ignore tokens from a stream that belongs to a different thread
+      const { threadId: currentThreadId } = useChatStore.getState()
+      if (threadId && threadId !== currentThreadId) return
+      appendToken(token)
+    }) || (() => {})
+    const offToolCall = chat.onToolCall?.(({ threadId, ...toolCall }) => {
+      const { threadId: currentThreadId } = useChatStore.getState()
+      if (threadId && threadId !== currentThreadId) return
+      addToolCall(toolCall)
+    }) || (() => {})
+    const offToolResult = chat.onToolResult?.(({ threadId, ...result }) => {
+      const { threadId: currentThreadId } = useChatStore.getState()
+      if (threadId && threadId !== currentThreadId) return
+      addToolResult(result)
+    }) || (() => {})
+    const offDone = chat.onDone?.(() => {
+      setStreaming(false)
+      setActiveSession(null, null)
+    }) || (() => {})
     const offError =
       chat.onError?.((error) => {
         setStreaming(false)
+        setActiveSession(null, null)
         setError(error.message, error.type as Parameters<typeof setError>[1])
       }) || (() => {})
     const offAgentToken =
@@ -198,17 +275,11 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
         finalizeArbitration(runId, result)
       }) || (() => {})
     const offEnsembleDone =
-      chat.onEnsembleDone?.(({ runId, agentAnswers, arbitrationMode }) => {
-        const {
-          ensembleRuns,
-          threadId: currentThreadId,
-          arbitrationMode: currentArbitrationMode
-        } = useChatStore.getState()
+      chat.onEnsembleDone?.(({ runId, agentAnswers }) => {
+        const { ensembleRuns, threadId: currentThreadId } = useChatStore.getState()
         const run = ensembleRuns[runId]
         if (!run) return
         if (currentThreadId && agentAnswers?.length) updateThread(currentThreadId, { agentAnswers })
-        const mode = (arbitrationMode || currentArbitrationMode) === 'manual' ? 'compare' : 'ensemble'
-        if (mode === 'compare') finalizeManualEnsemble(runId, agentAnswers || [])
         completeEnsembleRun(runId)
       }) || (() => {})
 
@@ -233,6 +304,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     addToolResult,
     setStreaming,
     setError,
+    setActiveSession,
     appendAgentToken,
     setAgentRunStatus,
     setAgentMetrics,
@@ -242,8 +314,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     appendArbitrationToken,
     finalizeArbitration,
     completeEnsembleRun,
-    updateThread,
-    finalizeManualEnsemble
+    updateThread
   ])
 
   // Click outside to close popover
@@ -270,10 +341,10 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     } else {
       setPopoverType(null)
     }
-    const match = val.match(/\/\w*$/)
+    const match = val.match(/\/[^\n]*$/)
     if (match && !trigger) {
       setShowSkillPicker(true)
-      setSkillFilter(match[1].toLowerCase())
+      setSkillFilter(match[0].slice(1).toLowerCase().trim())
     } else {
       setShowSkillPicker(false)
     }
@@ -303,11 +374,55 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     [text]
   )
 
+  const activateSkill = useSkillsStore((state) => state.activateSkill)
+
   function handleSelectSkill(skillId: string) {
     if (activeThreadId) updateThread(activeThreadId, { skillId })
-    setText(text.replace(/\/\w*$/, ''))
+    activateSkill(skillId)
+    setText(text.replace(/\/[^\n]*$/, ''))
     setShowSkillPicker(false)
     textareaRef.current?.focus()
+  }
+
+  // Screenshot handler (defined before commands so handleSelectCommand can reference it)
+  const handleScreenshot = useCallback(async () => {
+    try {
+      const base64 = await window.api?.desktop?.capture()
+      if (!base64) return
+      const byteChars = atob(base64)
+      const byteArr = new Uint8Array(byteChars.length)
+      for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
+      const blob = new Blob([byteArr], { type: 'image/png' })
+      const url = URL.createObjectURL(blob)
+      const file = new File([byteArr], `screenshot-${Date.now()}.png`, { type: 'image/png' })
+      addAttachment({
+        id: genId(),
+        name: file.name,
+        path: url,
+        size: byteArr.length,
+        mimeType: 'image/png',
+        content: base64,
+        file,
+        type: 'image'
+      })
+    } catch (e) {
+      console.error('Screenshot failed:', e)
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('Failed to get sources') || msg.includes('permission')) {
+        alert(
+          'Screenshot permission denied.\n\nPlease go to System Settings → Privacy & Security → Screen Recording and allow OpenDesk.'
+        )
+      }
+    }
+  }, [addAttachment])
+
+  function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
   }
 
   const handleSelectCommand = useCallback(
@@ -315,7 +430,9 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
       setText(text.replace(/\/\w*$/, ''))
       setPopoverType(null)
       if (cmd.id === 'clear') onClearChat?.()
-      else if (cmd.id === 'model' || cmd.id === 'provider') {
+      else if (cmd.id === 'memory') {
+        window.dispatchEvent(new CustomEvent('opendesk:open-memory'))
+      } else if (cmd.id === 'model' || cmd.id === 'provider') {
         window.dispatchEvent(new CustomEvent('opendesk:focus-model'))
       } else if (cmd.id === 'screenshot') {
         handleScreenshot()
@@ -397,7 +514,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
         const item = popoverItems[popoverIndex]
         if (item) {
           if (popoverType === 'command') handleSelectCommand(item as unknown as QuickCommand)
-          else insertMention(item)
+          else insertMention(item as { type: string; id: string; name: string })
         }
         return
       }
@@ -418,8 +535,15 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     const content = text.trim()
     if (!content || streaming) return
 
+    // Abort any active stream from a previous message/thread before starting a new one
+    const { activeSessionId } = useChatStore.getState()
+    if (activeSessionId && window.api?.chat?.abort) {
+      window.api.chat.abort(activeSessionId)
+      setActiveSession(null, null)
+    }
+
     const currentMode = mode
-    const isEnsembleMode = currentMode === 'ensemble' || currentMode === 'compare' || currentMode === 'agent'
+    const isEnsembleMode = currentMode === 'ensemble' || currentMode === 'agent'
 
     const ensProviders = isEnsembleMode
       ? selectedEnsembleIds.length > 0
@@ -454,15 +578,93 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     }
     if (mentions.length > 0) processedContent += '\n\n[Context: ' + mentions.join(', ') + ']'
 
+    // Resolve @file: references by reading workspace files
+    const fileMentionRegex = /@file:([^\s]+)/g
+    const fileReads: Array<{ name: string; content: string; error?: string }> = []
+    const workspacePath = workspace?.folderPath
+    let fileMatch
+    while ((fileMatch = fileMentionRegex.exec(content)) !== null) {
+      if (fileMatch[1]) {
+        const fileName = fileMatch[1]
+        if (!workspacePath) {
+          fileReads.push({ name: fileName, content: '', error: 'No workspace set' })
+          continue
+        }
+        const filePath = fileName.startsWith('/') ? fileName : `${workspacePath}/${fileName}`
+        try {
+          const result = await window.api.tools.readFile(filePath)
+          if (result.success && result.content !== undefined) {
+            fileReads.push({ name: fileName, content: result.content })
+          } else {
+            fileReads.push({ name: fileName, content: '', error: result.error || 'Failed to read file' })
+          }
+        } catch (e) {
+          fileReads.push({ name: fileName, content: '', error: e instanceof Error ? e.message : String(e) })
+        }
+      }
+    }
+    if (fileReads.length > 0) {
+      processedContent += '\n\n[Referenced files]'
+      for (const fr of fileReads) {
+        if (fr.error) {
+          processedContent += `\n\n[File: ${fr.name}]\nError: ${fr.error}`
+        } else {
+          const truncated = fr.content.length > MAX_TEXT_ATTACHMENT_CHARS ? fr.content.slice(0, MAX_TEXT_ATTACHMENT_CHARS) + '\n... [truncated]' : fr.content
+          processedContent += `\n\n[File: ${fr.name}]\n\`\`\`\n${truncated}\n\`\`\``
+        }
+      }
+    }
+
     let attachmentContent = ''
+    const skippedAttachments: string[] = []
     for (const att of attachments) {
       if (!att.file) continue
-      if (att.type === 'text' || att.type === 'code') {
-        const txt = await att.file.text()
-        attachmentContent += `\n\n[Attachment: ${att.file.name}]\n\`\`\`\n${txt}\n\`\`\`\n`
-      } else if (att.type === 'image') {
-        attachmentContent += `\n\n[Image attached: ${att.file.name}]\n`
+      if (att.type === 'pptx') {
+        try {
+          const filePath =
+            att.path && att.path !== att.file.name
+              ? att.path
+              : window.api?.tools?.getPathForFile?.(att.file as File)
+          if (!filePath) {
+            skippedAttachments.push(`${att.file.name} (unable to access file path)`)
+            continue
+          }
+          const result = await window.api?.tools?.extractPptxText?.(filePath)
+          if (result?.success && result.text !== undefined) {
+            const truncated = result.text.length > MAX_TEXT_ATTACHMENT_CHARS ? result.text.slice(0, MAX_TEXT_ATTACHMENT_CHARS) + '\n... [truncated]' : result.text
+            attachmentContent += `\n\n[Attachment: ${att.file!.name}]\n\`\`\`\n${truncated}\n\`\`\`\n`
+          } else {
+            attachmentContent += `\n\n[Attachment: ${att.file!.name}] (extraction failed)\n`
+          }
+        } catch (e) {
+          skippedAttachments.push(`${att.file!.name} (${e instanceof Error ? e.message : String(e)})`)
+        }
+        continue
       }
+      if (att.type === 'binary' || att.type === 'pdf') {
+        skippedAttachments.push(`${att.file!.name} (${att.type === 'pdf' ? 'PDF' : 'binary'} not inline-readable)`)
+        continue
+      }
+      if (att.type === 'text' || att.type === 'code') {
+        if (att.file!.size > MAX_TEXT_ATTACHMENT_SIZE) {
+          skippedAttachments.push(`${att.file!.name} (>${Math.round(MAX_TEXT_ATTACHMENT_SIZE / 1024)}KB)`)
+          continue
+        }
+        const txt = await att.file!.text()
+        const truncated = txt.length > MAX_TEXT_ATTACHMENT_CHARS ? txt.slice(0, MAX_TEXT_ATTACHMENT_CHARS) + '\n... [truncated]' : txt
+        attachmentContent += `\n\n[Attachment: ${att.file!.name}]\n\`\`\`\n${truncated}\n\`\`\`\n`
+      } else if (att.type === 'image') {
+        if (att.file!.size > MAX_IMAGE_ATTACHMENT_SIZE) {
+          skippedAttachments.push(`${att.file!.name} (>${Math.round(MAX_IMAGE_ATTACHMENT_SIZE / 1024)}KB)`)
+          continue
+        }
+        const dataUrl = await fileToDataUrl(att.file as File)
+        attachmentContent += `\n\n![${att.file!.name}](${dataUrl})\n`
+      }
+    }
+    if (skippedAttachments.length > 0) {
+      attachmentContent += `\n\n[Skipped attachments: ${skippedAttachments.join(', ')}]`
+      toast.info(`Skipped ${skippedAttachments.length} attachment(s): too large or unsupported format`)
     }
     if (attachmentContent) processedContent += attachmentContent
 
@@ -482,7 +684,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     if (window.api?.draft?.save) window.api.draft.save({ text: '', threadId: null }).catch(console.error)
 
     const roleAssignments = ensembleRoleAssignments
-    const arbitrationMode = currentMode === 'compare' ? 'manual' : 'auto'
+    const arbitrationMode = 'auto'
 
     if (threadId) {
       updateThread(threadId, {
@@ -495,12 +697,16 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     }
 
     const sessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    // Track this session so we can abort it on thread switch or when starting another message
+    setActiveSession(sessionId, threadId || null)
+
     const payload: Record<string, unknown> = {
       messages: [...messages, userMsg],
       sessionId,
       threadId,
-      mode: currentMode === 'compare' ? 'compare' : currentMode,
-      arbitrationMode
+      mode: currentMode,
+      arbitrationMode,
+      activeSkillIds
     }
     if (workspace) payload.workspaceId = workspace.id
 
@@ -536,10 +742,11 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
   function abort() {
     const chat = window.api?.chat
     if (!chat) return
-    const { activeRunId } = useChatStore.getState()
-    if (activeRunId) chat.abort(activeRunId)
-    else if (settings.activeProviderId) chat.abort(settings.activeProviderId)
+    const { activeSessionId, activeRunId } = useChatStore.getState()
+    if (activeSessionId) chat.abort(activeSessionId)
+    else if (activeRunId) chat.abort(activeRunId)
     setStreaming(false)
+    setActiveSession(null, null)
   }
 
   // Drag & drop handlers
@@ -558,19 +765,9 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
       e.preventDefault()
       e.stopPropagation()
       setIsDragging(false)
-      Array.from(e.dataTransfer.files).forEach((file) => {
-        addAttachment({
-          id: genId(),
-          name: file.name,
-          path: file.name,
-          size: file.size,
-          mimeType: file.type || 'application/octet-stream',
-          file,
-          type: determineFileType(file)
-        })
-      })
+      addFilesFromFileList(e.dataTransfer.files)
     },
-    [addAttachment]
+    [addFilesFromFileList]
   )
 
   // Paste handler
@@ -595,66 +792,50 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
     [addAttachment]
   )
 
-  // Screenshot handler
-  const handleScreenshot = useCallback(async () => {
-    try {
-      const base64 = await window.api?.desktop?.capture()
-      if (!base64) return
-      const byteChars = atob(base64)
-      const byteArr = new Uint8Array(byteChars.length)
-      for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
-      const blob = new Blob([byteArr], { type: 'image/png' })
-      const url = URL.createObjectURL(blob)
-      const file = new File([byteArr], `screenshot-${Date.now()}.png`, { type: 'image/png' })
-      addAttachment({
-        id: genId(),
-        name: file.name,
-        path: url,
-        size: byteArr.length,
-        mimeType: 'image/png',
-        content: base64,
-        file,
-        type: 'image'
-      })
-    } catch (e) {
-      console.error('Screenshot failed:', e)
-      const msg = e instanceof Error ? e.message : String(e)
-      if (msg.includes('Failed to get sources') || msg.includes('permission')) {
-        alert(
-          'Screenshot permission denied.\n\nPlease go to System Settings → Privacy & Security → Screen Recording and allow OpenDesk.'
-        )
-      }
-    }
-  }, [addAttachment])
-
-  // Load workspace file list for @file mentions
+  // Load workspace file list for @file mentions (recursive, shallow limit)
   useEffect(() => {
     if (!workspace?.folderPath) {
       setWorkspaceFiles([])
       return
     }
+    const rootPath = workspace.folderPath
     async function loadFiles() {
-      try {
-        const result = await window.api.tools.listDirectory(workspace.folderPath)
-        if (result.success && result.entries) {
-          const files = result.entries.filter((e) => !e.isDirectory).map((e) => e.name)
-          setWorkspaceFiles(files)
-        } else {
-          setWorkspaceFiles([])
+      const files: string[] = []
+      const queue: string[] = [rootPath]
+      const seen = new Set<string>()
+      while (queue.length > 0 && files.length < 200) {
+        const dir = queue.shift()!
+        if (seen.has(dir)) continue
+        seen.add(dir)
+        try {
+          const result = await window.api.tools.listDirectory(dir)
+          if (!result.success || !result.entries) continue
+          for (const entry of result.entries) {
+            if (entry.isDirectory) {
+              if (!entry.name.startsWith('.') && !entry.name.startsWith('node_modules') && queue.length < 50) {
+                queue.push(entry.path)
+              }
+            } else {
+              const rel = entry.path.slice(rootPath.length).replace(/^\//, '')
+              files.push(rel)
+              if (files.length >= 200) break
+            }
+          }
+        } catch {
+          // ignore unreadable dirs
         }
-      } catch {
-        setWorkspaceFiles([])
       }
+      setWorkspaceFiles(files)
     }
     loadFiles()
   }, [workspace?.folderPath])
 
   const handleSelectPopover = useCallback(
-    (item: { type: string; id: string; name: string }) => {
+    (item: MentionItem) => {
       if (popoverType === 'command') {
         handleSelectCommand(item as unknown as QuickCommand)
       } else {
-        insertMention(item)
+        insertMention(item as { type: string; id: string; name: string })
       }
     },
     [popoverType, handleSelectCommand, insertMention]
@@ -670,8 +851,16 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
       />
       <AttachmentList attachments={attachments} onRemove={removeAttachment} />
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       <div
-        className={`rounded-2xl overflow-visible bg-[var(--bg-input)]/80 border transition-all duration-300 relative shadow-sm ${
+        className={`rounded-2xl overflow-visible bg-[var(--bg-input)]/40 backdrop-blur-xl border transition-all duration-300 relative shadow-sm ${
           isDragging
             ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/20'
             : 'border-[var(--border)] focus-within:border-[var(--text-muted)] focus-within:shadow-md'
@@ -695,7 +884,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
           placeholder={
             provider ? 'Message OpenDesk… (↵ to send, ⇧↵ for new line, / for skills)' : 'Configure a provider to start…'
           }
-          isDragging={isDragging}
+          _isDragging={isDragging}
           popoverType={popoverType}
           popoverItems={popoverItems}
           popoverIndex={popoverIndex}
@@ -708,6 +897,7 @@ export default function InputBar({ onOpenSettings, onClearChat, onWebSearch }: I
         <InputBarToolbar
           onScreenshot={handleScreenshot}
           onOpenSettings={onOpenSettings}
+          onAttachFiles={() => fileInputRef.current?.click()}
           mode={mode}
           onModeChange={setMode}
           streaming={streaming}

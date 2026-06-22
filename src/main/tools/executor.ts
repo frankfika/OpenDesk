@@ -2,6 +2,7 @@ import { mcpBridge } from '../mcp/mcp-bridge'
 import { ToolRegistry } from './registry'
 import { registerBuiltins } from './builtins'
 import { scanAllSkills, executeSkillTool, getSkillToolAsProviderTool } from '../skills'
+import type { ApprovalMode } from '../../shared/types'
 import type { Tool, ToolCall, ToolResult } from '../providers/base'
 
 const toolRegistry = new ToolRegistry()
@@ -17,12 +18,16 @@ function getWorkspacePath(workspaceId?: string): string | null {
 }
 
 import { resolve, sep } from 'path'
+import { homedir } from 'os'
 
-function isPathAllowed(filePath: string, workspacePath: string | null): boolean {
-  if (!workspacePath) return false
-  const resolvedFile = resolve(filePath)
-  const resolvedWorkspace = resolve(workspacePath)
-  return resolvedFile === resolvedWorkspace || resolvedFile.startsWith(resolvedWorkspace + sep)
+function isPathInAnyBase(filePath: string, bases: (string | null)[]): boolean {
+  const resolved = resolve(filePath)
+  for (const base of bases) {
+    if (!base) continue
+    const resolvedBase = resolve(base)
+    if (resolved === resolvedBase || resolved.startsWith(resolvedBase + sep)) return true
+  }
+  return false
 }
 
 async function executeBuiltinTool(toolCall: ToolCall, workspaceId?: string): Promise<ToolResult> {
@@ -40,14 +45,15 @@ async function executeBuiltinTool(toolCall: ToolCall, workspaceId?: string): Pro
     // Settings are not directly available here; desktopEnabled is checked in handlers.ts before calling
   }
 
-  // Security: file tools restricted to workspace
+  // Security: file tools restricted to workspace or home directory
   if (toolCall.name.startsWith('file_') || toolCall.name === 'apply_patch') {
     const workspacePath = getWorkspacePath(workspaceId)
     const targetPath = (toolCall.arguments.path as string) || ''
-    if (workspacePath && !isPathAllowed(targetPath, workspacePath)) {
+    const allowedBases = [workspacePath, homedir()].filter(Boolean) as string[]
+    if (!isPathInAnyBase(targetPath, allowedBases)) {
       return {
         toolCallId: toolCall.id,
-        content: `Path is outside the workspace directory (${workspacePath})`,
+        content: `Path is outside allowed directories (workspace or home directory)`,
         isError: true
       }
     }
@@ -72,7 +78,7 @@ async function executeBuiltinTool(toolCall: ToolCall, workspaceId?: string): Pro
 export async function executeTool(
   toolCall: ToolCall,
   workspaceId?: string,
-  options?: { desktopEnabled?: boolean; approvalMode?: string }
+  options?: { desktopEnabled?: boolean; approvalMode?: ApprovalMode }
 ): Promise<ToolResult> {
   // Security: desktop tools require desktopEnabled
   if (toolCall.name.startsWith('desktop_')) {
@@ -86,11 +92,13 @@ export async function executeTool(
   }
 
   // Security: approval mode check for shell and desktop tools
-  const approvalMode = options?.approvalMode ?? 'ask'
+  // 'ask' blocks shell/desktop until the user enables an auto mode in Settings.
+  // All other modes allow shell/desktop within the workspace/home directory sandbox.
+  const approvalMode = options?.approvalMode ?? 'auto-edits'
   if (approvalMode === 'ask' && (toolCall.name === 'shell' || toolCall.name.startsWith('desktop_'))) {
     return {
       toolCallId: toolCall.id,
-      content: `Tool execution blocked: approvalMode is 'ask'. The tool '${toolCall.name}' requires user approval. Enable auto-approval in Settings to run tools without confirmation.`,
+      content: `Tool execution blocked: approvalMode is '${approvalMode}'. The tool '${toolCall.name}' requires user approval. Enable an auto-approval mode in Settings to run tools without confirmation.`,
       isError: true
     }
   }

@@ -25,9 +25,9 @@ interface ChatAPI {
   abort: (providerId: string) => void
   regenerate: (payload: ChatSendPayload) => void
   editMessage: (payload: ChatSendPayload & { editIndex: number }) => void
-  onToken: (cb: (token: string) => void) => () => void
-  onToolCall: (cb: (toolCall: { id: string; name: string; arguments: Record<string, unknown> }) => void) => () => void
-  onToolResult: (cb: (result: { toolCallId: string; content: string; isError?: boolean }) => void) => () => void
+  onToken: (cb: (payload: { token: string; threadId?: string }) => void) => () => void
+  onToolCall: (cb: (payload: { id: string; name: string; arguments: Record<string, unknown>; threadId?: string }) => void) => () => void
+  onToolResult: (cb: (payload: { toolCallId: string; content: string; isError?: boolean; threadId?: string }) => void) => () => void
   onDone: (
     cb: (meta?: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string }) => void
   ) => () => void
@@ -88,8 +88,8 @@ interface SettingsAPI {
   get: () => Promise<AppSettings>
   set: (next: Partial<AppSettings>) => Promise<boolean>
   setApiKey: (providerId: string, apiKey: string) => Promise<boolean>
-  testProvider: (providerId: string, type: string, model: string, baseUrl?: string) => Promise<boolean>
-  fetchModels: (providerId: string, type: string, baseUrl?: string) => Promise<ModelInfo[]>
+  testProvider: (providerId: string, type: string, model: string, baseUrl?: string, apiKey?: string) => Promise<boolean>
+  fetchModels: (providerId: string, type: string, baseUrl?: string, apiKey?: string) => Promise<ModelInfo[]>
 }
 
 interface DraftAPI {
@@ -159,6 +159,50 @@ interface MemoryAPI {
   extract: (
     messages: Array<{ role: string; content: string }>
   ) => Promise<Array<{ content: string; timestamp: number; source: string }>>
+  onUpdated: (cb: (payload: { count: number; categories: string[] }) => void) => () => void
+}
+
+interface ToolsAPI {
+  listDirectory: (
+    path: string
+  ) => Promise<{
+    success: boolean
+    entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>
+    error?: string
+  }>
+  readFile: (path: string, maxSizeBytes?: number) => Promise<{ success: boolean; content?: string; error?: string }>
+  writeFile: (path: string, content: string, workspacePath?: string) => Promise<{ success: boolean; error?: string }>
+  executeShell: (
+    command: string,
+    args: string[],
+    options?: { timeout?: number; cwd?: string; env?: Record<string, string> }
+  ) => Promise<{ success: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }>
+  getPathForFile: (file: File) => string
+  extractPptxText: (filePath: string) => Promise<{ success: boolean; text?: string; error?: string }>
+}
+
+interface Web3TxRequest {
+  id: string
+  chain: string
+  chainName: string
+  from: string
+  to: string
+  data?: string
+  value?: string
+  description: string
+}
+
+interface Web3API {
+  prepareTx: (payload: {
+    chain: string
+    from: string
+    to: string
+    data?: string
+    value?: string
+    description: string
+  }) => Promise<{ txHash?: string; signedTx?: string; error?: string }>
+  explainCalldata: (payload: { chain: string; data: string }) => Promise<{ selector?: string; length?: number; note?: string; error?: string }>
+  onTxRequest: (cb: (req: Web3TxRequest) => void) => () => void
 }
 
 declare global {
@@ -174,6 +218,8 @@ declare global {
       desktop: DesktopAPI
       doctor: DoctorAPI
       memory: MemoryAPI
+      tools: ToolsAPI
+      web3: Web3API
       app: {
         onNewChat: (cb: () => void) => () => void
         onOpenSettings: (cb: () => void) => () => void

@@ -78,8 +78,8 @@ describe('chat store', () => {
     store.setMode('ensemble')
     expect(useChatStore.getState().mode).toBe('ensemble')
 
-    store.setMode('compare')
-    expect(useChatStore.getState().mode).toBe('compare')
+    store.setMode('single')
+    expect(useChatStore.getState().mode).toBe('single')
   })
 
   it('should manage attachments', async () => {

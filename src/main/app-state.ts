@@ -1,4 +1,4 @@
-import type { AppSettings, MCPServerConfig, ProviderConfig } from '../../shared/types'
+import type { AppSettings, MCPServerConfig, ProviderConfig } from '../shared/types'
 
 export const defaultSettings: AppSettings = {
   activeProviderId: null,
@@ -11,7 +11,7 @@ export const defaultSettings: AppSettings = {
   startupBehavior: 'restore',
   autoUpdate: false,
   desktopEnabled: false,
-  approvalMode: 'ask',
+  approvalMode: 'auto-edits',
   showThinking: false
 }
 

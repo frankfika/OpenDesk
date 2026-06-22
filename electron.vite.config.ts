@@ -9,7 +9,14 @@ export default defineConfig({
       alias: {
         '@shared': resolve('src/shared')
       }
-    }
+    },
+    build: {
+      // electron-vite's MainBuildOptions doesn't expose rollupOptions directly,
+      // but Rollup still honours it at build time.
+      rollupOptions: {
+        external: ['electron', '@aws-sdk/client-s3']
+      }
+    } as any
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

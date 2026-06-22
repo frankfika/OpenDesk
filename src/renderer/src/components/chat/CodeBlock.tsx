@@ -1,7 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Copy, Check, Eye, Download, Terminal, Play } from 'lucide-react'
+import { Copy, Check, Eye, Download, Play, Loader2 } from 'lucide-react'
 import { useToast } from '../../store/toast'
+import {
+  useCodeExecution,
+  normalizeExecutableLanguage,
+  LANGUAGE_CONFIG
+} from '../../hooks/useCodeExecution'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -46,22 +51,23 @@ hljs.registerLanguage('yml', yaml)
 hljs.registerLanguage('markdown', markdown)
 hljs.registerLanguage('md', markdown)
 
-const SHELL_LANGS = new Set(['bash', 'sh', 'shell', 'zsh'])
-
 interface CodeBlockProps {
+  id?: string
   code: string
   language?: string
   onPreview?: () => void
   filename?: string
 }
 
-export default function CodeBlock({ code, language, onPreview, filename }: CodeBlockProps) {
+export default function CodeBlock({ id, code, language, onPreview, filename }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
-  const [runOutput, setRunOutput] = useState<string | null>(null)
-  const [running, setRunning] = useState(false)
   const toast = useToast()
   const codeRef = useRef<HTMLElement>(null)
-  const isShell = language ? SHELL_LANGS.has(language.toLowerCase()) : false
+  const [stableBlockId] = useState(() => id ?? `codeblock-${crypto.randomUUID()}`)
+  const executableLang = normalizeExecutableLanguage(language)
+  const { outputs, execute } = useCodeExecution()
+  const runState = outputs[stableBlockId] ?? { output: '', status: 'idle' as const }
+  const isRunning = runState.status === 'running'
 
   useEffect(() => {
     if (!codeRef.current) return
@@ -118,42 +124,26 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
     URL.revokeObjectURL(url)
   }, [code, language, filename])
 
-  const handleRunShell = useCallback(async () => {
-    if (!window.api?.tools) return
-    setRunning(true)
-    setRunOutput(null)
+  const handleRun = useCallback(async () => {
+    if (!executableLang) return
+    await execute(stableBlockId, code, executableLang)
+  }, [stableBlockId, code, executableLang, execute])
+
+  const handleCopyOutput = useCallback(async () => {
     try {
-      // Use tools:writeFile + shell execution via IPC
-      // We can use the existing applyPatch or a new shell route
-      // For now, show a "copy to run" prompt — real execution needs shell IPC
-      const lines = code
-        .trim()
-        .split('\n')
-        .filter((l) => l.trim() && !l.trim().startsWith('#'))
-      if (lines.length === 0) {
-        setRunning(false)
-        return
-      }
-      // Dispatch event so InputBar can pick it up
-      window.dispatchEvent(
-        new CustomEvent('opendesk:fill-input', {
-          detail: { text: lines.join('\n') }
-        })
-      )
-      toast.success('Command sent to input')
-    } catch (e) {
-      setRunOutput(`Error: ${e instanceof Error ? e.message : String(e)}`)
-    } finally {
-      setRunning(false)
+      await navigator.clipboard.writeText(runState.output)
+      toast.success('Output copied')
+    } catch {
+      toast.error('Failed to copy output')
     }
-  }, [code, toast])
+  }, [runState.output, toast])
 
   return (
     <div className="relative group/code my-3 text-sm font-mono rounded-lg overflow-hidden border border-[var(--border)] shadow-sm">
       {/* Header bar */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-sidebar)] border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          {isShell && <Terminal size={11} className="text-[var(--text-muted)]" />}
+          {executableLang && <Play size={11} className="text-[var(--text-muted)]" />}
           {filename ? (
             <span className="text-[11px] font-sans text-[var(--text-secondary)] truncate max-w-[240px]">
               {filename}
@@ -176,15 +166,19 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
               <span>Preview</span>
             </button>
           )}
-          {isShell && (
+          {executableLang && (
             <button
-              onClick={handleRunShell}
-              disabled={running}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-[var(--success)] hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
-              title="Send to input"
+              onClick={handleRun}
+              disabled={isRunning}
+              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-colors disabled:opacity-50 text-[var(--success)] hover:bg-emerald-500/10"
+              title={`Run ${LANGUAGE_CONFIG[executableLang].label}`}
             >
-              <Play size={12} />
-              <span>Run</span>
+              {isRunning ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Play size={12} />
+              )}
+              <span>{isRunning ? 'Running' : 'Run'}</span>
             </button>
           )}
           <button
@@ -225,6 +219,15 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
               )}
             </AnimatePresence>
           </button>
+          {runState.output && (
+            <button
+              onClick={handleCopyOutput}
+              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors"
+              title="Copy output"
+            >
+              <Copy size={12} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -237,9 +240,37 @@ export default function CodeBlock({ code, language, onPreview, filename }: CodeB
         </pre>
       </div>
 
-      {runOutput && (
-        <div className="border-t border-[var(--border)] px-4 py-3 bg-black/5 font-mono text-[12px] text-[var(--text-secondary)] whitespace-pre-wrap max-h-[200px] overflow-y-auto">
-          {runOutput}
+      {runState.output && (
+        <div className="border-t border-[var(--border)]">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-sidebar)]/30">
+            <span
+              className={`text-[10px] font-medium uppercase ${
+                runState.status === 'error'
+                  ? 'text-[var(--error)]'
+                  : runState.status === 'success'
+                    ? 'text-[var(--success)]'
+                    : 'text-[var(--text-muted)]'
+              }`}
+            >
+              {runState.status === 'running'
+                ? 'Running...'
+                : runState.status === 'error'
+                  ? 'Error'
+                  : 'Output'}
+            </span>
+            {runState.executionTime && (
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                {runState.executionTime}ms
+              </span>
+            )}
+          </div>
+          <pre
+            className={`p-3 text-[12px] font-mono leading-relaxed max-h-[300px] overflow-y-auto whitespace-pre-wrap ${
+              runState.status === 'error' ? 'text-[var(--error)]' : 'text-[var(--text-secondary)]'
+            }`}
+          >
+            {runState.output}
+          </pre>
         </div>
       )}
     </div>

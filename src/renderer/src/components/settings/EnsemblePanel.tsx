@@ -1,7 +1,7 @@
 import { Users, Scale } from 'lucide-react'
 import Switch from '../ui/Switch'
 import { AGENT_ROLES } from '@shared/agent-roles'
-import type { AppSettings, ProviderConfig } from '@shared/types'
+import type { AppSettings, AgentRole, ProviderConfig } from '@shared/types'
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   generalist: 'Balanced general-purpose assistant',
@@ -109,7 +109,7 @@ export default function EnsemblePanel({ settings, providers, onUpdate }: Ensembl
                         onChange={(e) => {
                           const assignments = {
                             ...(settings.agentRoleAssignments ?? {}),
-                            [p.id]: e.target.value as string
+                            [p.id]: e.target.value as AgentRole
                           }
                           onUpdate({ agentRoleAssignments: assignments })
                         }}

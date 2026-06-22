@@ -1,6 +1,7 @@
 import { join, resolve } from 'path'
 import { homedir } from 'os'
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
+import { app } from 'electron'
 import type { Skill, SkillSource, SkillToolDefinition } from '../../shared/types'
 
 // YAML frontmatter regex: /^---\n([\s\S]*?)\n---\n([\s\S]*)$/
@@ -233,11 +234,29 @@ function scanSourceDirectory(basePath: string, source: SkillSource): Skill[] {
 export function getBuiltinSkillsPath(): string {
   // In production, builtins are bundled with the app
   // In dev, they are in src/main/skills/builtins/
-  const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
-  if (isDev) {
-    return resolve(__dirname, '../../src/main/skills/builtins')
+  const candidates: string[] = []
+
+  // Dev layout: src/main/skills/builtins (relative to compiled main in out/main)
+  candidates.push(resolve(__dirname, '../../src/main/skills/builtins'))
+  // Build layout: out/skills/builtins
+  candidates.push(resolve(__dirname, '../skills/builtins'))
+
+  // Packaged app layouts
+  try {
+    const appPath = app.getAppPath()
+    candidates.push(resolve(appPath, 'out/skills/builtins'))
+    candidates.push(resolve(appPath, 'skills/builtins'))
+    candidates.push(resolve(appPath, '../skills/builtins'))
+  } catch {
+    // app module may not be ready in unit tests
   }
-  return resolve(__dirname, '../skills/builtins')
+
+  for (const p of candidates) {
+    if (existsSync(p)) return p
+  }
+
+  // Fallback to dev path so callers can report a clear ENOENT
+  return candidates[0] || resolve(__dirname, '../../src/main/skills/builtins')
 }
 
 export function getGlobalSkillsPath(): string {

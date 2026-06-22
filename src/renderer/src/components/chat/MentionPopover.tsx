@@ -1,10 +1,11 @@
-interface MentionItem {
+export interface MentionItem {
   id: string
-  name: string
-  subtitle: string
+  name?: string
+  subtitle?: string
   icon?: React.ReactNode
   label?: string
   desc?: string
+  type?: string
 }
 
 interface MentionPopoverProps {
@@ -37,10 +38,10 @@ export default function MentionPopover({ type, items, selectedIndex, onSelect }:
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-[var(--text-primary)]">
-                {type === 'command' ? item.label : item.name}
+                {type === 'command' ? (item.label ?? item.name) : (item.name ?? item.label)}
               </span>
               <span className="text-[11px] text-[var(--text-secondary)] ml-2">
-                {type === 'command' ? item.desc : item.subtitle}
+                {type === 'command' ? (item.desc ?? item.subtitle) : (item.subtitle ?? item.desc)}
               </span>
             </div>
           </button>

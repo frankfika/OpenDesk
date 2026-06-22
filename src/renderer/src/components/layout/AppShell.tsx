@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Sidebar from './Sidebar'
+import LeftColumn from './LeftColumn'
+import MiddleColumn from './MiddleColumn'
 import ChatPanel from '../chat/ChatPanel'
 import SkillsPanel from '../skills/SkillsPanel'
-import FilePanel from '../files/FilePanel'
 import MemoryPanel from '../memory/MemoryPanel'
-import CodeRunner from '../runner/CodeRunner'
-import AgentExecutor from '../agent/AgentExecutor'
 import SettingsModal from '../settings/SettingsModal'
 import OnboardingModal from '../onboarding/OnboardingModal'
 import CommandPalette from '../ui/CommandPalette'
@@ -19,6 +17,7 @@ import { useWorkspaceStore } from '../../store/workspace'
 import { useSettingsStore } from '../../store/settings'
 import { useThemeStore } from '../../store/theme'
 import type { Thread } from '@shared/types'
+import { useToast } from '../../store/toast'
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -28,20 +27,42 @@ export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [skillsPanelOpen, setSkillsPanelOpen] = useState(false)
-  const [filePanelOpen, setFilePanelOpen] = useState(false)
   const [memoryPanelOpen, setMemoryPanelOpen] = useState(false)
-  const [runnerPanelOpen, setRunnerPanelOpen] = useState(false)
-  const [agentPanelOpen, setAgentPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [activeNav, setActiveNav] = useState('Chats')
   const newThread = useChatStore((state) => state.newThread)
   const { createThread, activeWorkspace, loadWorkspaces } = useWorkspaceStore()
   const { settings, load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
   const { setTheme, toggleTheme } = useThemeStore()
+  const toast = useToast()
 
-  // Check if first launch (no workspaces and no providers)
+  // Listen for memory update events from main process
+  useEffect(() => {
+    const off = window.api?.memory?.onUpdated?.(({ count, categories }) => {
+      const catLabels = categories.map((c) => (c === 'user' ? 'User' : c === 'identity' ? 'Identity' : 'Soul')).join(', ')
+      // Use a small delay so the toast appears after the assistant response is rendered
+      setTimeout(() => {
+        toast.info(`Memory updated: ${count} new ${count === 1 ? 'entry' : 'entries'} saved to ${catLabels}`, {
+          label: 'View',
+          onClick: () => {
+            setMemoryPanelOpen(true)
+          }
+        })
+      }, 500)
+    })
+    return () => {
+      off?.()
+    }
+  }, [toast])
+
+  // Listen for quick-command request to open Memory panel
+  useEffect(() => {
+    const handler = () => {
+      setMemoryPanelOpen(true)
+    }
+    window.addEventListener('opendesk:open-memory', handler)
+    return () => window.removeEventListener('opendesk:open-memory', handler)
+  }, [])
   useEffect(() => {
     if (!settingsLoaded) {
       loadSettings().then(() => {
@@ -57,15 +78,11 @@ export default function AppShell() {
 
   // Listen for global shortcuts from main process
   useEffect(() => {
-    const offSidebar = window.api?.app?.onToggleSidebar
-      ? window.api.app.onToggleSidebar(() => setSidebarCollapsed((v) => !v))
-      : () => {}
     const offTheme = window.api?.app?.onToggleTheme ? window.api.app.onToggleTheme(() => toggleTheme()) : () => {}
     const offFocusModel = window.api?.app?.onFocusModel
       ? window.api.app.onFocusModel(() => window.dispatchEvent(new CustomEvent('opendesk:focus-model')))
       : () => {}
     return () => {
-      offSidebar()
       offTheme()
       offFocusModel()
     }
@@ -131,67 +148,62 @@ export default function AppShell() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  const closeSkillsPanel = () => {
-    setSkillsPanelOpen(false)
-    setActiveNav((current) => (current === 'Skills' ? 'Chats' : current))
-  }
-  const closeFilePanel = () => {
-    setFilePanelOpen(false)
-    setActiveNav((current) => (current === 'Files' ? 'Chats' : current))
-  }
-  const closeMemoryPanel = () => {
-    setMemoryPanelOpen(false)
-    setActiveNav((current) => (current === 'Memory' ? 'Chats' : current))
-  }
-  const closeRunnerPanel = () => {
-    setRunnerPanelOpen(false)
-    setActiveNav((current) => (current === 'Runner' ? 'Chats' : current))
-  }
-  const closeAgentPanel = () => {
-    setAgentPanelOpen(false)
-    setActiveNav((current) => (current === 'Agent' ? 'Chats' : current))
-  }
+  const closeSkillsPanel = () => setSkillsPanelOpen(false)
+  const closeMemoryPanel = () => setMemoryPanelOpen(false)
 
-  const anyPanelOpen = skillsPanelOpen || filePanelOpen || memoryPanelOpen || runnerPanelOpen || agentPanelOpen
+  const anyPanelOpen = skillsPanelOpen || memoryPanelOpen
+
+  const [leftCollapsed] = useState(false)
+  const [middleCollapsed] = useState(false)
 
   return (
     <ErrorBoundary>
       <div className="flex h-screen w-screen overflow-hidden text-[var(--text-primary)] bg-transparent">
-        {!sidebarCollapsed && (
-          <Sidebar
-            activeNav={activeNav}
-            setActiveNav={setActiveNav}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onNewThread={handleNewThread}
-            onOpenSkills={() => {
-              setActiveNav('Skills')
-              setSkillsPanelOpen(true)
-            }}
-            onOpenFiles={() => {
-              setActiveNav('Files')
-              setFilePanelOpen(true)
-            }}
-            onOpenMemory={() => {
-              setActiveNav('Memory')
-              setMemoryPanelOpen(true)
-            }}
-            onOpenRunner={() => {
-              setActiveNav('Runner')
-              setRunnerPanelOpen(true)
-            }}
-            onOpenAgent={() => {
-              setActiveNav('Agent')
-              setAgentPanelOpen(true)
-            }}
-          />
-        )}
+        <AnimatePresence initial={false}>
+          {!leftCollapsed && (
+            <motion.div
+              key="left-column"
+              className="shrink-0 overflow-hidden border-r border-[var(--border)]"
+              initial={{ width: 0 }}
+              animate={{ width: 240 }}
+              exit={{ width: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <div style={{ width: 240 }}>
+                <LeftColumn />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence initial={false}>
+          {!middleCollapsed && (
+            <motion.div
+              key="middle-column"
+              className="shrink-0 overflow-hidden border-r border-[var(--border)]"
+              initial={{ width: 0 }}
+              animate={{ width: 240 }}
+              exit={{ width: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+            >
+              <div style={{ width: 240 }}>
+                <MiddleColumn onNewThread={handleNewThread} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <main
           role="main"
           aria-label="Chat"
-          className="flex flex-col flex-1 overflow-hidden relative border-l border-[var(--border)] bg-[var(--bg-content)]"
+          className="flex flex-col flex-1 overflow-hidden relative bg-[var(--bg-content)] min-w-[400px]"
         >
           <ErrorBoundary>
-            <ChatPanel onOpenSettings={() => setSettingsOpen(true)} onOpenFiles={() => setFilePanelOpen(true)} />
+            <ChatPanel
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenMemory={() => setMemoryPanelOpen(true)}
+              onOpenSkills={() => setSkillsPanelOpen(true)}
+            />
           </ErrorBoundary>
         </main>
 
@@ -206,10 +218,7 @@ export default function AppShell() {
               transition={{ duration: 0.2 }}
               onClick={() => {
                 closeSkillsPanel()
-                closeFilePanel()
                 closeMemoryPanel()
-                closeRunnerPanel()
-                closeAgentPanel()
               }}
             />
           )}
@@ -220,7 +229,7 @@ export default function AppShell() {
           {skillsPanelOpen && (
             <motion.div
               className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
-              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              style={{ width: 480, maxWidth: 'calc(100vw - 520px)' }}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -234,27 +243,10 @@ export default function AppShell() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {filePanelOpen && (
-            <motion.div
-              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[640px]"
-              style={{ width: 640, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
-            >
-              <ErrorBoundary>
-                <FilePanel onClose={closeFilePanel} />
-              </ErrorBoundary>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
           {memoryPanelOpen && (
             <motion.div
               className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
-              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
+              style={{ width: 480, maxWidth: 'calc(100vw - 520px)' }}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -262,40 +254,6 @@ export default function AppShell() {
             >
               <ErrorBoundary>
                 <MemoryPanel onClose={closeMemoryPanel} />
-              </ErrorBoundary>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {runnerPanelOpen && (
-            <motion.div
-              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[640px]"
-              style={{ width: 640, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
-            >
-              <ErrorBoundary>
-                <CodeRunner />
-              </ErrorBoundary>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {agentPanelOpen && (
-            <motion.div
-              className="fixed right-0 top-0 bottom-0 z-40 bg-[var(--bg-content)] border-l border-[var(--border)] shadow-2xl max-w-[100vw] sm:max-w-[480px]"
-              style={{ width: 480, maxWidth: 'calc(100vw - var(--sidebar-width, 0px))' }}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
-            >
-              <ErrorBoundary>
-                <AgentExecutor />
               </ErrorBoundary>
             </motion.div>
           )}
@@ -322,7 +280,11 @@ export default function AppShell() {
         <ShortcutHelp open={shortcutHelpOpen} onOpenChange={setShortcutHelpOpen} />
 
         {/* Command Palette */}
-        <CommandPalette onOpenSettings={() => setSettingsOpen(true)} onOpenSkills={() => setSkillsPanelOpen(true)} />
+        <CommandPalette
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSkills={() => setSkillsPanelOpen(true)}
+          onOpenMemory={() => setMemoryPanelOpen(true)}
+        />
 
         {/* Toast notifications */}
         <ToastContainer />

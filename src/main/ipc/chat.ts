@@ -14,6 +14,7 @@ import { abortControllers } from './abort'
 import { loadKeys, loadThreads } from '../persistence'
 import { getWorkspacePath } from './workspace'
 import { settings } from '../app-state'
+import { normalizeToolMessages } from '../orchestration/message-utils'
 
 const channels = ['chat:send', 'chat:abort', 'chat:regenerate', 'chat:editMessage']
 
@@ -47,11 +48,11 @@ async function doChatStream(
   }
 
   let skillSystemContent = ''
-  const activeSkillIds: string[] = []
+  const activeSkillIds: string[] = payload.activeSkillIds ? [...payload.activeSkillIds] : []
   if (threadId) {
     const threads = loadThreads()
     const thread = threads.find((t) => t.id === threadId)
-    if (thread?.skillId) {
+    if (thread?.skillId && !activeSkillIds.includes(thread.skillId)) {
       activeSkillIds.push(thread.skillId)
     }
   }
@@ -64,7 +65,11 @@ async function doChatStream(
     }
   }
 
-  let finalMessages = messages
+  // Normalize legacy frontend messages where tool calls were stored as standalone
+  // kind='tool_call' assistant messages without metadata.toolCalls. OpenAI-compatible
+  // providers require a single assistant message with tool_calls followed by tool results.
+  const normalizedMessages = normalizeToolMessages(messages)
+  let finalMessages = normalizedMessages
   let combinedSystemPrompt = systemPrompt || ''
   if (skillSystemContent) {
     combinedSystemPrompt += (combinedSystemPrompt ? '\n\n' : '') + skillSystemContent
@@ -74,7 +79,7 @@ async function doChatStream(
   if (workspacePath) {
     combinedSystemPrompt +=
       (combinedSystemPrompt ? '\n\n' : '') +
-      `You are working inside the workspace: ${workspacePath}. You can read, write, list, and patch files within this workspace using the available tools. Always use absolute paths when calling file tools.`
+      `You are working inside the workspace: ${workspacePath}. You can read, write, list, and patch files within this workspace or the user's home directory using the available tools. Always use absolute paths when calling file tools. Avoid system directories.`
   }
 
   const memory = memoryService.getMemory()
@@ -95,7 +100,7 @@ async function doChatStream(
   if (combinedSystemPrompt) {
     finalMessages = [
       { id: 'system', role: 'system', content: combinedSystemPrompt, timestamp: Date.now() },
-      ...messages
+      ...normalizedMessages
     ]
   }
 
@@ -123,13 +128,14 @@ async function doChatStream(
 
         if (typeof chunk === 'string') {
           assistantContent += chunk
-          win.webContents.send('chat:token', chunk)
+          win.webContents.send('chat:token', { token: chunk, threadId })
         } else {
           pendingToolCalls.push(chunk)
           win.webContents.send('chat:tool_call', {
             id: chunk.id,
             name: chunk.name,
-            arguments: chunk.arguments
+            arguments: chunk.arguments,
+            threadId
           })
         }
       }
@@ -149,11 +155,15 @@ async function doChatStream(
       })
 
       for (const tc of pendingToolCalls) {
-        const result: ToolResult = await executeTool(tc, workspaceId, { desktopEnabled: settings.desktopEnabled })
+        const result: ToolResult = await executeTool(tc, workspaceId, {
+          desktopEnabled: settings.desktopEnabled,
+          approvalMode: settings.approvalMode
+        })
         win.webContents.send('chat:tool_result', {
           toolCallId: result.toolCallId,
           content: result.content,
-          isError: result.isError
+          isError: result.isError,
+          threadId
         })
         currentMessages.push({
           id: randomUUID(),
@@ -170,10 +180,27 @@ async function doChatStream(
     win.webContents.send('chat:done', { regenerate, editIndex, workspaceId, threadId })
 
     try {
-      const recentMessages = messages.slice(-10)
+      const recentMessages = normalizedMessages.slice(-10)
       const entries = memoryService.extractFromMessages(recentMessages)
       if (entries.length > 0) {
         memoryService.appendExtracted(entries)
+        const categories = new Set<string>()
+        for (const e of entries) {
+          const lower = e.content.toLowerCase()
+          if (lower.includes('user preference') || lower.includes('user mentioned')) categories.add('user')
+          else if (
+            lower.includes('ai role') ||
+            lower.includes('tone') ||
+            lower.includes('convention') ||
+            lower.includes('project convention') ||
+            lower.includes('workspace identity')
+          )
+            categories.add('identity')
+          else if (lower.includes('lesson learned') || lower.includes('best practice') || lower.includes('pattern'))
+            categories.add('soul')
+          else categories.add('soul')
+        }
+        win.webContents.send('memory:updated', { count: entries.length, categories: Array.from(categories) })
       }
     } catch (memErr) {
       console.error('[Memory] Extraction failed:', memErr)
@@ -213,7 +240,7 @@ async function doChatStream(
 }
 
 async function doEnsembleChat(win: BrowserWindow, payload: ChatSendPayload): Promise<void> {
-  const runId = createRunId()
+  const runId = payload.sessionId || createRunId()
   const apiKeys = loadKeys()
 
   try {
@@ -248,8 +275,8 @@ async function doEnsembleChat(win: BrowserWindow, payload: ChatSendPayload): Pro
         onArbitrationDone: ({ result }) => {
           win.webContents.send('chat:arbitration:done', { runId, result })
         },
-        onEnsembleDone: ({ threadId, workspaceId }) => {
-          win.webContents.send('chat:ensemble:done', { runId, threadId, workspaceId })
+        onEnsembleDone: ({ threadId, workspaceId, agentAnswers }) => {
+          win.webContents.send('chat:ensemble:done', { runId, threadId, workspaceId, agentAnswers })
         },
         onError: ({ error }) => {
           win.webContents.send('chat:error', { message: error, type: 'generic' })
@@ -279,7 +306,11 @@ export function registerChatHandlers(win: BrowserWindow): void {
   })
 
   ipcMain.on('chat:regenerate', async (_e, payload: ChatSendPayload) => {
-    await doChatStream(win, payload, true)
+    if (payload.mode === 'ensemble' || payload.mode === 'agent' || (payload.providerIds && payload.providerIds.length > 1)) {
+      await doEnsembleChat(win, payload)
+    } else {
+      await doChatStream(win, payload, true)
+    }
   })
 
   ipcMain.on('chat:editMessage', async (_e, payload: ChatSendPayload & { editIndex: number }) => {

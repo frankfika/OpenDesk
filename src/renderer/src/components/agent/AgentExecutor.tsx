@@ -201,7 +201,7 @@ export default function AgentExecutor() {
       updateRun(run.id, { status: 'running', startedAt: Date.now() })
 
       // Register IPC listeners for this run
-      const unsubToken = window.api.chat.onToken((token: string) => {
+      const unsubToken = window.api.chat.onToken(({ token }: { token: string; threadId?: string }) => {
         // Token received - append to current thought/response step
         const currentRun = runs.find((r) => r.id === run.id)
         if (!currentRun || currentRun.status === 'paused') return

@@ -48,7 +48,13 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
         return
       }
       const skills = await window.api.skills.scan()
-      set({ skills, loaded: true })
+      // Auto-activate built-in skills so they work out of the box
+      const builtinIds = skills.filter((s) => s.source === 'builtin' || s.isBuiltIn).map((s) => s.id)
+      set((state) => ({
+        skills,
+        loaded: true,
+        activeSkillIds: [...new Set([...state.activeSkillIds, ...builtinIds])]
+      }))
     } catch (e) {
       console.error('Failed to load skills:', e)
       set({ loaded: true })

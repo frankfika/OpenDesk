@@ -11,7 +11,7 @@ if (typeof window !== 'undefined' && !window.api) {
         startupBehavior: 'restore',
         autoUpdate: true,
         desktopEnabled: false,
-        approvalMode: 'suggest',
+        approvalMode: 'auto-edits',
         showThinking: true
       }),
       set: async () => true,
@@ -57,7 +57,8 @@ if (typeof window !== 'undefined' && !window.api) {
       saveMessages: async () => true
     },
     chat: {
-      send: () => {},
+      // No-op stub in browser mode. The renderer detects missing chat.send
+      // and falls through to the in-browser web3Chat agent.
       abort: () => {},
       regenerate: () => {},
       editMessage: () => {},
@@ -106,7 +107,8 @@ if (typeof window !== 'undefined' && !window.api) {
       readFile: async () => ({ success: false, error: 'Not available in browser mode' }),
       writeFile: async () => ({ success: false, error: 'Not available in browser mode' }),
       listDirectory: async () => ({ success: false, error: 'Not available in browser mode' }),
-      applyPatch: async () => ({ success: false, error: 'Not available in browser mode' })
+      applyPatch: async () => ({ success: false, error: 'Not available in browser mode' }),
+      executeShell: async () => ({ success: false, stdout: '', stderr: 'Not available in browser mode', exitCode: 1 })
     },
     skills: {
       list: async () => [],

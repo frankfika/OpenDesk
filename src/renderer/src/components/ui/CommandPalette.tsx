@@ -12,7 +12,8 @@ import {
   ArrowUpRight,
   FileText,
   Plug,
-  Wrench
+  Wrench,
+  Brain
 } from 'lucide-react'
 import { useChatStore } from '../../store/chat'
 import { useWorkspaceStore } from '../../store/workspace'
@@ -32,9 +33,10 @@ interface CommandItem {
 interface CommandPaletteProps {
   onOpenSettings?: () => void
   onOpenSkills?: () => void
+  onOpenMemory?: () => void
 }
 
-export default function CommandPalette({ onOpenSettings }: CommandPaletteProps) {
+export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMemory }: CommandPaletteProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -127,6 +129,26 @@ export default function CommandPalette({ onOpenSettings }: CommandPaletteProps) 
 
     // Actions
     list.push({
+      id: 'action-memory',
+      group: 'Actions',
+      icon: Brain,
+      label: 'Open Memory',
+      action: () => {
+        setOpen(false)
+        onOpenMemory?.()
+      }
+    })
+    list.push({
+      id: 'action-skills',
+      group: 'Actions',
+      icon: Wrench,
+      label: 'Open Skills',
+      action: () => {
+        setOpen(false)
+        onOpenSkills?.()
+      }
+    })
+    list.push({
       id: 'action-screenshot',
       group: 'Actions',
       icon: ArrowUpRight,
@@ -211,6 +233,8 @@ export default function CommandPalette({ onOpenSettings }: CommandPaletteProps) 
     activeWorkspaceId,
     theme,
     onOpenSettings,
+    onOpenSkills,
+    onOpenMemory,
     newThread,
     setActiveWorkspace,
     setActiveThread,

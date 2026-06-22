@@ -1,10 +1,11 @@
 import { BrowserWindow } from 'electron'
-import { initSettings, saveSettingsToDisk } from '../persistence'
 import { settings } from '../app-state'
+import { saveSettingsToDisk } from '../persistence'
 import { startHealthChecks } from '../providers/health-checker'
+import type { ProviderConfig } from '../../shared/types'
 import { registerSettingsHandlers } from './settings'
 import { registerMemoryHandlers } from './memory'
-import { registerMcpHandlers, connectEnabledMcpServers } from './mcp'
+import { registerMcpHandlers } from './mcp'
 import { registerSkillsHandlers } from './skills'
 import { registerWorkspaceHandlers } from './workspace'
 import { registerThreadHandlers } from './thread'
@@ -13,16 +14,9 @@ import { registerDesktopHandlers } from './desktop'
 import { registerDoctorHandlers } from './doctor'
 import { registerToolsHandlers } from './tools'
 import { registerRAGHandlers } from './rag'
+import { registerWeb3Handlers } from './web3'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
-  // Load persisted settings on startup
-  initSettings()
-
-  // Connect enabled MCP servers on startup
-  connectEnabledMcpServers().catch((err) => {
-    console.error('Failed to connect enabled MCP servers on startup:', err)
-  })
-
   // Register domain-specific handlers
   registerSettingsHandlers(win)
   registerMemoryHandlers(win)
@@ -35,12 +29,13 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerDoctorHandlers(win)
   registerToolsHandlers(win)
   registerRAGHandlers(win)
+  registerWeb3Handlers(win)
 
   /* ===== Health Checks ===== */
   startHealthChecks(
     () => settings,
     (providerId, result) => {
-      const idx = settings.providers.findIndex((p) => p.id === providerId)
+      const idx = settings.providers.findIndex((p: ProviderConfig) => p.id === providerId)
       if (idx !== -1) {
         settings.providers[idx] = { ...settings.providers[idx], lastTestResult: result, lastTestedAt: Date.now() }
         saveSettingsToDisk()

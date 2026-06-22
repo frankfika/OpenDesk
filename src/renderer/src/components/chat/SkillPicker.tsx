@@ -3,10 +3,11 @@ import { useSkillsStore } from '../../store/skills'
 interface SkillPickerProps {
   filter: string
   onSelect: (skillId: string) => void
+  onOpenSkills?: () => void
 }
 
-export default function SkillPicker({ filter, onSelect }: SkillPickerProps) {
-  const { skills } = useSkillsStore()
+export default function SkillPicker({ filter, onSelect, onOpenSkills }: SkillPickerProps) {
+  const { skills, loaded } = useSkillsStore()
   const normalized = filter.toLowerCase()
   const filtered = skills.filter((s) => s.name.toLowerCase().includes(normalized))
 
@@ -16,8 +17,21 @@ export default function SkillPicker({ filter, onSelect }: SkillPickerProps) {
         Select a skill
       </div>
       <div className="overflow-y-auto flex-1 px-1">
-        {filtered.length === 0 ? (
-          <div className="px-3 py-4 text-xs text-center text-[var(--text-muted)]">No matching skills found</div>
+        {!loaded ? (
+          <div className="px-3 py-4 text-xs text-center text-[var(--text-muted)]">Loading skills…</div>
+        ) : filtered.length === 0 ? (
+          <div className="px-3 py-4 text-xs text-center text-[var(--text-muted)] flex flex-col gap-2">
+            <span>No matching skills found</span>
+            {onOpenSkills && (
+              <button
+                type="button"
+                onClick={onOpenSkills}
+                className="text-[var(--accent)] hover:underline"
+              >
+                Open Skills panel
+              </button>
+            )}
+          </div>
         ) : (
           filtered.map((s) => (
             <button

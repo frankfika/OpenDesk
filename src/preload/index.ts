@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type {
   AppSettings,
   ChatSendPayload,
@@ -17,7 +17,8 @@ import type {
   ModelInfo,
   MCPServerConfig,
   MCPTool,
-  ArbitrationResult
+  ArbitrationResult,
+  AgentRole
 } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
@@ -27,10 +28,10 @@ contextBridge.exposeInMainWorld('api', {
     setApiKey: (providerId: string, apiKey: string): Promise<boolean> =>
       ipcRenderer.invoke('settings:setApiKey', providerId, apiKey),
     // NOTE: getApiKey removed to prevent API key exfiltration from renderer
-    testProvider: (providerId: string, type: string, model: string, baseUrl?: string): Promise<boolean> =>
-      ipcRenderer.invoke('settings:testProvider', providerId, type, model, baseUrl),
-    fetchModels: (providerId: string, type: string, baseUrl?: string): Promise<ModelInfo[]> =>
-      ipcRenderer.invoke('settings:fetchModels', providerId, type, baseUrl)
+    testProvider: (providerId: string, type: string, model: string, baseUrl?: string, apiKey?: string): Promise<boolean> =>
+      ipcRenderer.invoke('settings:testProvider', providerId, type, model, baseUrl, apiKey),
+    fetchModels: (providerId: string, type: string, baseUrl?: string, apiKey?: string): Promise<ModelInfo[]> =>
+      ipcRenderer.invoke('settings:fetchModels', providerId, type, baseUrl, apiKey)
   },
 
   draft: {
@@ -102,8 +103,11 @@ contextBridge.exposeInMainWorld('api', {
     regenerate: (payload: ChatSendPayload): void => ipcRenderer.send('chat:regenerate', payload),
     editMessage: (payload: ChatSendPayload & { editIndex: number }): void =>
       ipcRenderer.send('chat:editMessage', payload),
-    onToken: (cb: (token: string) => void) => {
-      const listener = (_e: Electron.IpcRendererEvent, token: string): void => cb(token)
+    onToken: (cb: (payload: { token: string; threadId?: string }) => void) => {
+      const listener = (
+        _e: Electron.IpcRendererEvent,
+        payload: { token: string; threadId?: string }
+      ): void => cb(payload)
       ipcRenderer.on('chat:token', listener)
       return () => ipcRenderer.removeListener('chat:token', listener)
     },
@@ -221,9 +225,23 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.on('chat:arbitration:done', listener)
       return () => ipcRenderer.removeListener('chat:arbitration:done', listener)
     },
-    onEnsembleDone: (cb: (payload: { runId: string; threadId?: string; workspaceId?: string }) => void) => {
+    onEnsembleDone: (
+      cb: (payload: {
+        runId: string
+        threadId?: string
+        workspaceId?: string
+        agentAnswers?: { agentId: string; providerId: string; model?: string; role?: AgentRole; content: string }[]
+      }) => void
+    ) => {
       const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void =>
-        cb(payload as { runId: string; threadId?: string; workspaceId?: string })
+        cb(
+          payload as {
+            runId: string
+            threadId?: string
+            workspaceId?: string
+            agentAnswers?: { agentId: string; providerId: string; model?: string; role?: AgentRole; content: string }[]
+          }
+        )
       ipcRenderer.on('chat:ensemble:done', listener)
       return () => ipcRenderer.removeListener('chat:ensemble:done', listener)
     }
@@ -259,7 +277,10 @@ contextBridge.exposeInMainWorld('api', {
       args: string[],
       options?: { timeout?: number; cwd?: string; env?: Record<string, string> }
     ): Promise<{ success: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }> =>
-      ipcRenderer.invoke('tools:executeShell', command, args, options)
+      ipcRenderer.invoke('tools:executeShell', command, args, options),
+    getPathForFile: (file: File): string => webUtils.getPathForFile(file),
+    extractPptxText: (filePath: string): Promise<{ success: boolean; text?: string; error?: string }> =>
+      ipcRenderer.invoke('tools:extractPptxText', filePath)
   },
 
   rag: {
@@ -290,7 +311,28 @@ contextBridge.exposeInMainWorld('api', {
     extract: (
       messages: Array<{ role: string; content: string }>
     ): Promise<Array<{ content: string; timestamp: number; source: string }>> =>
-      ipcRenderer.invoke('memory:extract', messages)
+      ipcRenderer.invoke('memory:extract', messages),
+    onUpdated: (cb: (payload: { count: number; categories: string[] }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: unknown): void =>
+        cb(payload as { count: number; categories: string[] })
+      ipcRenderer.on('memory:updated', listener)
+      return () => ipcRenderer.removeListener('memory:updated', listener)
+    }
+  },
+
+  web3: {
+    prepareTx: (
+      payload: { chain: string; from: string; to: string; data?: string; value?: string; description: string }
+    ): Promise<{ txHash?: string; signedTx?: string; error?: string }> =>
+      ipcRenderer.invoke('web3:prepareTx', payload),
+    explainCalldata: (payload: { chain: string; data: string }): Promise<{ selector?: string; length?: number; note?: string; error?: string }> =>
+      ipcRenderer.invoke('web3:explainCalldata', payload),
+    onTxRequest: (cb: (req: { id: string; chain: string; chainName: string; from: string; to: string; data?: string; value?: string; description: string }) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, req: unknown): void =>
+        cb(req as { id: string; chain: string; chainName: string; from: string; to: string; data?: string; value?: string; description: string })
+      ipcRenderer.on('web3:txRequest', listener)
+      return () => ipcRenderer.removeListener('web3:txRequest', listener)
+    }
   },
 
   app: {

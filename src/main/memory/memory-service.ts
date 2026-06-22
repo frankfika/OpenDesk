@@ -10,7 +10,7 @@ export interface MemoryService {
   appendExtracted(entries: MemoryEntry[]): void
 }
 
-const EXTRACTION_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes
+const EXTRACTION_COOLDOWN_MS = 30 * 1000 // 30 seconds
 
 export function createMemoryService(store?: MemoryStore): MemoryService {
   const memoryStore = store || createMemoryStore()
@@ -52,6 +52,14 @@ export function createMemoryService(store?: MemoryStore): MemoryService {
         const lower = entry.content.toLowerCase()
         if (lower.includes('user preference') || lower.includes('user mentioned')) {
           memoryStore.append('user', entry)
+        } else if (
+          lower.includes('ai role') ||
+          lower.includes('tone') ||
+          lower.includes('convention') ||
+          lower.includes('project convention') ||
+          lower.includes('workspace identity')
+        ) {
+          memoryStore.append('identity', entry)
         } else if (lower.includes('lesson learned') || lower.includes('best practice') || lower.includes('pattern')) {
           memoryStore.append('soul', entry)
         } else {

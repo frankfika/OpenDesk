@@ -5,6 +5,8 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { createTray, destroyTray } from './tray'
 import { registerShortcuts, unregisterShortcuts } from './shortcuts'
 import { OLLAMA_BASE_URL } from '../shared/providers'
+import { initSettings } from './persistence'
+import { connectEnabledMcpServers } from './ipc/mcp'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -132,6 +134,12 @@ async function autoDetectOllama(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  // Load persisted settings and connect MCP servers once, before any IPC handlers use them.
+  initSettings()
+  await connectEnabledMcpServers().catch((err) => {
+    console.error('Failed to connect enabled MCP servers on startup:', err)
+  })
+
   mainWindow = createWindow()
   registerIpcHandlers(mainWindow)
   createTray(mainWindow)

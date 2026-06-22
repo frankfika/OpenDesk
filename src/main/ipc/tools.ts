@@ -1,7 +1,8 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { promises as fs } from 'fs'
+import { promises as fs, createReadStream } from 'fs'
 import { join, resolve } from 'path'
 import { spawn } from 'child_process'
+import { Parse, type Entry } from 'unzipper'
 
 interface FileEntry {
   name: string
@@ -119,8 +120,17 @@ async function listDirectory(dirPath: string): Promise<{ success: boolean; entri
   }
 }
 
+const MAX_READ_FILE_SIZE = 5 * 1024 * 1024
+
 async function readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
   try {
+    const stats = await fs.stat(filePath)
+    if (stats.size > MAX_READ_FILE_SIZE) {
+      return {
+        success: false,
+        error: `File too large (${(stats.size / 1024 / 1024).toFixed(1)} MB). Max allowed is ${(MAX_READ_FILE_SIZE / 1024 / 1024).toFixed(0)} MB.`
+      }
+    }
     const content = await fs.readFile(filePath, 'utf-8')
     return { success: true, content }
   } catch (e) {
@@ -144,6 +154,43 @@ async function writeFile(
   }
 }
 
+async function extractPptxText(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {
+  try {
+    const slides: string[] = []
+    await new Promise<void>((resolve, reject) => {
+      createReadStream(filePath)
+        .pipe(Parse())
+        .on('entry', function (entry: Entry) {
+          const fileName = entry.path
+          if (fileName.startsWith('ppt/slides/') && fileName.endsWith('.xml')) {
+            let content = ''
+            entry.on('data', (chunk: Buffer) => {
+              content += chunk.toString()
+            })
+            entry.on('end', () => {
+              const texts: string[] = []
+              const regex = /<a:t>([^<]*)<\/a:t>/g
+              let match
+              while ((match = regex.exec(content)) !== null) {
+                if (match[1].trim()) texts.push(match[1])
+              }
+              if (texts.length > 0) slides.push(texts.join(' '))
+            })
+            entry.on('error', (err: Error) => reject(err))
+          } else {
+            entry.autodrain()
+          }
+        })
+        .on('close', () => resolve())
+        .on('error', (err: Error) => reject(err))
+    })
+    const text = slides.join('\n\n')
+    return { success: true, text: text || '(no text content found in presentation)' }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 export function registerToolsHandlers(_win: BrowserWindow): void {
   ipcMain.handle('tools:listDirectory', async (_event, dirPath: string) => {
     return listDirectory(dirPath)
@@ -159,5 +206,9 @@ export function registerToolsHandlers(_win: BrowserWindow): void {
 
   ipcMain.handle('tools:executeShell', async (_event, command: string, args: string[], options?: { timeout?: number; cwd?: string; env?: Record<string, string> }) => {
     return executeShell(command, args, options)
+  })
+
+  ipcMain.handle('tools:extractPptxText', async (_event, filePath: string) => {
+    return extractPptxText(filePath)
   })
 }

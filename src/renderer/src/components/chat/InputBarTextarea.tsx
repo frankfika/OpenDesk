@@ -1,14 +1,8 @@
 import { memo } from 'react'
-import MentionPopover from './MentionPopover'
+import MentionPopover, { type MentionItem } from './MentionPopover'
 import SkillPicker from './SkillPicker'
 
-interface PopoverItem {
-  type: string
-  id: string
-  name: string
-  subtitle: string
-  icon: React.ReactNode
-}
+type PopoverItem = MentionItem
 
 interface InputBarTextareaProps {
   text: string
@@ -25,6 +19,7 @@ interface InputBarTextareaProps {
   showSkillPicker: boolean
   skillFilter: string
   onSelectSkill: (skillId: string) => void
+  onOpenSkills?: () => void
 }
 
 function InputBarTextarea({
@@ -41,7 +36,8 @@ function InputBarTextarea({
   onSelectPopover,
   showSkillPicker,
   skillFilter,
-  onSelectSkill
+  onSelectSkill,
+  onOpenSkills
 }: InputBarTextareaProps) {
   return (
     <div className="px-5 pt-4 pb-2 relative">
@@ -60,13 +56,13 @@ function InputBarTextarea({
       {popoverType && popoverItems.length > 0 && (
         <MentionPopover
           type={popoverType}
-          items={popoverItems as unknown as Parameters<typeof MentionPopover>['items']}
+          items={popoverItems}
           selectedIndex={popoverIndex}
-          onSelect={(item) => onSelectPopover(item as unknown as PopoverItem)}
+          onSelect={onSelectPopover}
         />
       )}
 
-      {showSkillPicker && <SkillPicker filter={skillFilter} onSelect={onSelectSkill} />}
+      {showSkillPicker && <SkillPicker filter={skillFilter} onSelect={onSelectSkill} onOpenSkills={onOpenSkills} />}
     </div>
   )
 }

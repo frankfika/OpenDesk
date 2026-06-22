@@ -10,8 +10,10 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "ox/tempo/KeyAuthorization": ["src/main/types/ox-tempo-keyauth-stub.d.ts"]
     }
   },
-  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
+  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"],
+  "exclude": ["node_modules", "node_modules/viem/**", "node_modules/ox/**"]
 }

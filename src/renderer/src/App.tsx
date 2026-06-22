@@ -1,5 +1,10 @@
-import AppShell from './components/layout/AppShell'
+import Web3Providers from './components/web3/Web3Providers'
+import Web3Shell from './components/web3/Web3Shell'
 
 export default function App() {
-  return <AppShell />
+  return (
+    <Web3Providers>
+      <Web3Shell />
+    </Web3Providers>
+  )
 }

@@ -1,5 +1,17 @@
 import { useState, useMemo } from 'react'
-import { FileText, Pencil, FolderOpen, Terminal, CheckCircle, XCircle, Wrench, Clock, ChevronRight } from 'lucide-react'
+import {
+  FileText,
+  Pencil,
+  FolderOpen,
+  Terminal,
+  CheckCircle,
+  XCircle,
+  Wrench,
+  Clock,
+  ChevronRight,
+  ShieldAlert,
+  Settings as SettingsIcon
+} from 'lucide-react'
 
 interface ToolCallCardProps {
   toolName: string
@@ -11,6 +23,10 @@ interface ToolCallCardProps {
 
 export default function ToolCallCard({ toolName, args, isResult, content, isError }: ToolCallCardProps) {
   const [expanded, setExpanded] = useState(false)
+
+  const isBlocked = useMemo(() => {
+    return isError && content?.toLowerCase().includes('blocked') && content?.toLowerCase().includes('approval')
+  }, [isError, content])
 
   const { icon, label, summary, detail, color } = useMemo(() => {
     const a = args || {}
@@ -96,19 +112,21 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
 
     return (
       <div
-        className={`my-1 rounded-lg border text-[12px] overflow-hidden ${isError ? 'bg-red-500/5 border-[var(--error-border)]/60' : 'bg-[var(--bg-sidebar)]/40 border-[var(--border)]'}`}
+        className={`my-1 rounded-lg border text-[12px] overflow-hidden ${isBlocked ? 'bg-amber-500/5 border-amber-500/40 shadow-sm animate-in fade-in slide-in-from-top-1' : isError ? 'bg-red-500/5 border-[var(--error-border)]/60' : 'bg-[var(--bg-sidebar)]/40 border-[var(--border)]'}`}
       >
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--border)]/30 transition-colors"
+          className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--border)]/30 transition-colors ${isBlocked ? 'bg-amber-500/10' : ''}`}
         >
-          {isError ? (
+          {isBlocked ? (
+            <ShieldAlert size={12} className="text-amber-500 shrink-0" />
+          ) : isError ? (
             <XCircle size={12} className="text-[var(--error)] shrink-0" />
           ) : (
             <CheckCircle size={12} className="text-[var(--success)] shrink-0" />
           )}
-          <span className={`text-[11px] font-medium ${isError ? 'text-[var(--error)]' : 'text-[var(--text-muted)]'}`}>
-            {isError ? 'Error' : isFileWrite ? 'Written' : 'Result'} · {toolName.replace(/_/g, ' ')}
+          <span className={`text-[11px] font-medium ${isBlocked ? 'text-amber-600' : isError ? 'text-[var(--error)]' : 'text-[var(--text-muted)]'}`}>
+            {isBlocked ? 'Approval Required' : isError ? 'Error' : isFileWrite ? 'Written' : 'Result'} · {toolName.replace(/_/g, ' ')}
           </span>
           {content && !expanded && (
             <span className="flex-1 min-w-0 truncate text-[var(--text-muted)] font-mono ml-1">
@@ -143,10 +161,29 @@ export default function ToolCallCard({ toolName, args, isResult, content, isErro
               })}
             </div>
           ) : (
-            <div
-              className={`px-3 pb-3 font-mono text-[12px] whitespace-pre-wrap max-h-[300px] overflow-y-auto leading-relaxed ${isError ? 'text-[var(--error)]' : 'text-[var(--text-secondary)]'}`}
-            >
-              {content}
+            <div className="px-3 pb-3">
+              <div
+                className={`font-mono text-[12px] whitespace-pre-wrap max-h-[300px] overflow-y-auto leading-relaxed ${isBlocked ? 'text-amber-700 dark:text-amber-400' : isError ? 'text-[var(--error)]' : 'text-[var(--text-secondary)]'}`}
+              >
+                {content}
+              </div>
+              {isBlocked && (
+                <div className="mt-3 flex items-center gap-2 pt-2 border-t border-amber-500/20">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.dispatchEvent(new CustomEvent('opendesk:open-settings'))
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500 text-white text-[11px] font-semibold hover:bg-amber-600 transition-colors shadow-sm"
+                  >
+                    <SettingsIcon size={12} />
+                    Enable Auto-Approval
+                  </button>
+                  <span className="text-[11px] text-amber-600/80 italic">
+                    Remind: Tool execution requires your permission in Settings.
+                  </span>
+                </div>
+              )}
             </div>
           ))}
       </div>

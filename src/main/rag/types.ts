@@ -61,7 +61,7 @@ export interface VectorStoreAdapter {
 
 export interface RAGService {
   adapter: VectorStoreAdapter
-  indexFile(workspaceId: string, filePath: string, content: string): Promise<KnowledgeSource>
+  indexFile(workspaceId: string, filePath: string, content?: string): Promise<KnowledgeSource>
   search(workspaceId: string, query: string, topK?: number): Promise<SearchResult[]>
   deleteSource(workspaceId: string, sourceId: string): Promise<void>
   listSources(workspaceId: string): Promise<KnowledgeSource[]>

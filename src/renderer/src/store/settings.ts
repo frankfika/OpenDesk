@@ -48,7 +48,7 @@ interface SettingsState {
   mcpTools: MCPTool[]
 
   load: () => Promise<void>
-  update: (next: Partial<AppSettings>) => Promise<void>
+  update: (next: Partial<AppSettings>) => Promise<boolean>
   saveApiKey: (providerId: string, apiKey: string) => Promise<void>
   addProvider: (config: ProviderConfig, apiKey: string) => Promise<void>
   updateProvider: (id: string, patch: Partial<ProviderConfig>) => Promise<void>
@@ -57,7 +57,7 @@ interface SettingsState {
   ensembleProviders: () => ProviderConfig[]
   arbitratorProvider: () => ProviderConfig | null
   fetchModels: (providerId: string) => Promise<ModelInfo[]>
-  testProvider: (providerId: string, type: string, model: string, baseUrl?: string) => Promise<boolean>
+  testProvider: (providerId: string, type: string, model: string, baseUrl?: string, apiKey?: string) => Promise<boolean>
   addMCPServer: (config: MCPServerConfig) => Promise<boolean>
   removeMCPServer: (name: string) => Promise<boolean>
   toggleMCPServer: (name: string) => Promise<boolean>
@@ -76,7 +76,7 @@ const defaultSettings: AppSettings = {
   startupBehavior: 'restore',
   autoUpdate: true,
   desktopEnabled: false,
-  approvalMode: 'ask',
+  approvalMode: 'auto-edits',
   showThinking: true,
   ensembleProviderIds: [],
   arbitratorProviderId: null,
@@ -100,6 +100,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const s = await window.api.settings.get()
       // Merge with defaults to ensure all fields exist
       const merged = { ...defaultSettings, ...s }
+      const validModes: Array<AppSettings['approvalMode']> = ['ask', 'auto-edits', 'auto-all', 'bypass']
+      // Migrate legacy approval mode on the renderer side as well
+      if (merged.approvalMode === 'ask' || !validModes.includes(merged.approvalMode)) {
+        merged.approvalMode = 'auto-edits'
+        // Persist the migrated value back to main process
+        window.api.settings.set({ approvalMode: 'auto-edits' }).catch(console.error)
+      }
       set({ settings: merged, loaded: true })
       // Load MCP tools
       get().refreshMCPTools()
@@ -120,13 +127,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   update: async (next) => {
+    const previous = get().settings
     try {
       if (window.api?.settings?.set) {
         await window.api.settings.set(next)
       }
       set((s) => ({ settings: { ...s.settings, ...next } }))
+      return true
     } catch (e) {
       console.error('Failed to update settings:', e)
+      // Roll back local state if the main process failed to persist,
+      // so the UI does not drift from the actual persisted settings.
+      set({ settings: previous })
+      return false
     }
   },
 
@@ -142,9 +155,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   addProvider: async (config, apiKey) => {
     const providers = [...get().settings.providers, config]
+    const nextActiveId = get().settings.activeProviderId ?? config.id
     try {
       if (window.api?.settings?.set) {
-        await window.api.settings.set({ providers })
+        await window.api.settings.set({ providers, activeProviderId: nextActiveId })
       }
       if (window.api?.settings?.setApiKey) {
         await window.api.settings.setApiKey(config.id, apiKey)
@@ -156,7 +170,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...s.settings,
         providers,
-        activeProviderId: s.settings.activeProviderId ?? config.id
+        activeProviderId: nextActiveId
       }
     }))
   },
@@ -246,10 +260,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   },
 
-  testProvider: async (providerId, type, model, baseUrl) => {
+  testProvider: async (providerId, type, model, baseUrl, apiKey) => {
     try {
       if (!window.api?.settings?.testProvider) return false
-      return await window.api.settings.testProvider(providerId, type, model, baseUrl)
+      return await window.api.settings.testProvider(providerId, type, model, baseUrl, apiKey)
     } catch (e) {
       console.error('Failed to test provider:', e)
       return false

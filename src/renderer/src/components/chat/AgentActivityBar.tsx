@@ -17,6 +17,7 @@ import {
   Scale
 } from 'lucide-react'
 import { getRoleName } from '@shared/agent-roles'
+import type { AgentRole } from '@shared/types'
 
 function toolIcon(name: string) {
   switch (name) {
@@ -139,7 +140,7 @@ function AgentProgressRow({
       </span>
       {role && (
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-muted)] capitalize">
-          {getRoleName(role as string)}
+          {getRoleName(role as AgentRole)}
         </span>
       )}
       <span className="text-[11px] text-[var(--text-muted)] truncate">{label}</span>
@@ -242,10 +243,11 @@ export default function AgentActivityBar() {
   }, [agents])
 
   // Show ensemble progress when in ensemble mode and actively streaming
-  if ((mode === 'ensemble' || mode === 'agent' || mode === 'compare') && streaming && activeRun) {
-    const doneCount = agents.filter((a) => a.status === 'done').length
+  if ((mode === 'ensemble' || mode === 'agent') && streaming && activeRun) {
+    const completedCount = agents.filter((a) => a.status === 'done' || a.status === 'error').length
     const totalCount = agents.length
     const isArbitrating = activeRun.status === 'arbitrating'
+    const isComplete = completedCount === totalCount && totalCount > 0
     const showSharedTools = ensembleSteps.length > 0
 
     return (
@@ -259,9 +261,9 @@ export default function AgentActivityBar() {
           <div className="px-3 py-2 flex items-center gap-2 border-b border-[var(--border)]/60">
             <Users size={11} className="text-[var(--accent)]" />
             <span className="text-[11px] font-medium text-[var(--text-muted)]">
-              Ensemble · {doneCount}/{totalCount} agents · {isArbitrating ? 'arbitrating' : 'running'}
+              Ensemble · {completedCount}/{totalCount} agents · {isArbitrating ? 'arbitrating' : isComplete ? 'done' : 'running'}
             </span>
-            {doneCount === totalCount && totalCount > 0 && (
+            {isComplete && totalCount > 0 && (
               <span className="ml-auto text-[10px] text-[var(--text-muted)] flex items-center gap-2">
                 {totals.maxLatency > 0 && <span>⏱ {formatLatency(totals.maxLatency)}</span>}
                 {totals.totalIn + totals.totalOut > 0 && (

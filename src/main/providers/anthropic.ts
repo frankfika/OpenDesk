@@ -2,6 +2,16 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { Provider, Tool, ToolCall } from './base'
 import type { Message } from '../../shared/types'
 
+// The modern @anthropic-ai/sdk no longer exports `ContentBlockParam` as a
+// single union — it was split into TextBlockParam | ImageBlockParam |
+// ToolUseBlockParam | ToolResultBlockParam. We alias the union locally so
+// the rest of the file stays close to the upstream docs.
+type ContentBlockParam =
+  | Anthropic.TextBlockParam
+  | Anthropic.ImageBlockParam
+  | Anthropic.ToolUseBlockParam
+  | Anthropic.ToolResultBlockParam
+
 export class AnthropicProvider implements Provider {
   private client: Anthropic
   private model: string
@@ -13,7 +23,7 @@ export class AnthropicProvider implements Provider {
 
   private formatMessages(
     messages: Message[]
-  ): Array<{ role: 'user' | 'assistant'; content: string | Anthropic.ContentBlockParam[] }> {
+  ): Array<{ role: 'user' | 'assistant'; content: string | ContentBlockParam[] }> {
     return messages
       .filter((m) => m.role !== 'system')
       .map((m) => {
@@ -26,12 +36,12 @@ export class AnthropicProvider implements Provider {
                 tool_use_id: m.toolCallId || (m.metadata?.toolCallId as string) || '',
                 content: m.content
               }
-            ] as Anthropic.ContentBlockParam[]
+            ] as ContentBlockParam[]
           }
         }
         if (m.role === 'assistant' && m.metadata?.toolCalls) {
           const toolCalls = m.metadata.toolCalls as unknown as ToolCall[]
-          const content: Anthropic.ContentBlockParam[] = []
+          const content: ContentBlockParam[] = []
           if (m.content) {
             content.push({ type: 'text', text: m.content })
           }
@@ -112,15 +122,11 @@ export class AnthropicProvider implements Provider {
   }
 
   async test(): Promise<boolean> {
-    try {
-      await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1,
-        messages: [{ role: 'user', content: 'hi' }]
-      })
-      return true
-    } catch {
-      return false
-    }
+    await this.client.messages.create({
+      model: this.model,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'hi' }]
+    })
+    return true
   }
 }

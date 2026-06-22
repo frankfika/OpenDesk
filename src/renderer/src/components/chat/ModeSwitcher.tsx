@@ -8,9 +8,7 @@ interface ModeSwitcherProps {
 
 const MODES: { value: ChatMode; label: string; short: string }[] = [
   { value: 'single', label: 'Chat', short: 'Chat' },
-  { value: 'agent', label: 'Agent', short: 'Agent' },
-  { value: 'ensemble', label: 'Ensemble', short: 'Ensemble' },
-  { value: 'compare', label: 'Compare', short: 'Compare' }
+  { value: 'ensemble', label: 'Ensemble', short: 'Ensemble' }
 ]
 
 export default function ModeSwitcher({ mode, onChange, disabled }: ModeSwitcherProps) {

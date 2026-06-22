@@ -85,26 +85,28 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 px-8">
+    <div className="flex flex-col items-center justify-center h-full gap-10 px-8">
       <motion.div
         className="text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1.0] }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
       >
         <motion.div
-          className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--bg-sidebar)] border border-[var(--border)]"
+          className="mb-6 inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-[var(--bg-sidebar)] border border-[var(--border)] shadow-sm"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.35, delay: 0.1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <MessageSquare size={28} className="text-[var(--text-muted)]" />
+          <MessageSquare size={36} className="text-[var(--text-primary)]" strokeWidth={1.5} />
         </motion.div>
-        <h1 className="text-3xl font-semibold mb-3 text-[var(--text-primary)]">What can I help with?</h1>
-        <p className="text-[15px] text-[var(--text-secondary)]">{`Using ${provider.name} · ${provider.model}`}</p>
+        <h1 className="text-4xl font-bold mb-3 tracking-tight text-[var(--text-primary)]">What can I help with?</h1>
+        <p className="text-[15px] text-[var(--text-secondary)] font-medium">
+          {`Ready with ${provider.name} · ${provider.model}`}
+        </p>
       </motion.div>
 
-      <div className="flex gap-4 flex-wrap justify-center max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full">
         {SUGGESTION_CARDS.map((card, i) => (
           <SuggestionCard
             key={card.title}
@@ -113,15 +115,16 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
             description={card.description}
             index={i}
             onClick={() => fillInput(card.prompt)}
+            className="w-full"
           />
         ))}
       </div>
 
       <motion.div
-        className="flex gap-4 flex-wrap justify-center max-w-2xl"
+        className="flex gap-3 flex-wrap justify-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.3 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
       >
         {QUICK_ACTIONS.map((action, i) => {
           const Icon = action.icon
@@ -129,14 +132,14 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
             <motion.button type="button"
               key={action.title}
               onClick={action.onClick({ onOpenSettings, handleConnectFiles, fillInput })}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-all"
+              className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-[13px] font-semibold bg-[var(--bg-content)] border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] hover:border-[var(--border-strong)] shadow-sm transition-all"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.35 + i * 0.05 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.3, delay: 0.4 + i * 0.05 }}
+              whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Icon size={15} />
+              <Icon size={14} className="text-[var(--text-muted)]" />
               {action.title}
             </motion.button>
           )
@@ -146,31 +149,32 @@ export default function EmptyChatState({ onOpenSettings }: EmptyChatStateProps) 
       <AnimatePresence>
         {recentWorkspaces.length > 0 && (
           <motion.div
-            className="w-full max-w-md"
+            className="w-full max-w-md mt-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
           >
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-3 text-center">
-              Recent Workspaces
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] mb-4 text-center">
+              Jump Back In
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-1 gap-2">
               {recentWorkspaces.map((ws, i) => (
                 <motion.button type="button"
                   key={ws.id}
                   onClick={() => setActiveWorkspace(ws.id)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-sidebar)]/50 border border-[var(--border)] hover:border-[var(--text-muted)] transition-all text-left"
+                  className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--bg-sidebar)]/40 border border-[var(--border)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sidebar)]/60 transition-all text-left group"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.55 + i * 0.05 }}
-                  whileHover={{ x: 4 }}
+                  transition={{ delay: 0.7 + i * 0.05 }}
                 >
-                  <FolderSymlink size={16} className="text-[var(--text-muted)]" />
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg-content)] border border-[var(--border)] flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <FolderSymlink size={18} className="text-[var(--text-primary)]" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+                    <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
                       {ws.name || ws.folderPath.split('/').pop()}
                     </div>
-                    <div className="text-[11px] text-[var(--text-muted)] truncate">{ws.folderPath}</div>
+                    <div className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">{ws.folderPath}</div>
                   </div>
                 </motion.button>
               ))}

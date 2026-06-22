@@ -48,7 +48,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [addFormPreset, setAddFormPreset] = useState<{ name: string; baseUrl: string; model: string } | null>(null)
   const [editingProvider, setEditingProvider] = useState<string | null>(null)
-  const [editApiKey, setEditApiKey] = useState('')
   const [showAddMCP, setShowAddMCP] = useState(false)
   const [mcpCommand, setMcpCommand] = useState('npx')
   const [mcpCustomCommand, setMcpCustomCommand] = useState('')
@@ -94,8 +93,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           onClick: () => setEditingProvider(providerId)
         })
       }
-    } catch {
-      toast.error(`Failed to test ${p.name}`)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      await updateProvider(p.id, { lastTestResult: false, lastTestedAt: Date.now() })
+      toast.error(`${p.name} test failed: ${message}`, {
+        label: 'Fix',
+        onClick: () => setEditingProvider(providerId)
+      })
     } finally {
       setTestingProvider(null)
     }
@@ -128,13 +132,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
     }
   }
 
-  function handleEditApiKey(providerId: string) {
-    if (editApiKey.trim()) {
-      window.api.settings.setApiKey(providerId, editApiKey.trim())
-      setEditingProvider(null)
-      setEditApiKey('')
-      toast.success('API key updated')
+  async function handleEditSave(config: ProviderConfig, apiKey: string) {
+    await updateProvider(config.id, config)
+    if (apiKey.trim()) {
+      await window.api.settings.setApiKey(config.id, apiKey.trim())
     }
+    setEditingProvider(null)
+    toast.success(`${config.name} updated`)
   }
 
   async function handleAddMCP(e: React.FormEvent) {
@@ -282,7 +286,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       showAddForm={showAddForm}
                       addFormPreset={addFormPreset}
                       editingProvider={editingProvider}
-                      editApiKey={editApiKey}
                       testingProvider={testingProvider}
                       onToggleAddForm={() => {
                         setShowAddForm((v) => !v)
@@ -299,14 +302,11 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       onRemove={handleRemove}
                       onStartEdit={(id) => {
                         setEditingProvider(id)
-                        setEditApiKey('')
                       }}
                       onCancelEdit={() => {
                         setEditingProvider(null)
-                        setEditApiKey('')
                       }}
-                      onEditApiKeyChange={setEditApiKey}
-                      onSaveApiKey={handleEditApiKey}
+                      onEditSave={handleEditSave}
                       onFetchModels={fetchModels}
                       onUpdateProvider={updateProvider}
                     />

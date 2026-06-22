@@ -1,16 +1,18 @@
 import { memo } from 'react'
-import { Send, Square, Camera, Users } from 'lucide-react'
+import { Send, Square, Camera, Users, Paperclip, Sparkles } from 'lucide-react'
 import ModeSwitcher from './ModeSwitcher'
 import EnsembleModelPicker from './EnsembleModelPicker'
 import ModelPicker from './ModelPicker'
 import ApprovalModeSelector from './ApprovalModeSelector'
-import type { AgentRole } from '@shared/types'
+import { useSkillsStore } from '../../store/skills'
+import type { AgentRole, ChatMode, ProviderConfig } from '@shared/types'
 
 interface InputBarToolbarProps {
   onScreenshot: () => void
   onOpenSettings: () => void
-  mode: string
-  onModeChange: (mode: string) => void
+  onAttachFiles: () => void
+  mode: ChatMode
+  onModeChange: (mode: ChatMode) => void
   streaming: boolean
   selectedEnsembleIds: string[]
   setSelectedEnsembleIds: React.Dispatch<React.SetStateAction<string[]>>
@@ -20,7 +22,7 @@ interface InputBarToolbarProps {
   setEnsembleArbitratorId: React.Dispatch<React.SetStateAction<string | null>>
   ensembleRoleAssignments: Record<string, AgentRole>
   setEnsembleRoleAssignments: React.Dispatch<React.SetStateAction<Record<string, AgentRole>>>
-  providers: Array<{ id: string; name: string; type: string; model: string; enabled: boolean }>
+  providers: ProviderConfig[]
   onSend: () => void
   onAbort: () => void
   text: string
@@ -29,6 +31,7 @@ interface InputBarToolbarProps {
 function InputBarToolbar({
   onScreenshot,
   onOpenSettings,
+  onAttachFiles,
   mode,
   onModeChange,
   streaming,
@@ -45,7 +48,8 @@ function InputBarToolbar({
   onAbort,
   text
 }: InputBarToolbarProps) {
-  const isEnsembleMode = mode === 'ensemble' || mode === 'agent' || mode === 'compare'
+  const isEnsembleMode = mode === 'ensemble' || mode === 'agent'
+  const activeSkills = useSkillsStore((state) => state.getActiveSkills())
 
   return (
     <div className="flex items-center px-4 pb-4 gap-2">
@@ -58,7 +62,31 @@ function InputBarToolbar({
         <Camera size={14} />
       </button>
 
-      <ModelPicker onOpenSettings={onOpenSettings} />
+      <button
+        type="button"
+        onClick={onAttachFiles}
+        className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        title="Attach files"
+      >
+        <Paperclip size={14} />
+      </button>
+
+      {activeSkills.length > 0 && (
+        <div className="flex items-center gap-1">
+          {activeSkills.map((skill) => (
+            <span
+              key={skill.id}
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20"
+              title={skill.description}
+            >
+              <Sparkles size={10} />
+              {skill.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!isEnsembleMode && <ModelPicker onOpenSettings={onOpenSettings} />}
       <ModeSwitcher mode={mode} onChange={onModeChange} disabled={streaming} />
 
       {isEnsembleMode && (

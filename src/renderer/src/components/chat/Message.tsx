@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, memo } from 'react'
+import { useState, useCallback, useMemo, memo, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
-import type { Components, CodeProps } from 'react-markdown'
+import type { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Message } from '@shared/types'
 import StreamCursor from './StreamCursor'
@@ -48,6 +48,46 @@ function getProviderIcon(providerType?: string) {
     default:
       return <Bot size={16} />
   }
+}
+
+function CopyableImage({ src, alt }: { src: string; alt?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(async () => {
+    try {
+      if (src.startsWith('data:')) {
+        const res = await fetch(src)
+        const blob = await res.blob()
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+      } else {
+        await navigator.clipboard.writeText(src)
+      }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (e) {
+      console.error('Failed to copy image:', e)
+      navigator.clipboard.writeText(src).catch(() => {})
+    }
+  }, [src])
+
+  return (
+    <span className="relative inline-block group">
+      <img
+        src={src}
+        alt={alt || 'image'}
+        className="max-w-full max-h-[300px] rounded-lg border border-[var(--border)] cursor-pointer"
+        onClick={handleCopy}
+      />
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-[var(--bg-content)]/90 border border-[var(--border)] text-[11px] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <Copy size={11} />
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </span>
+  )
 }
 
 // ─── Main MessageRow ─────────────────────────────────────────────────────────
@@ -108,12 +148,55 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
   const handleAddToFavorites = useCallback(() => {
     // Store in localStorage keyed list for now
     const raw = localStorage.getItem('od:favorites') || '[]'
-    const favs = JSON.parse(raw) as Array<{ id: string }>
+    const favs = JSON.parse(raw) as Array<{ id: string; content: string; ts: number }>
     if (!favs.find((f) => f.id === message.id)) {
       favs.push({ id: message.id, content: message.content, ts: Date.now() })
       localStorage.setItem('od:favorites', JSON.stringify(favs))
     }
   }, [message])
+
+  // Shared markdown components (used by normal + arbitration messages)
+  const mdComponents: Components = useMemo(
+    () => ({
+      code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: ReactNode }) {
+        const match = /language-(\w+)/.exec(className || '')
+        const lang = match ? match[1] : ''
+        const codeStr = String(children).replace(/\n$/, '')
+        const artType = detectArtifactType(lang)
+        if (!inline) {
+          return (
+            <CodeBlock
+              code={codeStr}
+              language={lang}
+              onPreview={
+                artType
+                  ? () => addArtifact({ type: artType, title: artifactTitleFromLang(lang), content: codeStr })
+                  : undefined
+              }
+            />
+          )
+        }
+        return (
+          <code
+            className="px-1 py-0.5 rounded bg-[var(--bg-sidebar)] font-mono text-[13px] text-[var(--text-secondary)] border border-[var(--border)]"
+            {...props}
+          >
+            {children}
+          </code>
+        )
+      },
+      pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
+        return <>{children}</>
+      },
+      p({ children }: React.ComponentPropsWithoutRef<'p'>) {
+        return <div className="prose-od-p">{children}</div>
+      },
+      img({ src, alt }: React.ComponentPropsWithoutRef<'img'>) {
+        return <CopyableImage src={src || ''} alt={alt} />
+      }
+    }),
+    [addArtifact]
+  )
 
   // ── Reasoning ──
   if (message.kind === 'reasoning') {
@@ -187,42 +270,6 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
     ? 'bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)]'
     : `border ${getProviderColor(provider?.type)}`
 
-  const mdComponents: Components = useMemo(
-    () => ({
-      code({ inline, className, children, ...props }: CodeProps) {
-        const match = /language-(\w+)/.exec(className || '')
-        const lang = match ? match[1] : ''
-        const codeStr = String(children).replace(/\n$/, '')
-        const artType = detectArtifactType(lang)
-        if (!inline) {
-          return (
-            <CodeBlock
-              code={codeStr}
-              language={lang}
-              onPreview={
-                artType
-                  ? () => addArtifact({ type: artType, title: artifactTitleFromLang(lang), content: codeStr })
-                  : undefined
-              }
-            />
-          )
-        }
-        return (
-          <code
-            className="px-1 py-0.5 rounded bg-[var(--bg-sidebar)] font-mono text-[13px] text-[var(--text-secondary)] border border-[var(--border)]"
-            {...props}
-          >
-            {children}
-          </code>
-        )
-      },
-      pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
-        return <>{children}</>
-      }
-    }),
-    [addArtifact]
-  )
-
   return (
     <>
       {showDateDivider && dateLabel && (
@@ -241,21 +288,21 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
               {isUser ? <User size={15} /> : getProviderIcon(provider?.type)}
             </div>
 
-            <div className="flex-1 min-w-0 mt-0.5">
+            <div className="flex-1 min-w-0 mt-0">
               {/* Header row */}
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-[var(--text-primary)]">
                     {isUser ? 'You' : message.isArbitration ? 'Arbitrator' : provider?.name || 'Assistant'}
                   </span>
                   {!isUser && provider && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-muted)]">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--bg-sidebar)] border border-[var(--border)] text-[var(--text-secondary)]">
                       {provider.model}
                     </span>
                   )}
                   {!hideTimestamp && (
                     <span
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] text-[var(--text-muted)]"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] text-[var(--text-muted)] font-medium"
                       onMouseEnter={() => setShowTimeTooltip(true)}
                       onMouseLeave={() => setShowTimeTooltip(false)}
                     >
@@ -309,6 +356,13 @@ function MessageRow({ message, isStreaming, showDateDivider, dateLabel, hideTime
                   <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                     {message.content}
                   </ReactMarkdown>
+                  {isAssistant && Array.isArray(message.metadata?.toolCalls) && (
+                    <div className="pl-13 w-full mt-2">
+                      {(message.metadata.toolCalls as Array<{ id: string; name: string; arguments: Record<string, unknown> }>).map((tc) => (
+                        <ToolCallCard key={tc.id} toolName={tc.name} args={tc.arguments as Record<string, unknown>} />
+                      ))}
+                    </div>
+                  )}
                   {message.isArbitration && message.arbitrationReason && (
                     <div className="mt-3 p-3 rounded-lg bg-[var(--bg-sidebar)]/50 border border-[var(--border)] text-[12px] text-[var(--text-muted)] leading-relaxed">
                       <span className="font-medium text-[var(--text-secondary)]">Arbitration reason:</span>{' '}

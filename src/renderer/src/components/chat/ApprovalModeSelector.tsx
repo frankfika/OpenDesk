@@ -3,11 +3,11 @@ import { ShieldAlert, ChevronDown, Check } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings'
 
 const APPROVAL_MODES = [
-  { value: 'ask', label: 'Ask', desc: 'Ask before every tool' },
-  { value: 'auto-edits', label: 'Auto edits', desc: 'Auto-approve file edits, ask for shell/desktop' },
-  { value: 'auto-all', label: 'Auto all', desc: 'Auto-approve common actions' },
-  { value: 'bypass', label: 'Bypass', desc: 'Run all actions without approval' }
-]
+  { value: 'auto-edits', label: 'Auto edits', desc: 'Auto-approve file edits, shell & desktop within allowed directories' },
+  { value: 'auto-all', label: 'Auto all', desc: 'Auto-approve all common tool actions' },
+  { value: 'bypass', label: 'Bypass', desc: 'Run all actions without approval' },
+  { value: 'ask', label: 'Ask', desc: 'Block shell & desktop tools until you enable auto mode' }
+] as const
 
 export default function ApprovalModeSelector() {
   const { settings, update } = useSettingsStore()

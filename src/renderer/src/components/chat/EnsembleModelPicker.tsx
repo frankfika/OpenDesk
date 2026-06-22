@@ -14,12 +14,32 @@ interface EnsembleModelPickerProps {
   onClose: () => void
 }
 
-const ROLES: { value: AgentRole; label: string }[] = [
-  { value: 'generalist', label: 'Generalist' },
-  { value: 'coder', label: 'Coder' },
-  { value: 'reviewer', label: 'Reviewer' },
-  { value: 'researcher', label: 'Researcher' },
-  { value: 'writer', label: 'Writer' }
+const ROLES: { value: AgentRole; label: string; description: string }[] = [
+  {
+    value: 'generalist',
+    label: 'Generalist',
+    description: 'Balanced, accurate answers without a strong specialty.'
+  },
+  {
+    value: 'coder',
+    label: 'Coder',
+    description: 'Focus on code correctness, best practices, and edge cases.'
+  },
+  {
+    value: 'reviewer',
+    label: 'Reviewer',
+    description: 'Skeptical lens: find mistakes, omissions, and weaknesses.'
+  },
+  {
+    value: 'researcher',
+    label: 'Researcher',
+    description: 'Gather context, compare alternatives, and cite facts.'
+  },
+  {
+    value: 'writer',
+    label: 'Writer',
+    description: 'Clear, well-structured output with good examples.'
+  }
 ]
 
 export default function EnsembleModelPicker({
@@ -39,14 +59,14 @@ export default function EnsembleModelPicker({
     // Rough estimate per 1k tokens blended; should be replaced by per-provider pricing
     const per1k = 0.009
     return selectedProviders.length > 0
-      ? `$${(selectedProviders.length * per1k).toFixed(3)} / 1k tokens (est.)`
+      ? `~$${(selectedProviders.length * per1k).toFixed(3)} / 1k tokens`
       : 'Select at least one model'
   }, [selectedProviders.length])
 
   if (!open) return null
 
   return (
-    <div className="absolute bottom-full left-0 mb-2 w-full max-w-2xl rounded-2xl border border-[var(--border)] bg-[var(--bg-content)] shadow-2xl p-4 z-50">
+    <div className="absolute bottom-full left-0 mb-2 min-w-[320px] w-max max-w-[min(90vw,420px)] rounded-2xl border border-[var(--border)] bg-[var(--bg-content)] shadow-2xl p-4 z-50">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-[var(--text-primary)]">
           <Users size={16} />
@@ -69,7 +89,7 @@ export default function EnsembleModelPicker({
             <div
               key={provider.id}
               className={[
-                'flex items-center gap-3 p-2.5 rounded-xl border transition-all',
+                'flex items-center gap-3 p-2.5 rounded-xl border transition-all min-w-0',
                 selected
                   ? 'border-[var(--accent)] bg-[var(--accent)]/5'
                   : 'border-[var(--border)] hover:border-[var(--text-muted)]'
@@ -80,43 +100,48 @@ export default function EnsembleModelPicker({
                 id={`em-${provider.id}`}
                 checked={selected}
                 onChange={() => onToggleProvider(provider.id)}
-                className="h-4 w-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                className="h-4 w-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] shrink-0"
               />
-              <label htmlFor={`em-${provider.id}`} className="flex-1 cursor-pointer">
-                <div className="text-sm font-medium text-[var(--text-primary)]">{provider.name}</div>
-                <div className="text-xs text-[var(--text-muted)]">{provider.model}</div>
+              <label htmlFor={`em-${provider.id}`} className="flex-1 min-w-0 cursor-pointer">
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{provider.name}</div>
+                <div className="text-xs text-[var(--text-muted)] truncate">{provider.model}</div>
               </label>
 
-              {selected && (
-                <>
-                  <select
-                    value={roleAssignments[provider.id] || 'generalist'}
-                    onChange={(e) => onSetRole(provider.id, e.target.value as AgentRole)}
-                    className="text-xs rounded-lg border border-[var(--border)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-primary)] focus:border-[var(--text-muted)]"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex items-center gap-2 shrink-0">
+                {selected && (
+                  <div className="flex flex-col gap-1 shrink-0 max-w-[140px]">
+                    <select
+                      value={roleAssignments[provider.id] || 'generalist'}
+                      onChange={(e) => onSetRole(provider.id, e.target.value as AgentRole)}
+                      className="text-xs rounded-lg border border-[var(--border)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-primary)] focus:border-[var(--text-muted)]"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="text-[10px] text-[var(--text-muted)] leading-tight">
+                      {ROLES.find((r) => r.value === (roleAssignments[provider.id] || 'generalist'))?.description}
+                    </div>
+                  </div>
+                )}
 
-                  <button
-                    type="button"
-                    onClick={() => onSetArbitrator(isArbitrator ? null : provider.id)}
-                    title={isArbitrator ? 'Arbitrator' : 'Set as arbitrator'}
-                    className={[
-                      'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors',
-                      isArbitrator
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-sidebar)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    ].join(' ')}
-                  >
-                    <Scale size={12} />
-                    {isArbitrator ? 'Arb' : 'Arb'}
-                  </button>
-                </>
-              )}
+                <button
+                  type="button"
+                  onClick={() => onSetArbitrator(isArbitrator ? null : provider.id)}
+                  title={isArbitrator ? 'Arbitrator: synthesizes all agent answers' : 'Set as arbitrator'}
+                  className={[
+                    'flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0',
+                    isArbitrator
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-sidebar)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  ].join(' ')}
+                >
+                  <Scale size={12} />
+                  <span className="hidden sm:inline">{isArbitrator ? 'Arb' : 'Arb'}</span>
+                </button>
+              </div>
             </div>
           )
         })}
@@ -129,7 +154,7 @@ export default function EnsembleModelPicker({
             {selectedProviders.length} model{selectedProviders.length !== 1 ? 's' : ''} selected
           </span>
         </div>
-        <div className="text-[var(--text-secondary)]">{estimatedCost}</div>
+        <div className="text-[var(--text-secondary)] whitespace-nowrap">{estimatedCost}</div>
       </div>
     </div>
   )

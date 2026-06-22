@@ -219,7 +219,7 @@ export class SQLiteFTS5Adapter implements VectorStoreAdapter {
         id: s.chunk.id,
         content: s.chunk.content,
         score: Math.min(s.score / 10, 1),
-        metadata: s.chunk.metadata
+        metadata: { ...s.chunk.metadata, sourceId: s.chunk.sourceId }
       }))
     }
 
