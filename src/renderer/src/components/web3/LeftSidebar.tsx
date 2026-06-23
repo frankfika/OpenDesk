@@ -57,6 +57,7 @@ export default function LeftSidebar(): JSX.Element {
               <motion.button
                 key={s.id}
                 type="button"
+                data-scenario={s.id}
                 onClick={() => handleScenario(s)}
                 whileTap={{ scale: 0.98 }}
                 className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] font-medium transition-all relative ${
