@@ -19,6 +19,7 @@ import { registerArtifactExportHandlers } from './artifacts-export'
 import { registerExpertsHandlers } from './experts'
 import { registerSchedulerHandlers } from './scheduler'
 import { registerChangeLogHandlers } from './changeLog'
+import { registerMarketplaceHandlers } from './marketplace'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Register domain-specific handlers
@@ -38,6 +39,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerExpertsHandlers()
   registerSchedulerHandlers()
   registerChangeLogHandlers()
+  registerMarketplaceHandlers()
 
   /* ===== Health Checks ===== */
   startHealthChecks(

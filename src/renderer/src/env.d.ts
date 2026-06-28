@@ -234,6 +234,20 @@ declare global {
           export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }) =>
             Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }>
         }
+        marketplace: {
+          list: () => Promise<Array<{
+            id: string; name: string; description: string
+            category: string; tags: string[]; author: string
+            githubPath: string; skillSubpath: string
+            stars?: number; installs?: number; version?: string; verified?: boolean
+          }>>
+          install: (entry: {
+            id: string; name: string; description: string
+            category: string; tags: string[]; author: string
+            githubPath: string; skillSubpath: string
+            stars?: number; installs?: number; version?: string; verified?: boolean
+          }) => Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string }>
+        }
         changelog: {
           record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) => Promise<{ id: string }>
           update: (id: string, patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>) => Promise<void>

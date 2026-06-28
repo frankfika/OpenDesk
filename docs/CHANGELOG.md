@@ -1,5 +1,91 @@
 # OpenDesk Changelog
 
+## v0.7.0-alpha.1 — 2026-06-23
+
+### ✨ 新增
+
+- **Skills Marketplace**（`src/main/marketplace/registry.ts` + `MarketplacePanel.tsx`）
+  - 策划 registry 一键安装；复用现有 `skills:importFromGitHub` IPC
+  - 内置 8 个 fallback 条目（awesome-readme / translation-pro / sql-migration / web3-portfolio-pro / regex-builder / commit-message / interview-transcript / crypto-news-digest）
+  - 可选从 `frankfika/opendesk-skills/main/registry.json` 拉远程 registry，5s 超时降级
+  - 分类筛选 / 搜索 / 已验证徽章 / 版本号显示
+
+## v0.6.2 — 2026-06-23
+
+### ✨ 新增
+
+- **8 个新 Skill（22 → 30 / 30，v0.6.0 路线图全部完成）**：
+  - `image-alt-text` — WCAG 友好的 alt 文本（图标 / 截图 / 图表 / 首图）
+  - `seo-optimizer` — Title / Meta / 标题 / 关键词 / Schema / 链接 审计 + 评分
+  - `accessibility-checker` — WCAG 2.1 AA / AAA 审计（perceivable / operable / understandable / robust）
+  - `voice-memo` — 音频文件 → 转写 + 摘要 + 行动项，含说话人标签
+  - `podcast-transcript` — RSS / Spotify / Apple URL → 节目简报，含引用 + 章节索引
+  - `slack-drafter` — Slack / Discord / Teams 消息草稿，含格式 + 语气模板
+  - `wechat-publisher` — 公众号文章草稿，5 种正文模板 + SEO + 封面图 prompt
+  - `markdown-formatter` — Markdown 美化（标题 / 列表 / 代码 / 表格），含 diff 输出
+
+## v0.6.1 — 2026-06-23
+
+### ✨ 新增
+
+- **WorkerPool runner 接入 chat pipeline**：
+  - 新增 `src/renderer/src/lib/chatPipeline.ts`：`runChat()` 订阅 `chat:token` + `chat:done`，累加 token，120s 超时兜底
+  - 每个 worker 拿到唯一 `pool-...-<providerId>` threadId，token 流正确路由
+- **ChangeLog 持久化到 SQLite**：
+  - 新增 `src/main/changeLog/store.ts`（better-sqlite3，WAL 模式，2 个索引）
+  - 模块加载用 `require()` + try/catch fallback，无原生二进制也能 build
+  - 新增 IPC：`changelog:record / update / list / clear`
+  - `useChangeLog` Zustand store 首次挂载从磁盘 hydrate
+- **8 个新 Skill（14 → 22 / 30）**：
+  - `email-drafter` / `data-explorer` / `sql-helper` / `pdf-summarizer` / `youtube-transcript` / `interview-questions` / `crypto-portfolio` / `api-doc-fetcher`
+
+### 🔧 改动
+
+- `chat:done` IPC 通过 `window.api.chat.onDone` 暴露（合并；payload 增加可选 `error`）
+- 5 张新截图：`08-experts-panel.png` / `09-scheduler-panel.png` / `10-scheduler-create.png` / `11-section-rail-overview.png` / `12-worker-pool-modal.png`
+
+## v0.6.0 — 2026-06-23
+
+WorkBuddy 启发合集。10/10 模块全部发版。
+
+### ✨ 新增
+
+- **三大工作模式（Ask / Plan / Craft）** in `WorkModeSwitch.tsx`
+  - 映射到现有 `approvalMode` enum（不动 executor）；`bypass` 移到 Settings → Advanced
+- **MiddleColumn 搜索**（useMemo 过滤 Thread 标题）
+- **Artifact 多格式导出（Word / Excel / PPTX / Markdown）** via `docx` + `xlsx` + `pptxgenjs`
+- **Expert Panel**：6 个垂直专家 in `src/main/experts/registry.ts`
+- **Scheduler（cron / 自动化）** 基于 `node-cron`，持久化到 `userData/scheduler/tasks.json`
+- **七大板块导航**（`SectionRail` + `SectionDock`）：助理 / 项目 / 专家 / 自动化 / 文件 / 知识库 / 灵感
+- **Multi-Agent Worker Pool**（`workerPool.ts` + `WorkerPoolPanel.tsx`）—— runner stub（v0.6.0）；真接入 v0.6.1
+- **ChangeLog（结果区）** 含 Zustand store + per-thread 条目
+- **工作流沉淀（Save as Template）** 把 Skill 复制到 `~/.opendesk/skills/<name>`
+- **8 个新 Skill（6 → 14）**：
+  - `ocr-invoice` / `sales-insight` / `xhs-publisher` / `weekly-report` / `meeting-notes` / `competitor-watch` / `resume-screener` / `code-review-expert`
+
+### 🔧 工具
+
+- 新依赖：`docx@^9.0.2` / `xlsx@^0.18.5` / `pptxgenjs@^3.12.0` / `node-cron@^3.0.3`
+- 类型 stub：`src/main/types/node-cron.d.ts`（typed `cron.validate` + `cron.schedule`）
+
+### v0.6.0-alpha.1（pre-release）
+
+- WorkMode + 侧边栏搜索 + 8 个新 Skill 第一批切片（commit `42838bb`）
+
+## v0.5.0 — 2026-06-22
+
+### ✨ 新增
+
+- **Web3 Workbench**（根视图）：wagmi + Reown AppKit + 12 主网/测试网
+- ENS 解析、Etherscan / Basescan / Arbiscan 实时链上数据
+- Wallet Doctor：ERC-20 授权审计
+- TxConfirmCard：每笔链上交易都要二次确认
+- 三大场景 Skill：Chain Intel / One-Liner Trade / Wallet Doctor
+- 45+ 类型错误 → 0
+- 64 lint 警告 → 0
+- 95/95 vitest 通过
+- e2e 测试中硬编码的 DeepSeek key 移除
+
 ## v0.4.1 — 2026-06-20
 
 ### 修复

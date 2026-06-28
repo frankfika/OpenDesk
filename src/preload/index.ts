@@ -386,6 +386,12 @@ contextBridge.exposeInMainWorld('api', {
       clear: (opts?: { threadId?: string }) =>
         ipcRenderer.invoke('changelog:clear', opts) as Promise<number>
     },
+    marketplace: {
+      list: (): Promise<Array<{ id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }>> =>
+        ipcRenderer.invoke('marketplace:list'),
+      install: (entry: { id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }) =>
+        ipcRenderer.invoke('marketplace:install', entry) as Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string }>
+    },
     onOpenSettings: (cb: () => void) => {
       const listener = (): void => cb()
       ipcRenderer.on('app:open-settings', listener)
