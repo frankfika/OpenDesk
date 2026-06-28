@@ -308,18 +308,18 @@ npm run lint && npm test                  # lint + vitest
 
 | Module | What ships | Path | Effort | Status |
 |--------|-----------|------|--------|--------|
-| **Three work modes** | Ask / Plan / Craft switcher in TopBar | Reuse current Approval Mode (4 levels → 3 semantic modes) | 3 days | ✅ v0.6.0-alpha.1 |
-| **Seven-section nav** | Assistant / Projects / Experts / Automation / Files / KB / Inspiration | Add segmented control to LeftSidebar | 2 days | 📅 |
-| **Multi-Agent parallelism** | Multiple threads run concurrently, independent progress bars | Extend current Ensemble mode with a Worker Pool | 5 days | 📅 |
-| **30+ preset Skills** | Grow from 6 to 30+ | Write 24 `SKILL.md` templates (Xiaohongshu ops, Excel merge, OCR invoice, sales insight, …) | 5 days | 🟡 14/30 (alpha.1) |
-| **Expert system** | Wrap Skills as domain experts | Skill + pinned system prompt + entry point | 3 days | 📅 |
-| **Multi-format export** | One-click export to Word / Excel / PPT from Artifacts | `docx` + `xlsx` + `pptxgenjs` | 4 days | 📅 |
-| **Scheduled tasks (Automation)** | "Run the daily report at 9 AM" | `node-cron` + IPC + SQLite persistence | 4 days | 📅 |
-| **Sidebar search + grouping** | Search box at top of MiddleColumn | Upgrade existing thread list | 1 day | ✅ v0.6.0-alpha.1 |
-| **Results panel (file-change log)** | Extract tool calls into a dedicated panel | Split off current Message stream | 4 days | 📅 |
-| **Workflow persistence** | "Save as Template" button on Skills | Add save path in SkillPanel | 2 days | 📅 |
+| **Three work modes** | Ask / Plan / Craft switcher in TopBar | Reuse current Approval Mode (4 levels → 3 semantic modes) | 3 days | ✅ v0.6.0 |
+| **Seven-section nav** | Assistant / Projects / Experts / Automation / Files / KB / Inspiration | Add segmented control to LeftSidebar | 2 days | ✅ v0.6.0 |
+| **Multi-Agent parallelism** | Multiple threads run concurrently, independent progress bars | Extend current Ensemble mode with a Worker Pool | 5 days | ✅ v0.6.0 (runner in v0.6.1) |
+| **30+ preset Skills** | Grow from 6 to 30+ | Write 24 `SKILL.md` templates (Xiaohongshu ops, Excel merge, OCR invoice, sales insight, …) | 5 days | 🟡 14/30 (v0.6.0) |
+| **Expert system** | Wrap Skills as domain experts | Skill + pinned system prompt + entry point | 3 days | ✅ v0.6.0 |
+| **Multi-format export** | One-click export to Word / Excel / PPT from Artifacts | `docx` + `xlsx` + `pptxgenjs` | 4 days | ✅ v0.6.0 |
+| **Scheduled tasks (Automation)** | "Run the daily report at 9 AM" | `node-cron` + IPC + SQLite persistence | 4 days | ✅ v0.6.0 |
+| **Sidebar search + grouping** | Search box at top of MiddleColumn | Upgrade existing thread list | 1 day | ✅ v0.6.0 |
+| **Results panel (file-change log)** | Extract tool calls into a dedicated panel | Split off current Message stream | 4 days | ✅ v0.6.0 |
+| **Workflow persistence** | "Save as Template" button on Skills | Add save path in SkillPanel | 2 days | ✅ v0.6.0 |
 
-**v0.6.0 total: ≈ 5–6 weeks (one engineer full-time) · progress: 3/10 modules**
+**v0.6.0 total: ≈ 5–6 weeks (one engineer full-time) · progress: 9/10 modules ✅ + 1 in progress (30 Skills)**
 
 ### 📦 v0.7.0 — Productivity leap
 
