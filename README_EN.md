@@ -132,29 +132,47 @@ Web3 transactions get an **extra** `TxConfirmCard`: amount, gas, target contract
 
 OpenDesk scans the folder → reads every xlsx → merges data → writes `Summary_2026Q1.xlsx` plus a `TOP3_regions.png` bar chart.
 
-### Scenario 2 — On-chain research: profile an unfamiliar address
+### Scenario 2 — Finance / admin: OCR invoices → reimbursement sheet
+
+> Prompt: *"Pull every invoice in `~/Documents/发票/`, extract the fields, and build a reimbursement sheet."*
+
+Fires the built-in **`ocr-invoice`** Skill (v0.6.0) → OCRs each PDF/image → extracts amount/date/vendor/tax-id → writes `Reimbursement_2026Q1.xlsx` where every field links back to the source invoice.
+
+### Scenario 3 — Sales ops: CRM insight report
+
+> Prompt: *"Analyse `~/CRM/Q1.csv` and tell me which customers are likely to churn this month, what's driving lost deals, and what's the forecast for next month."*
+
+Fires the built-in **`sales-insight`** Skill (v0.6.0) → runs pandas-style statistics → returns a three-section report plus three charts. Paste it straight into your weekly review.
+
+### Scenario 4 — On-chain research: profile an unfamiliar address
 
 > Prompt: *"Investigate 0xd8da...6045 over the last 30 days and give me an investor profile."*
 
 Routed through **Web3 Workbench → Chat**: calls Etherscan → grabs txs, transfers, token deltas → returns one of three labels: whale / active trader / passive holder.
 
-### Scenario 3 — Wallet checkup: revoke risky approvals
+### Scenario 5 — Wallet checkup: revoke risky approvals
 
 > Open **Wallet Doctor** → click *Scan all approvals*.
 
 The app lists every ERC-20 `approve` and **red-flags** "unlimited allowance + unknown contract". Hit `Revoke` → `TxConfirmCard` for a second confirmation → one click to revoke on-chain.
 
-### Scenario 4 — Content creation: draft a full article in one shot
+### Scenario 6 — Content creation: draft a full article in one shot
 
 > Prompt: *"Read `~/Notes/topics.md`, write a 2000-word WeChat post with a hook-style title."*
 
-OpenDesk reads the Markdown → asks the LLM to draft → uses `desktop_type` to paste it into Pages / Word → renders an HTML preview in the right-side Artifact panel.
+OpenDesk reads the Markdown → asks the LLM to draft → uses `desktop_type` to paste it into Pages / Word → renders an HTML preview in the right-side Artifact panel → **one-click `.docx` export**.
 
-### Scenario 5 — DevOps: hotfix from the train
+### Scenario 7 — DevOps: hotfix from the train
 
 > On your commute, scan the Claw QR with your phone → voice-prompt *"line 47 of `api/users.ts` may NPE — add a guard"*.
 
 The desktop OpenDesk receives the remote instruction → auto-Plans → you tap Yes on your phone to Confirm → it executes → compiles → commits → opens a PR. *(Remote control ships in v0.6.0 — see Roadmap.)*
+
+### Scenario 8 — Scheduled task: auto-run the daily report at 9 AM
+
+> In the **Automation** tab create a task: cron `0 9 * * 1-5` + *"Run yesterday's sales data, write the daily report into `~/Reports/`"*.
+
+OpenDesk fires the Skill on cron in the background → drops the artefact into the target folder → optional "on done" notify (system / Webhook / Telegram bot). *(Ships in v0.6.0.)*
 
 ## 🆚 OpenDesk vs other AI desktop assistants
 
@@ -164,10 +182,18 @@ The desktop OpenDesk receives the remote instruction → auto-Plans → you tap 
 | Models | BYOK, all providers | Hunyuan / DeepSeek / GLM / Kimi | Anthropic only | OpenAI / Anthropic |
 | Web3 native | ✅ wagmi + Reown + 12 chains | ❌ | ❌ | ❌ |
 | Computer use | ✅ macOS / Win / Linux | ✅ Windows only | ❌ | ❌ |
+| Three work modes | ✅ Ask / Plan / Craft (v0.6.0) | ✅ | ❌ | ❌ |
+| Seven-section nav | ✅ Assistant / Projects / Experts / Automation / Files / KB / Inspiration (v0.6.0) | ✅ | ❌ | ❌ |
+| Multi-Agent parallelism | ✅ Ensemble → Worker Pool (v0.6.0) | ✅ multi-window | ❌ | ❌ |
+| Preset Skill count | 30+ (expanded in v0.6.0) | 30+ | dozens | 0 |
+| Expert system | ✅ Skill wrapper (v0.6.0) | ✅ 140+ vertical experts | ❌ | ❌ |
+| Scheduled tasks (Automation) | ✅ node-cron (v0.6.0) | ✅ | ❌ | ❌ |
+| Multi-format export | ✅ Word / Excel / PPT (v0.6.0) | ✅ | ⚠️ Markdown only | ❌ |
 | Folder-as-workspace | ✅ + AGENTS.md | ✅ | ⚠️ half-baked | ❌ (project-as-workspace) |
 | MCP client | ✅ self-rolled, 5 presets | ✅ | ✅ | ❌ |
 | Cross-platform Skills | ✅ `.codex/skills` / `.claude/skills` | ✅ OpenClaw | ✅ | ❌ |
 | Local-first | ✅ SQLite on disk | ✅ fully local | ⚠️ partial | ❌ |
+| Remote control | ✅ Claw (v0.6.0) | ✅ five major IMs | ❌ | ❌ |
 | Open source | ✅ Apache 2.0 | ❌ proprietary | ❌ proprietary | ❌ proprietary |
 
 ## 🚀 Quick Start
@@ -269,31 +295,50 @@ npm run lint && npm test                  # lint + vitest
 ## 🛣️ Roadmap
 
 > Ordered by real user demand, not engineering complexity. Priorities shift with community feedback.
+>
+> **Every v0.6.0 item ships within 1–2 sprints on the current architecture** — most are battle-tested patterns from WorkBuddy (Tencent Cloud, 2026-03).
 
-- **v0.6.0 — Claw remote control**
-  - Scan a QR from WeChat / WeCom / Telegram / Discord → dispatch instructions remotely
-  - Voice input + push-to-talk
-  - Use cases: fix bugs on the train, run reports at the airport, order dinner from home
+### 🚀 v0.6.0 — WorkBuddy-inspired release (core delta)
 
-- **v0.7.0 — Multi-format export + RAG v2**
-  - One-click export to Word / Excel / PPT / Markdown (matches WorkBuddy's smart docs)
-  - Hybrid retrieval (BM25 + vector) + rerank
-  - Multimodal RAG (images, PDF tables)
+| Module | What ships | Path | Effort |
+|--------|-----------|------|--------|
+| **Three work modes** | Ask / Plan / Craft switcher in TopBar | Reuse current Approval Mode (4 levels → 3 semantic modes) | 3 days |
+| **Seven-section nav** | Assistant / Projects / Experts / Automation / Files / KB / Inspiration | Add segmented control to LeftSidebar | 2 days |
+| **Multi-Agent parallelism** | Multiple threads run concurrently, independent progress bars | Extend current Ensemble mode with a Worker Pool | 5 days |
+| **30+ preset Skills** | Grow from 6 to 30+ | Write 24 `SKILL.md` templates (Xiaohongshu ops, Excel merge, OCR invoice, sales insight, …) | 5 days |
+| **Expert system** | Wrap Skills as domain experts | Skill + pinned system prompt + entry point | 3 days |
+| **Multi-format export** | One-click export to Word / Excel / PPT from Artifacts | `docx` + `xlsx` + `pptxgenjs` | 4 days |
+| **Scheduled tasks (Automation)** | "Run the daily report at 9 AM" | `node-cron` + IPC + SQLite persistence | 4 days |
+| **Sidebar search + grouping** | Search box at top of LeftColumn | Upgrade existing thread list | 1 day |
+| **Results panel (file-change log)** | Extract tool calls into a dedicated panel | Split off current Message stream | 4 days |
+| **Workflow persistence** | "Save as Template" button on Skills | Add save path in SkillPanel | 2 days |
 
-- **v0.8.0 — Web3 advanced**
-  - Limit orders / DCA / multisig
-  - More testnets (zkSync / Linea / Scroll)
-  - ENS subdomain management
+**v0.6.0 total: ≈ 5–6 weeks (one engineer full-time)**
 
-- **v0.9.0 — Team collaboration**
-  - Shared workspaces + role-based access
-  - Skill Marketplace (community uploads + ratings)
-  - Multi-user audit log
+### 📦 v0.7.0 — Productivity leap
 
-- **v1.0.0 — Stable API + plugin marketplace + white-label**
-  - Public plugin API for third-party tools and Skills
-  - White-label packaging (company name / logo / domain)
-  - Full SLA + commercial support
+- Claw remote control (deferred from v0.6.0, addressed comprehensively)
+- RAG v2 (BM25 + vector hybrid retrieval + rerank + multimodal PDF tables)
+- Multi-format export → standard plugin (any Skill can register a custom exporter)
+- Skills Marketplace live (GitHub-based install of `opendesk-skill-*`)
+
+### 🌐 v0.8.0 — Web3 advanced
+
+- Limit orders / DCA / multisig
+- More testnets (zkSync / Linea / Scroll)
+- ENS subdomain management
+
+### 👥 v0.9.0 — Team collaboration
+
+- Shared workspaces + role-based access
+- Multi-user audit log
+- Skill Marketplace ratings + comments
+
+### 🏢 v1.0.0 — Stable API + plugin marketplace + white-label
+
+- Public plugin API (third-party tools, Skills, Providers)
+- White-label packaging (company name / logo / domain / theme)
+- Full SLA + commercial support
 
 ## 🤝 Contributing
 
