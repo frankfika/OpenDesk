@@ -122,7 +122,7 @@ Web3 transactions get an **extra** `TxConfirmCard`: amount, gas, target contract
 |---------------|------------------------|
 | ![Doctor](./docs/assets/05-doctor.png) | ![Settings](./docs/assets/06-settings.png) |
 
-| Skills panel (22 built-in Skills, v0.6.1) |
+| Skills panel (30 built-in Skills, v0.6.2 closing) |
 |--------------------------------------------|
 | ![Skills](./docs/assets/07-skills-panel.png) |
 
@@ -319,7 +319,7 @@ npm run lint && npm test                  # lint + vitest
 | **Three work modes** | Ask / Plan / Craft switcher in TopBar | Reuse current Approval Mode (4 levels → 3 semantic modes) | 3 days | ✅ v0.6.0 |
 | **Seven-section nav** | Assistant / Projects / Experts / Automation / Files / KB / Inspiration | Add segmented control to LeftSidebar | 2 days | ✅ v0.6.0 |
 | **Multi-Agent parallelism** | Multiple threads run concurrently, independent progress bars | Extend current Ensemble mode with a Worker Pool | 5 days | ✅ v0.6.0 (runner in v0.6.1) |
-| **30+ preset Skills** | Grow from 6 to 30+ | Write 24 `SKILL.md` templates (Xiaohongshu ops, Excel merge, OCR invoice, sales insight, …) | 5 days | 🟡 22/30 (v0.6.1) |
+| **30+ preset Skills** | Grow from 6 to 30+ | Write 24 `SKILL.md` templates (Xiaohongshu ops, Excel merge, OCR invoice, sales insight, …) | 5 days | ✅ 30/30 (v0.6.2) |
 | **Expert system** | Wrap Skills as domain experts | Skill + pinned system prompt + entry point | 3 days | ✅ v0.6.0 |
 | **Multi-format export** | One-click export to Word / Excel / PPT from Artifacts | `docx` + `xlsx` + `pptxgenjs` | 4 days | ✅ v0.6.0 |
 | **Scheduled tasks (Automation)** | "Run the daily report at 9 AM" | `node-cron` + IPC + SQLite persistence | 4 days | ✅ v0.6.0 |
@@ -327,7 +327,7 @@ npm run lint && npm test                  # lint + vitest
 | **Results panel (file-change log)** | Extract tool calls into a dedicated panel | Split off current Message stream | 4 days | ✅ v0.6.0 |
 | **Workflow persistence** | "Save as Template" button on Skills | Add save path in SkillPanel | 2 days | ✅ v0.6.0 |
 
-**v0.6.0 total: ≈ 5–6 weeks (one engineer full-time) · v0.6.1 progress: 10/10 modules ✅ + 8 Skills (22/30 total)**
+**v0.6.0 total: ≈ 5–6 weeks (one engineer full-time) · v0.6.2 close: 10/10 modules ✅ + 30/30 Skills ✅**
 
 ### 📦 v0.7.0 — Productivity leap
 
