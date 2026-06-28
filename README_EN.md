@@ -34,6 +34,32 @@ OpenDesk is a **desktop AI workbench** that puts "talk to AI", "manage your cryp
 - 🛠️ **Skills + MCP**: SKILL.md compatible with Claude Code and Codex; any MCP server plugs in.
 - 📁 **Folder-as-workspace**: open any folder, auto-discover `AGENTS.md`, attach files, save threads.
 
+## 🧭 Core workflow: Plan → Confirm → Execute
+
+Same lineage as WorkBuddy, Manus, and Claude Computer Use — **the AI never touches your files blindly. It lays out the plan, waits for your nod, then acts**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1️⃣ Plan    AI parses your request and breaks it into       │
+│              numbered steps                                  │
+│  2️⃣ Confirm You pick an Approval Mode in the toolbar        │
+│              (auto edits / auto all / bypass / ask)          │
+│  3️⃣ Execute Each tool call streams live into the message    │
+│              log — file, command, or tx, with status icons   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Four Approval Modes (toggle from the `ShieldAlert` icon in the toolbar):
+
+| Mode | Behaviour | When to use |
+|------|-----------|-------------|
+| **Auto edits** | File edits auto-approve; shell & desktop ask | Daily coding / writing docs |
+| **Auto all** | All tool calls auto-approve | Trusted bulk runs |
+| **Bypass** | Skip approval entirely | CI / automation scripts |
+| **Ask** | Anything risky prompts a confirm modal | Unfamiliar code / high-stakes ops |
+
+Web3 transactions get an **extra** `TxConfirmCard`: amount, gas, target contract, risk score — **nothing hits the chain until you click Confirm**.
+
 ## ✨ Features
 
 ### 1. 🧠 Multi-Provider Management
@@ -95,6 +121,54 @@ OpenDesk is a **desktop AI workbench** that puts "talk to AI", "manage your cryp
 | Wallet Doctor | Settings — Providers |
 |---------------|------------------------|
 | ![Doctor](./docs/assets/05-doctor.png) | ![Settings](./docs/assets/06-settings.png) |
+
+## 🎯 Typical Use Cases
+
+> **For non-technical readers**: five concrete scenarios that show what OpenDesk actually does for you. Every one runs out of the box — no plugins required.
+
+### Scenario 1 — E-commerce ops: bulk-merge sales sheets
+
+> Prompt: *"Merge the 12 store Excel files under `~/Desktop/2026Q1` into one sheet, sort by region, and rank the top 3."*
+
+OpenDesk scans the folder → reads every xlsx → merges data → writes `Summary_2026Q1.xlsx` plus a `TOP3_regions.png` bar chart.
+
+### Scenario 2 — On-chain research: profile an unfamiliar address
+
+> Prompt: *"Investigate 0xd8da...6045 over the last 30 days and give me an investor profile."*
+
+Routed through **Web3 Workbench → Chat**: calls Etherscan → grabs txs, transfers, token deltas → returns one of three labels: whale / active trader / passive holder.
+
+### Scenario 3 — Wallet checkup: revoke risky approvals
+
+> Open **Wallet Doctor** → click *Scan all approvals*.
+
+The app lists every ERC-20 `approve` and **red-flags** "unlimited allowance + unknown contract". Hit `Revoke` → `TxConfirmCard` for a second confirmation → one click to revoke on-chain.
+
+### Scenario 4 — Content creation: draft a full article in one shot
+
+> Prompt: *"Read `~/Notes/topics.md`, write a 2000-word WeChat post with a hook-style title."*
+
+OpenDesk reads the Markdown → asks the LLM to draft → uses `desktop_type` to paste it into Pages / Word → renders an HTML preview in the right-side Artifact panel.
+
+### Scenario 5 — DevOps: hotfix from the train
+
+> On your commute, scan the Claw QR with your phone → voice-prompt *"line 47 of `api/users.ts` may NPE — add a guard"*.
+
+The desktop OpenDesk receives the remote instruction → auto-Plans → you tap Yes on your phone to Confirm → it executes → compiles → commits → opens a PR. *(Remote control ships in v0.6.0 — see Roadmap.)*
+
+## 🆚 OpenDesk vs other AI desktop assistants
+
+| Dimension | **OpenDesk** | WorkBuddy (Tencent) | Claude Desktop | Cursor |
+|-----------|--------------|---------------------|----------------|--------|
+| Form factor | Desktop workbench (Electron) | Desktop agent (proprietary) | Desktop chat | IDE |
+| Models | BYOK, all providers | Hunyuan / DeepSeek / GLM / Kimi | Anthropic only | OpenAI / Anthropic |
+| Web3 native | ✅ wagmi + Reown + 12 chains | ❌ | ❌ | ❌ |
+| Computer use | ✅ macOS / Win / Linux | ✅ Windows only | ❌ | ❌ |
+| Folder-as-workspace | ✅ + AGENTS.md | ✅ | ⚠️ half-baked | ❌ (project-as-workspace) |
+| MCP client | ✅ self-rolled, 5 presets | ✅ | ✅ | ❌ |
+| Cross-platform Skills | ✅ `.codex/skills` / `.claude/skills` | ✅ OpenClaw | ✅ | ❌ |
+| Local-first | ✅ SQLite on disk | ✅ fully local | ⚠️ partial | ❌ |
+| Open source | ✅ Apache 2.0 | ❌ proprietary | ❌ proprietary | ❌ proprietary |
 
 ## 🚀 Quick Start
 
@@ -194,10 +268,32 @@ npm run lint && npm test                  # lint + vitest
 
 ## 🛣️ Roadmap
 
-- **v0.6.0** — Agent Mode with multi-round tool use + Computer-Use integration
-- **v0.7.0** — RAG v2 (hybrid retrieval + rerank)
-- **v0.8.0** — Web3: limit orders / DCA / multisig
-- **v1.0.0** — stable API, plugin marketplace, white-label packaging
+> Ordered by real user demand, not engineering complexity. Priorities shift with community feedback.
+
+- **v0.6.0 — Claw remote control**
+  - Scan a QR from WeChat / WeCom / Telegram / Discord → dispatch instructions remotely
+  - Voice input + push-to-talk
+  - Use cases: fix bugs on the train, run reports at the airport, order dinner from home
+
+- **v0.7.0 — Multi-format export + RAG v2**
+  - One-click export to Word / Excel / PPT / Markdown (matches WorkBuddy's smart docs)
+  - Hybrid retrieval (BM25 + vector) + rerank
+  - Multimodal RAG (images, PDF tables)
+
+- **v0.8.0 — Web3 advanced**
+  - Limit orders / DCA / multisig
+  - More testnets (zkSync / Linea / Scroll)
+  - ENS subdomain management
+
+- **v0.9.0 — Team collaboration**
+  - Shared workspaces + role-based access
+  - Skill Marketplace (community uploads + ratings)
+  - Multi-user audit log
+
+- **v1.0.0 — Stable API + plugin marketplace + white-label**
+  - Public plugin API for third-party tools and Skills
+  - White-label packaging (company name / logo / domain)
+  - Full SLA + commercial support
 
 ## 🤝 Contributing
 
