@@ -304,20 +304,22 @@ npm run lint && npm test                  # lint + vitest
 
 ### 🚀 v0.6.0 — WorkBuddy 启发合集（核心增量）
 
-| 模块 | 功能 | 实现路径 | 工期 |
-|------|------|---------|------|
-| **三大工作模式** | Ask / Plan / Craft 切换器放 TopBar | 复用现有 Approval Mode（4 档 → 3 档语义化） | 3 天 |
-| **七大板块导航** | 助理 / 项目 / 专家 / 自动化 / 文件 / 知识库 / 灵感 | 在 LeftSidebar 加 segmented control | 2 天 |
-| **多 Agent 并行** | 多个线程同时跑，进度条独立显示 | 扩展现有 Ensemble 模式，加 Worker Pool | 5 天 |
-| **30+ 预设 Skill** | 内置从 6 个扩到 30+ | 写 24 个 `SKILL.md` 模板（含小红书运营、Excel 汇总、票据识别、销售洞察等） | 5 天 |
-| **专家系统** | 包装 Skill 为"领域专家" | Skill + 固定 system prompt + 调用入口 | 3 天 |
-| **多模态导出** | Artifacts 一键导出 Word / Excel / PPT | `docx` + `xlsx` + `pptxgenjs` | 4 天 |
-| **定时任务（自动化）** | "每天 9 点自动跑日报" | `node-cron` + IPC + SQLite 持久化 | 4 天 |
-| **侧边栏搜索 + 分组** | LeftColumn 顶部加 search box | 已存在的 Thread 列表升级 | 1 天 |
-| **结果区（变更记录独立面板）** | 提取 tool call 到独立 panel | 抽离现有 Message 流 | 4 天 |
-| **工作流沉淀** | Skill "Save as Template" 按钮 | 在 SkillPanel 加保存路径 | 2 天 |
+> ✅ = 已发版（在 v0.6.0-alpha.1 或更新版本中）
 
-**v0.6.0 总工时：≈ 5–6 周（一人全职）**
+| 模块 | 功能 | 实现路径 | 工期 | 状态 |
+|------|------|---------|------|------|
+| **三大工作模式** | Ask / Plan / Craft 切换器放 TopBar | 复用现有 Approval Mode（4 档 → 3 档语义化） | 3 天 | ✅ v0.6.0-alpha.1 |
+| **七大板块导航** | 助理 / 项目 / 专家 / 自动化 / 文件 / 知识库 / 灵感 | 在 LeftSidebar 加 segmented control | 2 天 | 📅 |
+| **多 Agent 并行** | 多个线程同时跑，进度条独立显示 | 扩展现有 Ensemble 模式，加 Worker Pool | 5 天 | 📅 |
+| **30+ 预设 Skill** | 内置从 6 个扩到 30+ | 写 24 个 `SKILL.md` 模板（含小红书运营、Excel 汇总、票据识别、销售洞察等） | 5 天 | 🟡 14/30 (alpha.1) |
+| **专家系统** | 包装 Skill 为"领域专家" | Skill + 固定 system prompt + 调用入口 | 3 天 | 📅 |
+| **多模态导出** | Artifacts 一键导出 Word / Excel / PPT | `docx` + `xlsx` + `pptxgenjs` | 4 天 | 📅 |
+| **定时任务（自动化）** | "每天 9 点自动跑日报" | `node-cron` + IPC + SQLite 持久化 | 4 天 | 📅 |
+| **侧边栏搜索 + 分组** | MiddleColumn 顶部加 search box | 已存在的 Thread 列表升级 | 1 天 | ✅ v0.6.0-alpha.1 |
+| **结果区（变更记录独立面板）** | 提取 tool call 到独立 panel | 抽离现有 Message 流 | 4 天 | 📅 |
+| **工作流沉淀** | Skill "Save as Template" 按钮 | 在 SkillPanel 加保存路径 | 2 天 | 📅 |
+
+**v0.6.0 总工时：≈ 5–6 周（一人全职） · 当前进度：3/10 模块**
 
 ### 📦 v0.7.0 — 生产力跃升
 
