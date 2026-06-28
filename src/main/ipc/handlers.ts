@@ -15,6 +15,9 @@ import { registerDoctorHandlers } from './doctor'
 import { registerToolsHandlers } from './tools'
 import { registerRAGHandlers } from './rag'
 import { registerWeb3Handlers } from './web3'
+import { registerArtifactExportHandlers } from './artifacts-export'
+import { registerExpertsHandlers } from './experts'
+import { registerSchedulerHandlers } from './scheduler'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Register domain-specific handlers
@@ -30,6 +33,9 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerToolsHandlers(win)
   registerRAGHandlers(win)
   registerWeb3Handlers(win)
+  registerArtifactExportHandlers(win)
+  registerExpertsHandlers()
+  registerSchedulerHandlers()
 
   /* ===== Health Checks ===== */
   startHealthChecks(

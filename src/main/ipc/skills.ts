@@ -8,6 +8,7 @@ import {
   importSkillFromGitHub,
   deleteGlobalSkill,
   saveNewSkill,
+  saveSkillAsTemplate,
   executeSkillTool
 } from '../skills'
 
@@ -21,7 +22,8 @@ const channels = [
   'skills:importFromGitHub',
   'skills:delete',
   'skills:getBuiltins',
-  'skills:create'
+  'skills:create',
+  'skills:saveAsTemplate'
 ]
 
 function removeStaleListeners(): void {
@@ -81,5 +83,14 @@ export function registerSkillsHandlers(_win: BrowserWindow): void {
 
   ipcMain.handle('skills:create', async (_e, name: string, description: string, tags: string[]) => {
     return saveNewSkill(name, description, tags)
+  })
+
+  ipcMain.handle('skills:saveAsTemplate', async (_e, skillId: string) => {
+    const allSkills = scanAllSkills()
+    const skill = allSkills.find((s) => s.id === skillId)
+    if (!skill) {
+      throw new Error(`Skill '${skillId}' not found`)
+    }
+    return saveSkillAsTemplate(skill.path)
   })
 }

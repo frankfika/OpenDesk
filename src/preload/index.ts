@@ -71,7 +71,9 @@ contextBridge.exposeInMainWorld('api', {
     delete: (skillId: string): Promise<boolean> => ipcRenderer.invoke('skills:delete', skillId),
     getBuiltins: (): Promise<Skill[]> => ipcRenderer.invoke('skills:getBuiltins'),
     create: (name: string, description: string, tags: string[]): Promise<SkillImportResult> =>
-      ipcRenderer.invoke('skills:create', name, description, tags)
+      ipcRenderer.invoke('skills:create', name, description, tags),
+    saveAsTemplate: (skillId: string): Promise<{ destPath: string; overwritten: boolean }> =>
+      ipcRenderer.invoke('skills:saveAsTemplate', skillId)
   },
 
   workspace: {
@@ -340,6 +342,34 @@ contextBridge.exposeInMainWorld('api', {
       const listener = (): void => cb()
       ipcRenderer.on('app:new-chat', listener)
       return () => ipcRenderer.removeListener('app:new-chat', listener)
+    },
+    artifact: {
+      export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }): Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }> =>
+        ipcRenderer.invoke('artifact:export', args)
+    },
+    experts: {
+      list: (): Promise<Array<{ id: string; name: string; domain: string; description: string; icon: string; color: string; skillId: string; systemPrompt: string; starters: string[] }>> =>
+        ipcRenderer.invoke('experts:list'),
+      get: (id: string): Promise<{ id: string; name: string; domain: string; description: string; icon: string; color: string; skillId: string; systemPrompt: string; starters: string[] } | null> =>
+        ipcRenderer.invoke('experts:get', id)
+    },
+    scheduler: {
+      list: (): Promise<Array<{ id: string; name: string; cron: string; enabled: boolean; createdAt: number; lastRunAt?: number; lastRunStatus?: 'success' | 'error'; lastRunError?: string }>> =>
+        ipcRenderer.invoke('scheduler:list'),
+      create: (input: { name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string } }) =>
+        ipcRenderer.invoke('scheduler:create', input),
+      update: (id: string, patch: Partial<{ name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; enabled: boolean }>) =>
+        ipcRenderer.invoke('scheduler:update', id, patch),
+      delete: (id: string) => ipcRenderer.invoke('scheduler:delete', id),
+      run: (id: string) => ipcRenderer.invoke('scheduler:run', id),
+      validate: (expr: string) => ipcRenderer.invoke('scheduler:validate', expr),
+      reportFinished: (id: string, status: 'success' | 'error', error?: string) =>
+        ipcRenderer.invoke('scheduler:reportFinished', id, status, error),
+      onTaskRunning: (cb: (payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }) => void) => {
+        const listener = (_e: unknown, payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }): void => cb(payload)
+        ipcRenderer.on('scheduler:taskRunning', listener)
+        return () => ipcRenderer.removeListener('scheduler:taskRunning', listener)
+      }
     },
     onOpenSettings: (cb: () => void) => {
       const listener = (): void => cb()

@@ -15,6 +15,8 @@ import MemoryPanel from '../memory/MemoryPanel'
 import GlobalSearch from '../search/GlobalSearch'
 import ShortcutHelp from '../ui/ShortcutHelp'
 import Web3Workbench from './Web3Workbench'
+import SectionRail from '../layout/SectionRail'
+import SectionDock from '../layout/SectionDock'
 
 export default function Web3Shell(): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -116,9 +118,16 @@ export default function Web3Shell(): JSX.Element {
   return (
     <ErrorBoundary>
       <div className="flex h-screen w-screen overflow-hidden bg-transparent">
-        <ErrorBoundary>
-          <Web3Workbench />
-        </ErrorBoundary>
+        <SectionRail />
+        <div className="flex-1 min-w-0">
+          <SectionDock
+            assistantView={
+              <ErrorBoundary>
+                <Web3Workbench />
+              </ErrorBoundary>
+            }
+          />
+        </div>
 
         {/* Panel backdrops */}
         <AnimatePresence>

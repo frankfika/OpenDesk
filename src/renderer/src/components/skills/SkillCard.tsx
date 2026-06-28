@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import type { Skill } from '@shared/types'
-import { Zap, BookOpen, Code, Box, Tag, ChevronDown, ChevronUp, Power } from 'lucide-react'
+import { Zap, BookOpen, Code, Box, Tag, ChevronDown, ChevronUp, Power, BookmarkPlus, Check } from 'lucide-react'
 
 interface SkillCardProps {
   skill: Skill
   isActive: boolean
   onToggle: () => void
   onViewDetail: () => void
+  onAfterTemplate?: () => void
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -29,8 +30,10 @@ const SOURCE_LABELS: Record<string, string> = {
   builtin: 'Built-in'
 }
 
-export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: SkillCardProps) {
+export default function SkillCard({ skill, isActive, onToggle, onViewDetail, onAfterTemplate }: SkillCardProps): JSX.Element {
   const [expanded, setExpanded] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   return (
     <div
@@ -173,6 +176,28 @@ export default function SkillCard({ skill, isActive, onToggle, onViewDetail }: S
               </div>
             )}
             <div className="text-[10px] text-[var(--text-muted)] font-mono truncate">{skill.path}</div>
+            <button
+              type="button"
+              disabled={saving || saved}
+              onClick={async () => {
+                setSaving(true)
+                try {
+                  await window.api.skills.saveAsTemplate(skill.id)
+                  setSaved(true)
+                  onAfterTemplate?.()
+                  setTimeout(() => setSaved(false), 2000)
+                } catch (err) {
+                  console.error('saveAsTemplate failed', err)
+                } finally {
+                  setSaving(false)
+                }
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-1 py-1 text-[10px] rounded border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-content)] hover:border-[var(--border-strong)] disabled:opacity-60"
+              data-action="save-as-template"
+            >
+              {saved ? <Check size={10} /> : <BookmarkPlus size={10} />}
+              {saved ? 'Saved to ~/.opendesk/skills/' : saving ? 'Saving…' : 'Save as my template'}
+            </button>
           </div>
         )}
       </div>

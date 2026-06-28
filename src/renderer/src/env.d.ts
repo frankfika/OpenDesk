@@ -121,6 +121,7 @@ interface SkillsAPI {
   delete: (skillId: string) => Promise<boolean>
   getBuiltins: () => Promise<Skill[]>
   create: (name: string, description: string, tags: string[]) => Promise<SkillImportResult>
+  saveAsTemplate: (skillId: string) => Promise<{ destPath: string; overwritten: boolean }>
 }
 
 interface WorkspaceAPI {
@@ -229,6 +230,55 @@ declare global {
         onToggleTheme: (cb: () => void) => () => void
         onFocusModel: (cb: () => void) => () => void
         onHealthChanged: (cb: (payload: { providerId: string; result: boolean }) => void) => () => void
+        artifact: {
+          export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }) =>
+            Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }>
+        }
+        experts: {
+          list: () => Promise<Array<{
+            id: string
+            name: string
+            domain: string
+            description: string
+            icon: string
+            color: string
+            skillId: string
+            systemPrompt: string
+            starters: string[]
+          }>>
+          get: (id: string) => Promise<{
+            id: string
+            name: string
+            domain: string
+            description: string
+            icon: string
+            color: string
+            skillId: string
+            systemPrompt: string
+            starters: string[]
+          } | null>
+        }
+        scheduler: {
+          list: () => Promise<Array<{
+            id: string
+            name: string
+            cron: string
+            enabled: boolean
+            createdAt: number
+            lastRunAt?: number
+            lastRunStatus?: 'success' | 'error'
+            lastRunError?: string
+          }>>
+          create: (input: { name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string } }) => Promise<{
+            id: string; name: string; cron: string; enabled: boolean; createdAt: number
+          }>
+          update: (id: string, patch: Partial<{ name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; enabled: boolean }>) => Promise<unknown>
+          delete: (id: string) => Promise<boolean>
+          run: (id: string) => Promise<void>
+          validate: (expr: string) => Promise<boolean>
+          reportFinished: (id: string, status: 'success' | 'error', error?: string) => Promise<void>
+          onTaskRunning: (cb: (payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }) => void) => () => void
+        }
       }
     }
     electron?: {

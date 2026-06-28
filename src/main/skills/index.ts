@@ -7,5 +7,6 @@ export {
   importSkillFromGitHub,
   deleteGlobalSkill,
   createSkillTemplate,
-  saveNewSkill
+  saveNewSkill,
+  saveSkillAsTemplate
 } from './portability'

@@ -7,6 +7,7 @@ import { registerShortcuts, unregisterShortcuts } from './shortcuts'
 import { OLLAMA_BASE_URL } from '../shared/providers'
 import { initSettings } from './persistence'
 import { connectEnabledMcpServers } from './ipc/mcp'
+import { initScheduler } from './scheduler/scheduler'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -144,6 +145,7 @@ app.whenReady().then(async () => {
   registerIpcHandlers(mainWindow)
   createTray(mainWindow)
   registerShortcuts(mainWindow)
+  initScheduler(mainWindow)
 
   // Auto-detect Ollama on startup
   await autoDetectOllama()

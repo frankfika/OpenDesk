@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, PanelRightClose, PanelRightOpen, GripVertical } from 'lucide-react'
+import { X, PanelRightClose, PanelRightOpen, GripVertical, FileText, FileSpreadsheet, Presentation, Download } from 'lucide-react'
 import { useArtifactsStore } from '../../store/artifacts'
 import ArtifactRenderer, { ArtifactTypeIcon } from './ArtifactRenderer'
 
@@ -89,6 +89,9 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
+          {activeArtifact && (
+            <ArtifactExportMenu title={activeArtifact.title} content={activeArtifact.content} />
+          )}
           <button
             type="button"
             onClick={togglePanel}
@@ -178,5 +181,84 @@ export default function ArtifactPanel({ className = '' }: ArtifactPanelProps) {
         </AnimatePresence>
       </div>
     </motion.div>
+  )
+}
+
+/**
+ * Compact popover button offering 4 export targets (Word / Excel / PPTX / MD)
+ * for the active artifact. Rendered in the panel header.
+ */
+function ArtifactExportMenu({ title, content }: { title: string; content: string }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState<null | 'docx' | 'xlsx' | 'pptx' | 'md'>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  async function handleExport(format: 'docx' | 'xlsx' | 'pptx' | 'md'): Promise<void> {
+    setOpen(false)
+    setBusy(format)
+    try {
+      const result = await window.api.app.artifact.export({ format, title, content })
+      if (result.ok) {
+        setToast(`Saved → ${result.path.split('/').pop()}`)
+      } else if (!result.cancelled) {
+        setToast(`Error: ${result.error ?? 'unknown'}`)
+      }
+    } catch (err) {
+      setToast(`Error: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setBusy(null)
+      setTimeout(() => setToast(null), 3000)
+    }
+  }
+
+  const OPTIONS: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; label: string; icon: typeof FileText }[] = [
+    { format: 'docx', label: 'Word (.docx)', icon: FileText },
+    { format: 'xlsx', label: 'Excel (.xlsx)', icon: FileSpreadsheet },
+    { format: 'pptx', label: 'PowerPoint (.pptx)', icon: Presentation },
+    { format: 'md', label: 'Markdown (.md)', icon: Download }
+  ]
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy !== null}
+        className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors disabled:opacity-60"
+        title="Export artifact"
+        data-action="export"
+      >
+        <Download size={14} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-1 z-30 w-44 rounded-md border border-[var(--border)] bg-[var(--bg-content)] shadow-lg"
+          >
+            {OPTIONS.map(({ format, label, icon: Icon }) => (
+              <button
+                key={format}
+                type="button"
+                onClick={() => handleExport(format)}
+                disabled={busy !== null}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-sidebar)] first:rounded-t-md last:rounded-b-md disabled:opacity-60"
+              >
+                <Icon size={12} />
+                {busy === format ? 'Exporting…' : label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {toast && (
+        <span className="absolute right-0 top-full mt-12 z-30 px-2 py-1 text-[10px] rounded bg-[var(--accent)] text-white whitespace-nowrap">
+          {toast}
+        </span>
+      )}
+    </div>
   )
 }

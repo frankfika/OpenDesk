@@ -27,6 +27,33 @@ export async function exportSkill(skillPath: string, outputDir: string): Promise
   return destPath
 }
 
+/**
+ * Save a Skill as a reusable user-template. Copies the Skill folder into
+ * ~/.opendesk/skills/<name> so the user can edit it without modifying
+ * built-in sources. The original name is preserved; if a user-template
+ * with the same name already exists, it is replaced (caller's intent is
+ * to "revert / re-save").
+ */
+export async function saveSkillAsTemplate(skillPath: string): Promise<{ destPath: string; overwritten: boolean }> {
+  if (!existsSync(skillPath)) {
+    throw new Error(`Skill path does not exist: ${skillPath}`)
+  }
+
+  const skillName = basename(skillPath)
+  const destDir = getGlobalSkillsPath()
+  if (!existsSync(destDir)) {
+    mkdirSync(destDir, { recursive: true })
+  }
+
+  const destPath = join(destDir, skillName)
+  const overwritten = existsSync(destPath)
+  if (overwritten) {
+    rmSync(destPath, { recursive: true, force: true })
+  }
+  cpSync(skillPath, destPath, { recursive: true, force: true })
+  return { destPath, overwritten }
+}
+
 export async function importSkillFromFolder(sourcePath: string, targetDir?: string): Promise<SkillImportResult> {
   if (!existsSync(sourcePath)) {
     return { success: false, error: `Source path does not exist: ${sourcePath}` }
