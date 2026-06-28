@@ -29,7 +29,7 @@ interface ChatAPI {
   onToolCall: (cb: (payload: { id: string; name: string; arguments: Record<string, unknown>; threadId?: string }) => void) => () => void
   onToolResult: (cb: (payload: { toolCallId: string; content: string; isError?: boolean; threadId?: string }) => void) => () => void
   onDone: (
-    cb: (meta?: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string }) => void
+    cb: (meta: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string; error?: string }) => void
   ) => () => void
   onError: (cb: (error: { message: string; type: string }) => void) => () => void
   onAgentToken: (
@@ -233,6 +233,17 @@ declare global {
         artifact: {
           export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }) =>
             Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }>
+        }
+        changelog: {
+          record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) => Promise<{ id: string }>
+          update: (id: string, patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>) => Promise<void>
+          list: (opts?: { threadId?: string | null; limit?: number; sinceTs?: number }) => Promise<Array<{
+            id: string; threadId: string | null; ts: number
+            kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'
+            title: string; detail: string | null
+            status: 'pending' | 'success' | 'error'; error: string | null
+          }>>
+          clear: (opts?: { threadId?: string }) => Promise<number>
         }
         experts: {
           list: () => Promise<Array<{

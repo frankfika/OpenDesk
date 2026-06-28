@@ -124,7 +124,7 @@ async function run() {
     console.log('  ! settings button not found — skipping 06-settings')
   }
 
-  // 7. Skills panel (shows the new 14 built-in Skills)
+  // 7. Skills panel (shows the new 22 built-in Skills)
   // Close settings modal first
   await window.keyboard.press('Escape')
   await SLEEP(400)
@@ -134,6 +134,37 @@ async function run() {
   })
   await SLEEP(1200)
   await snap(window, '07-skills-panel', { wait: 800 })
+
+  // 8. Experts panel — click the Experts section in the rail
+  await window.locator('button[data-section="experts"]').first().click().catch(() => {})
+  await SLEEP(800)
+  await snap(window, '08-experts-panel')
+
+  // 9. Automation / Scheduler panel
+  await window.locator('button[data-section="automation"]').first().click().catch(() => {})
+  await SLEEP(800)
+  await snap(window, '09-scheduler-panel')
+
+  // 10. Scheduler — open the create form
+  await window.locator('button[data-action="new-task"]').first().click().catch(() => {})
+  await SLEEP(600)
+  await snap(window, '10-scheduler-create')
+
+  // Close the create form
+  await window.keyboard.press('Escape')
+  await SLEEP(300)
+
+  // 11. Back to home (Assistant section) — confirm SectionRail visible
+  await window.locator('button[data-section="assistant"]').first().click().catch(() => {})
+  await SLEEP(800)
+  await snap(window, '11-section-rail-overview')
+
+  // 12. WorkerPool modal — fire the modal via custom event
+  await window.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('opendesk:open-worker-pool', { detail: { prompt: '解释一下 LLM 的 scaling laws' } }))
+  })
+  await SLEEP(800)
+  await snap(window, '12-worker-pool-modal', { wait: 600 })
 
   console.log(`\n✨ Done. ${fs.readdirSync(ASSETS).length} files in docs/assets/\n`)
   await app.close()

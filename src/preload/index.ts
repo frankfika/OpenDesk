@@ -106,18 +106,23 @@ contextBridge.exposeInMainWorld('api', {
     editMessage: (payload: ChatSendPayload & { editIndex: number }): void =>
       ipcRenderer.send('chat:editMessage', payload),
     onToken: (cb: (payload: { token: string; threadId?: string }) => void) => {
-      const listener = (
-        _e: Electron.IpcRendererEvent,
-        payload: { token: string; threadId?: string }
-      ): void => cb(payload)
+      const listener = (_e: Electron.IpcRendererEvent, payload: { token: string; threadId?: string }): void => cb(payload)
       ipcRenderer.on('chat:token', listener)
       return () => ipcRenderer.removeListener('chat:token', listener)
     },
     onDone: (
-      cb: (meta?: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string }) => void
+      cb: (meta: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string; error?: string }) => void
     ) => {
-      const listener = (_e: Electron.IpcRendererEvent, meta?: unknown): void =>
-        cb(meta as { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string })
+      const listener = (_e: Electron.IpcRendererEvent, meta: unknown): void =>
+        cb(
+          (meta ?? {}) as {
+            regenerate?: boolean
+            editIndex?: number
+            workspaceId?: string
+            threadId?: string
+            error?: string
+          }
+        )
       ipcRenderer.on('chat:done', listener)
       return () => ipcRenderer.removeListener('chat:done', listener)
     },
@@ -370,6 +375,16 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('scheduler:taskRunning', listener)
         return () => ipcRenderer.removeListener('scheduler:taskRunning', listener)
       }
+    },
+    changelog: {
+      record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) =>
+        ipcRenderer.invoke('changelog:record', entry),
+      update: (id: string, patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>) =>
+        ipcRenderer.invoke('changelog:update', id, patch),
+      list: (opts?: { threadId?: string | null; limit?: number; sinceTs?: number }) =>
+        ipcRenderer.invoke('changelog:list', opts) as Promise<Array<{ id: string; threadId: string | null; ts: number; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail: string | null; status: 'pending' | 'success' | 'error'; error: string | null }>>,
+      clear: (opts?: { threadId?: string }) =>
+        ipcRenderer.invoke('changelog:clear', opts) as Promise<number>
     },
     onOpenSettings: (cb: () => void) => {
       const listener = (): void => cb()

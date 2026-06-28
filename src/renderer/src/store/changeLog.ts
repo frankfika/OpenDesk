@@ -20,21 +20,20 @@ export interface ChangeEntry {
   threadId: string | null
   ts: number
   kind: ChangeKind
-  /** Human-readable title shown in the panel */
   title: string
-  /** Optional sub-line (path, command, target) */
   detail?: string
-  /** Status of the action */
   status: 'pending' | 'success' | 'error'
   error?: string
 }
 
 interface ChangeLogState {
   entries: ChangeEntry[]
-  record: (entry: Omit<ChangeEntry, 'id' | 'ts'>) => ChangeEntry
-  update: (id: string, patch: Partial<ChangeEntry>) => void
-  clear: () => void
-  clearForThread: (threadId: string) => void
+  loaded: boolean
+  hydrate: () => Promise<void>
+  record: (entry: Omit<ChangeEntry, 'id' | 'ts'>) => Promise<ChangeEntry>
+  update: (id: string, patch: Partial<ChangeEntry>) => Promise<void>
+  clear: () => Promise<void>
+  clearForThread: (threadId: string) => Promise<void>
   forThread: (threadId: string | null) => ChangeEntry[]
 }
 
@@ -45,19 +44,77 @@ const uuid = (): string => {
 
 export const useChangeLog = create<ChangeLogState>((set, get) => ({
   entries: [],
-  record: (entry) => {
-    const e: ChangeEntry = { ...entry, id: uuid(), ts: Date.now() }
+  loaded: false,
+
+  hydrate: async () => {
+    if (get().loaded) return
+    const rows = await window.api.app.changelog.list({ limit: 500 })
+    set({ entries: rows.map(toEntry), loaded: true })
+  },
+
+  record: async (entry) => {
+    const persisted = await window.api.app.changelog.record({
+      threadId: entry.threadId ?? null,
+      kind: entry.kind,
+      title: entry.title,
+      detail: entry.detail ?? undefined,
+      status: entry.status,
+      error: entry.error ?? undefined
+    })
+    const e: ChangeEntry = {
+      ...entry,
+      id: persisted.id,
+      ts: Date.now()
+    }
     set((state) => ({ entries: [...state.entries, e] }))
     return e
   },
-  update: (id, patch) => {
+
+  update: async (id, patch) => {
     set((state) => ({
       entries: state.entries.map((e) => (e.id === id ? { ...e, ...patch } : e))
     }))
+    await window.api.app.changelog.update(id, {
+      status: patch.status,
+      error: patch.error ?? undefined
+    })
   },
-  clear: () => set({ entries: [] }),
-  clearForThread: (threadId) => {
+
+  clear: async () => {
+    await window.api.app.changelog.clear()
+    set({ entries: [] })
+  },
+
+  clearForThread: async (threadId) => {
+    await window.api.app.changelog.clear({ threadId })
     set((state) => ({ entries: state.entries.filter((e) => e.threadId !== threadId) }))
   },
-  forThread: (threadId) => get().entries.filter((e) => e.threadId === threadId || threadId === null)
+
+  forThread: (threadId) =>
+    get().entries.filter((e) => e.threadId === threadId || threadId === null)
 }))
+
+function toEntry(row: {
+  id: string
+  threadId: string | null
+  ts: number
+  kind: ChangeKind
+  title: string
+  detail: string | null
+  status: 'pending' | 'success' | 'error'
+  error: string | null
+}): ChangeEntry {
+  return {
+    id: row.id,
+    threadId: row.threadId,
+    ts: row.ts,
+    kind: row.kind,
+    title: row.title,
+    detail: row.detail ?? undefined,
+    status: row.status,
+    error: row.error ?? undefined
+  }
+}
+
+const _unusedUuid = uuid
+void _unusedUuid

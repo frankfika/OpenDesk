@@ -92,7 +92,6 @@ export default function SchedulerPanel(): JSX.Element {
               task={t}
               onChanged={() => void refresh()}
               onEdit={() => {
-                setEditingId(t.id)
                 setShowCreate(true)
               }}
             />

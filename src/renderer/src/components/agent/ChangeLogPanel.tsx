@@ -6,6 +6,7 @@
  * Rendered as a side panel; can also be embedded in ArtifactPanel.
  */
 
+import { useEffect } from 'react'
 import { useChangeLog, type ChangeKind, type ChangeEntry } from '../../store/changeLog'
 import {
   FileEdit,
@@ -59,7 +60,11 @@ export default function ChangeLogPanel({
   className = '',
   compact = false
 }: ChangeLogPanelProps): JSX.Element {
-  const { entries, clear, clearForThread } = useChangeLog()
+  const { entries, clear, clearForThread, hydrate } = useChangeLog()
+
+  useEffect(() => {
+    void hydrate()
+  }, [hydrate])
 
   const filtered = threadId
     ? entries.filter((e) => e.threadId === threadId || e.threadId === null)

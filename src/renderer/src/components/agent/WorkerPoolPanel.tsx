@@ -10,8 +10,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Play, Loader2, Check, AlertCircle, Layers } from 'lucide-react'
 import { runWorkerPool, type PoolWorker, type PoolHandle } from '../../lib/workerPool'
+import { runChat } from '../../lib/chatPipeline'
 import { useSettingsStore } from '../../store/settings'
-import { useWorkspaceStore } from '../../store/workspace'
 
 interface WorkerPoolPanelProps {
   open: boolean
@@ -21,8 +21,6 @@ interface WorkerPoolPanelProps {
 
 export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPanelProps): JSX.Element | null {
   const settings = useSettingsStore((s) => s.settings)
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
-  const threadsByWorkspace = useWorkspaceStore((s) => s.threadsByWorkspace)
   const [workers, setWorkers] = useState<PoolWorker[]>([])
   const [running, setRunning] = useState(false)
   const [pool, setPool] = useState<PoolHandle | null>(null)
@@ -44,21 +42,23 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
     if (running) return
     setRunning(true)
     setWorkers([])
-    const wsThreads = activeWorkspaceId ? threadsByWorkspace(activeWorkspaceId) : []
+    const poolId = `pool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const handle = runWorkerPool({
       prompt,
       workers: enabledProviders.slice(0, 4).map((p) => ({
         providerId: p.id,
         model: p.model,
-        threadId: wsThreads[0]?.id
+        threadId: `${poolId}-${p.id.replace(/[^a-zA-Z0-9]/g, '')}`
       })),
-      // v0.6.0: chat:send is fire-and-forget; for now the runner simulates by
-      // throwing a friendly "wiring pending" message. v0.6.1 hooks the actual
-      // chat pipeline here.
       runner: async (w) => {
-        // simulate 1.5–3s work
-        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 1500))
-        return `[${w.providerId}] 模拟输出：当前架构下 WorkerPool 数据层已就绪，runner 接入在 v0.6.1 完成。`
+        if (!w.threadId) throw new Error('no threadId assigned')
+        const result = await runChat({
+          providerId: w.providerId,
+          prompt,
+          threadId: w.threadId
+        })
+        if (!result.ok) throw new Error(result.error ?? 'chat failed')
+        return result.text ?? ''
       },
       onWorkerUpdate: (w) => {
         setWorkers((prev) => {
@@ -73,7 +73,7 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
     })
     setPool(handle)
     void handle.done
-  }, [running, prompt, enabledProviders, activeWorkspaceId, threadsByWorkspace])
+  }, [running, prompt, enabledProviders])
 
   useEffect(() => {
     if (!open) {

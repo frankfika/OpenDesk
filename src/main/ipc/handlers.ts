@@ -18,6 +18,7 @@ import { registerWeb3Handlers } from './web3'
 import { registerArtifactExportHandlers } from './artifacts-export'
 import { registerExpertsHandlers } from './experts'
 import { registerSchedulerHandlers } from './scheduler'
+import { registerChangeLogHandlers } from './changeLog'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Register domain-specific handlers
@@ -36,6 +37,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerArtifactExportHandlers(win)
   registerExpertsHandlers()
   registerSchedulerHandlers()
+  registerChangeLogHandlers()
 
   /* ===== Health Checks ===== */
   startHealthChecks(
