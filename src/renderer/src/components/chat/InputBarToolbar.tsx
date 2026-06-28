@@ -4,6 +4,7 @@ import ModeSwitcher from './ModeSwitcher'
 import EnsembleModelPicker from './EnsembleModelPicker'
 import ModelPicker from './ModelPicker'
 import ApprovalModeSelector from './ApprovalModeSelector'
+import WorkModeSwitch from './WorkModeSwitch'
 import { useSkillsStore } from '../../store/skills'
 import type { AgentRole, ChatMode, ProviderConfig } from '@shared/types'
 
@@ -119,6 +120,7 @@ function InputBarToolbar({
         </div>
       )}
 
+      <WorkModeSwitch />
       <ApprovalModeSelector />
       <div className="flex-1" />
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useWorkspaceStore } from '../../store/workspace'
-import { MessageSquare, Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { MessageSquare, Plus, Pencil, Trash2, MoreHorizontal, Search, X } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -22,8 +22,17 @@ export default function MiddleColumn({ onNewThread }: MiddleColumnProps) {
 
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editThreadValue, setEditThreadValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const wsThreads = activeWorkspaceId ? threadsByWorkspace(activeWorkspaceId) : []
+  const wsThreads = useMemo(
+    () => (activeWorkspaceId ? threadsByWorkspace(activeWorkspaceId) : []),
+    [activeWorkspaceId, threadsByWorkspace]
+  )
+  const filteredThreads = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return wsThreads
+    return wsThreads.filter((t) => t.title.toLowerCase().includes(q))
+  }, [wsThreads, searchQuery])
 
   function handleThreadRename(id: string) {
     const t = threads.find((th) => th.id === id)
@@ -68,6 +77,30 @@ export default function MiddleColumn({ onNewThread }: MiddleColumnProps) {
         </button>
       </div>
 
+      <div className="px-3 pb-2">
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search threads"
+            aria-label="Search threads"
+            className="no-drag w-full pl-7 pr-7 py-1.5 text-[12px] rounded-md bg-[var(--bg-content)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-strong)]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              aria-label="Clear search"
+            >
+              <X size={11} />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {!activeWorkspaceId ? (
           <p className="px-2 py-4 text-[12px] text-[var(--text-muted)] text-center">
@@ -75,10 +108,14 @@ export default function MiddleColumn({ onNewThread }: MiddleColumnProps) {
           </p>
         ) : wsThreads.length === 0 ? (
           <p className="px-2 py-4 text-[12px] text-[var(--text-muted)] text-center">No conversations yet</p>
+        ) : filteredThreads.length === 0 ? (
+          <p className="px-2 py-4 text-[12px] text-[var(--text-muted)] text-center">
+            No matches for "{searchQuery}"
+          </p>
         ) : (
           <div className="flex flex-col gap-0.5">
             <AnimatePresence initial={false}>
-              {wsThreads.map((t) => {
+              {filteredThreads.map((t) => {
                 const isActiveThread = activeThreadId === t.id
                 return (
                   <motion.div

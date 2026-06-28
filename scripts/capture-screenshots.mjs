@@ -124,6 +124,17 @@ async function run() {
     console.log('  ! settings button not found — skipping 06-settings')
   }
 
+  // 7. Skills panel (shows the new 14 built-in Skills)
+  // Close settings modal first
+  await window.keyboard.press('Escape')
+  await SLEEP(400)
+  await window.evaluate(() => {
+    // OpenSkillsPanel listens to a custom event in Web3Shell
+    window.dispatchEvent(new CustomEvent('opendesk:open-skills'))
+  })
+  await SLEEP(1200)
+  await snap(window, '07-skills-panel', { wait: 800 })
+
   console.log(`\n✨ Done. ${fs.readdirSync(ASSETS).length} files in docs/assets/\n`)
   await app.close()
 }

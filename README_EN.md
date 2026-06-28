@@ -122,6 +122,10 @@ Web3 transactions get an **extra** `TxConfirmCard`: amount, gas, target contract
 |---------------|------------------------|
 | ![Doctor](./docs/assets/05-doctor.png) | ![Settings](./docs/assets/06-settings.png) |
 
+| Skills panel (14 built-in Skills, v0.6.0) |
+|--------------------------------------------|
+| ![Skills](./docs/assets/07-skills-panel.png) |
+
 ## 🎯 Typical Use Cases
 
 > **For non-technical readers**: five concrete scenarios that show what OpenDesk actually does for you. Every one runs out of the box — no plugins required.
