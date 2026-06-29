@@ -126,6 +126,14 @@ Web3 transactions get an **extra** `TxConfirmCard`: amount, gas, target contract
 |--------------------------------------------|
 | ![Skills](./docs/assets/07-skills-panel.png) |
 
+| Workflow Settings · Scheduler | Workflow Settings · Claw |
+|------------------------------|-------------------------|
+| ![Scheduler](./docs/assets/13-workflow-scheduler.png) | ![Claw](./docs/assets/14-workflow-claw.png) |
+
+| Workflow Settings · Marketplace (installed / remote) |
+|------------------------------------------------------|
+| ![Marketplace](./docs/assets/15-workflow-marketplace.png) |
+
 | Experts panel (6 vertical experts) | Automation / scheduled tasks |
 |--------------------------------------|------------------------------|
 | ![Experts](./docs/assets/08-experts-panel.png) | ![Scheduler](./docs/assets/09-scheduler-panel.png) |
@@ -329,12 +337,13 @@ npm run lint && npm test                  # lint + vitest
 
 **v0.6.0 total: ≈ 5–6 weeks (one engineer full-time) · v0.6.2 close: 10/10 modules ✅ + 30/30 Skills ✅**
 
-### 📦 v0.7.0 — Productivity leap
+### 📦 v0.7.0 — Productivity leap (shipped)
 
-- Claw remote control (deferred from v0.6.0, addressed comprehensively)
-- RAG v2 (BM25 + vector hybrid retrieval + rerank + multimodal PDF tables)
+- **Skills Marketplace**: 8 entries, one-click install + version pinning + automatic update check
+- **RAG v2**: FTS5 BM25 + TF-IDF vector hybrid retrieval + Reciprocal-Rank Fusion
+- **Claw remote control**: Telegram bot (long polling) as the first ship; WeChat / WeCom / Lark / DingTalk moved to v0.8.0
+- **Settings · Workflow panel**: unified manager for Scheduler / Change Log / Marketplace / Claw
 - Multi-format export → standard plugin (any Skill can register a custom exporter)
-- Skills Marketplace live (GitHub-based install of `opendesk-skill-*`)
 
 ### 🌐 v0.8.0 — Web3 advanced
 

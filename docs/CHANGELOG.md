@@ -1,5 +1,45 @@
 # OpenDesk Changelog
 
+## v0.7.0 — 2026-06-23
+
+The "Productivity Leap" release — Skills Marketplace, RAG v2, Claw remote control, Settings · Workflow panel.
+
+### ✨ 新增
+
+- **Skills Marketplace 完整版**
+  - `src/main/marketplace/lock.ts`：版本锁定到 `userData/marketplace.lock.json`，survives 重启
+  - IPC：`marketplace:installed / uninstall / checkUpdates / findInstalled`
+  - 已装 / 发现双 tab UI：`installedIds` 状态 + 更新提示 + 重新安装 + 移除
+  - semver 比较：`0.1.0-beta` < `0.1.0`（pre-release tag sort）
+- **RAG v2**
+  - `src/main/rag/v2/vector.ts`：TF-IDF cosine + Reciprocal-Rank Fusion
+  - `src/main/rag/v2/hybridSearch.ts`：FTS5 + 向量混合编排（`HybridSearcher.search` + 一次性 `hybridSearch`）
+  - 中文用 bigram、英文用 word；sub-linear TF saturation；idf = log(1 + N/df)
+  - 可调权重 `ftsWeight` / `vectorWeight`；默认 0.6 / 0.4
+  - IPC：`rag:hybridSearch` + `rag:indexAndSearch`
+- **Claw 远程控制（Telegram bot）**
+  - `src/main/claw/telegram.ts`：长轮询实现，可输入 @BotFather 拿到的 token
+  - `src/main/claw/manager.ts`：单例管理 + 配置持久化 + 状态广播
+  - 自动按 4000 字 chunk 分割 Telegram 消息（避免超过 4096 限制）
+  - IPC：`claw:getConfig / updateConfig / start / stop / sendMessage / isRunning / onMessage / onStatus / onError`
+  - 其它平台（WeChat / WeCom / Lark / DingTalk）排期到 v0.8.0
+- **Settings · Workflow 面板**
+  - 4 个 sub-tab：定时任务 / 变更记录 / 技能市场 / Claw
+  - 一站式管理 v0.6 / v0.7 全部新功能（无需切到 Section Rail）
+
+### 🔧 工具
+
+- `scripts/capture-screenshots.mjs` 新增 13/14/15 三张 workflow 截图
+- README + README_EN 加 3 张 workflow 截图
+- Roadmap 把 v0.7.0 标记为「已发版」
+
+### 📊 验证
+
+- Typecheck (main + web): **0 errors**
+- ESLint: **0 warnings**
+- vitest: **95/95** passing
+- Build: succeed（30 skills bundled）
+
 ## v0.7.0-alpha.1 — 2026-06-23
 
 ### ✨ 新增

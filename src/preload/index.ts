@@ -390,7 +390,35 @@ contextBridge.exposeInMainWorld('api', {
       list: (): Promise<Array<{ id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }>> =>
         ipcRenderer.invoke('marketplace:list'),
       install: (entry: { id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }) =>
-        ipcRenderer.invoke('marketplace:install', entry) as Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string }>
+        ipcRenderer.invoke('marketplace:install', entry) as Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string; record?: { id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } }>,
+      installed: () => ipcRenderer.invoke('marketplace:installed') as Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>,
+      uninstall: (id: string) => ipcRenderer.invoke('marketplace:uninstall', id) as Promise<boolean>,
+      checkUpdates: () => ipcRenderer.invoke('marketplace:checkUpdates') as Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>,
+      findInstalled: (id: string) => ipcRenderer.invoke('marketplace:findInstalled', id) as Promise<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } | null>
+    },
+    claw: {
+      getConfig: () => ipcRenderer.invoke('claw:getConfig') as Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>,
+      updateConfig: (patch: { telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }) =>
+        ipcRenderer.invoke('claw:updateConfig', patch) as Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>,
+      start: () => ipcRenderer.invoke('claw:start') as Promise<void>,
+      stop: () => ipcRenderer.invoke('claw:stop') as Promise<void>,
+      sendMessage: (chatId: number, text: string) => ipcRenderer.invoke('claw:sendMessage', chatId, text) as Promise<void>,
+      isRunning: () => ipcRenderer.invoke('claw:isRunning') as Promise<boolean>,
+      onMessage: (cb: (m: { chatId: number; text: string; from: string; messageId: number }) => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, m: { chatId: number; text: string; from: string; messageId: number }): void => cb(m)
+        ipcRenderer.on('claw:message', listener)
+        return () => ipcRenderer.removeListener('claw:message', listener)
+      },
+      onStatus: (cb: (s: { running: boolean; hasToken: boolean; bindingCount: number }) => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, s: { running: boolean; hasToken: boolean; bindingCount: number }): void => cb(s)
+        ipcRenderer.on('claw:status', listener)
+        return () => ipcRenderer.removeListener('claw:status', listener)
+      },
+      onError: (cb: (e: { message: string }) => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, e: { message: string }): void => cb(e)
+        ipcRenderer.on('claw:error', listener)
+        return () => ipcRenderer.removeListener('claw:error', listener)
+      }
     },
     onOpenSettings: (cb: () => void) => {
       const listener = (): void => cb()

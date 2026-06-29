@@ -10,6 +10,7 @@ import EnsemblePanel from './EnsemblePanel'
 import WorkspaceMCPPanel from './WorkspaceMCPPanel'
 import GeneralPanel from './GeneralPanel'
 import AboutPanel from './AboutPanel'
+import WorkflowPanel from './WorkflowPanel'
 import type { ProviderConfig } from '@shared/types'
 
 import { X } from 'lucide-react'
@@ -22,6 +23,7 @@ interface SettingsModalProps {
 const TAB_LIST = [
   { id: 'providers', label: 'Providers' },
   { id: 'ensemble', label: 'Ensemble' },
+  { id: 'workflow', label: 'Workflow' },
   { id: 'workspace', label: 'Workspace & MCP' },
   { id: 'general', label: 'General' },
   { id: 'about', label: 'About' }
@@ -358,6 +360,11 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   {/* General */}
                   <Tabs.Content value="general" className="flex flex-col gap-5">
                     <GeneralPanel />
+                  </Tabs.Content>
+
+                  {/* Workflow */}
+                  <Tabs.Content value="workflow" className="flex flex-col h-full" style={{ minHeight: 0 }}>
+                    <WorkflowPanel />
                   </Tabs.Content>
 
                   {/* About */}

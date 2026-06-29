@@ -246,7 +246,22 @@ declare global {
             category: string; tags: string[]; author: string
             githubPath: string; skillSubpath: string
             stars?: number; installs?: number; version?: string; verified?: boolean
-          }) => Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string }>
+          }) => Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string; record?: { id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } }>
+          installed: () => Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>
+          uninstall: (id: string) => Promise<boolean>
+          checkUpdates: () => Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>
+          findInstalled: (id: string) => Promise<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } | null>
+        }
+        claw: {
+          getConfig: () => Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>
+          updateConfig: (patch: { telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }) => Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>
+          start: () => Promise<void>
+          stop: () => Promise<void>
+          sendMessage: (chatId: number, text: string) => Promise<void>
+          isRunning: () => Promise<boolean>
+          onMessage: (cb: (m: { chatId: number; text: string; from: string; messageId: number }) => void) => () => void
+          onStatus: (cb: (s: { running: boolean; hasToken: boolean; bindingCount: number }) => void) => () => void
+          onError: (cb: (e: { message: string }) => void) => () => void
         }
         changelog: {
           record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) => Promise<{ id: string }>

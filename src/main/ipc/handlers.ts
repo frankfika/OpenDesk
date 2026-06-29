@@ -13,13 +13,14 @@ import { registerChatHandlers } from './chat'
 import { registerDesktopHandlers } from './desktop'
 import { registerDoctorHandlers } from './doctor'
 import { registerToolsHandlers } from './tools'
-import { registerRAGHandlers } from './rag'
+import { registerRAGHandlers } from './rag' // legacy RAG v1 (kept)
 import { registerWeb3Handlers } from './web3'
 import { registerArtifactExportHandlers } from './artifacts-export'
 import { registerExpertsHandlers } from './experts'
 import { registerSchedulerHandlers } from './scheduler'
 import { registerChangeLogHandlers } from './changeLog'
 import { registerMarketplaceHandlers } from './marketplace'
+import { registerClawHandlers } from './claw'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Register domain-specific handlers
@@ -33,13 +34,15 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerDesktopHandlers(win)
   registerDoctorHandlers(win)
   registerToolsHandlers(win)
-  registerRAGHandlers(win)
+  registerRAGHandlers()
   registerWeb3Handlers(win)
   registerArtifactExportHandlers(win)
   registerExpertsHandlers()
   registerSchedulerHandlers()
   registerChangeLogHandlers()
   registerMarketplaceHandlers()
+  registerRAGHandlers()
+  registerClawHandlers(win)
 
   /* ===== Health Checks ===== */
   startHealthChecks(

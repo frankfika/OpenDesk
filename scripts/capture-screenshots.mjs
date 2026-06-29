@@ -165,6 +165,37 @@ async function run() {
   })
   await SLEEP(800)
   await snap(window, '12-worker-pool-modal', { wait: 600 })
+  await window.keyboard.press('Escape')
+  await SLEEP(400)
+
+  // 13. Workflow panel (Scheduler tab inside Settings)
+  // Open Settings first
+  const settingsBtn2 = window.locator('button[title^="Settings"]').first()
+  if (await settingsBtn2.count()) {
+    await settingsBtn2.click().catch(() => {})
+    await SLEEP(800)
+  }
+  await window.locator('button[role="tab"]:has-text("Workflow")').first().click().catch(() => {})
+  await SLEEP(600)
+  await snap(window, '13-workflow-scheduler')
+
+  // 14. Workflow → Claw tab
+  await window.locator('button[data-subtab="claw"]').first().click().catch(() => {})
+  await SLEEP(500)
+  await snap(window, '14-workflow-claw')
+  await window.keyboard.press('Escape')
+  await SLEEP(400)
+
+  // 15. Workflow → Marketplace tab
+  if (await settingsBtn2.count()) {
+    await settingsBtn2.click().catch(() => {})
+    await SLEEP(600)
+  }
+  await window.locator('button[role="tab"]:has-text("Workflow")').first().click().catch(() => {})
+  await SLEEP(500)
+  await window.locator('button[data-subtab="marketplace"]').first().click().catch(() => {})
+  await SLEEP(600)
+  await snap(window, '15-workflow-marketplace')
 
   console.log(`\n✨ Done. ${fs.readdirSync(ASSETS).length} files in docs/assets/\n`)
   await app.close()
