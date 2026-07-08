@@ -8,7 +8,7 @@ import { scanAgentsMd } from './agents-md'
 const WORKSPACES_FILE = 'workspaces.json'
 
 function getDataDir(): string {
-  const dir = join(app.getPath('userData'), 'opendesk')
+  const dir = app.getPath('userData')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -63,7 +63,7 @@ export function listWorkspaces(): Workspace[] {
 
 function createDefaultWorkspace(): Workspace {
   const now = Date.now()
-  const defaultPath = join(app.getPath('userData'), 'opendesk', 'default-workspace')
+  const defaultPath = join(app.getPath('userData'), 'default-workspace')
 
   // Create the directory if it doesn't exist
   if (!existsSync(defaultPath)) {

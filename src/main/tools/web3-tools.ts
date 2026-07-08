@@ -568,7 +568,7 @@ export const web3SimulateTxTool: ToolDefinition = {
 export const web3GetSwapCalldataTool: ToolDefinition = {
   name: 'web3_getSwapCalldata',
   description:
-    'Get the calldata and target address for a swap transaction on a specific chain. Currently supports Uniswap V3 style exactInputSingle swaps. Use this when the user wants to swap tokens.',
+    'Get executable calldata + target address for a token swap via the 0x aggregator (best route across DEXes). Requires a ZEROX_API_KEY; without one it returns a non-executable route plan. Use native-token sentinel 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for ETH/BNB. Use this when the user wants to swap tokens.',
   parameters: {
     type: 'object',
     properties: {
@@ -600,31 +600,112 @@ export const web3GetSwapCalldataTool: ToolDefinition = {
     }
 
     const router = routers[chain] || routers.ethereum
+    const chainId = WEB3_CHAINS[chain].chain.id
+    const apiKey = process.env.ZEROX_API_KEY || process.env.ZRX_API_KEY || ''
 
-    // For a real app, we would call an aggregator API here.
-    // For this version, we return a "Draft Plan" that the assistant can present.
-    // We also include a mock calldata for the UI to show.
-    return JSON.stringify(
-      {
-        chain,
-        router,
-        fromToken,
-        toToken,
-        amount: amount.toString(),
-        recipient,
-        slippage,
-        note: 'This tool currently returns a route plan for Uniswap V3. In a production environment, this would integrate with a 0x/1inch aggregator API.',
-        plan: {
-          provider: 'Uniswap V3',
-          estimatedOutput: 'Pending simulation...',
-          calldata: '0x', // In a real implementation, we'd encode exactInputSingle here
-          requiresApproval: true,
-          approvalAddress: router
-        }
-      },
-      null,
-      2
-    )
+    // No aggregator key configured — return a clearly non-executable route plan
+    // rather than fake calldata, so the UI can prompt the user to add a key.
+    if (!apiKey) {
+      return JSON.stringify(
+        {
+          chain,
+          chainId,
+          router,
+          fromToken,
+          toToken,
+          amount: amount.toString(),
+          recipient,
+          slippage,
+          executable: false,
+          note: 'Set ZEROX_API_KEY (from dashboard.0x.org) to fetch executable calldata via the 0x aggregator. Returning a route reference only — this calldata will NOT execute.',
+          plan: {
+            provider: 'Uniswap V3',
+            estimatedOutput: 'unknown (no aggregator key configured)',
+            calldata: '0x',
+            requiresApproval: true,
+            approvalAddress: router
+          }
+        },
+        null,
+        2
+      )
+    }
+
+    // Live 0x allowance-holder quote — returns ready-to-send transaction data
+    // without requiring a Permit2 signature.
+    try {
+      const sp = new URLSearchParams({
+        chainId: String(chainId),
+        sellToken: fromToken,
+        buyToken: toToken,
+        sellAmount: amount.toString(),
+        taker: recipient,
+        slippageBps: String(slippage)
+      })
+      const res = await fetch(`https://api.0x.org/swap/allowance-holder/quote?${sp.toString()}`, {
+        headers: { '0x-api-key': apiKey, '0x-version': 'v2' },
+        signal: AbortSignal.timeout(10000)
+      })
+      const quote = (await res.json().catch(() => ({}))) as {
+        liquidityAvailable?: boolean
+        buyAmount?: string
+        minBuyAmount?: string
+        transaction?: { to?: string; data?: string; value?: string; gas?: string }
+        issues?: { allowance?: { spender?: string } | null }
+        reason?: string
+      }
+      if (!res.ok || quote.liquidityAvailable === false || !quote.transaction?.data) {
+        return JSON.stringify(
+          {
+            chain,
+            chainId,
+            executable: false,
+            error: quote.reason || `0x quote failed (HTTP ${res.status})`,
+            note: 'The 0x aggregator returned no executable route for this pair/amount.'
+          },
+          null,
+          2
+        )
+      }
+      const allowanceSpender = quote.issues?.allowance?.spender ?? null
+      return JSON.stringify(
+        {
+          chain,
+          chainId,
+          provider: '0x Aggregator',
+          executable: true,
+          fromToken,
+          toToken,
+          amount: amount.toString(),
+          recipient,
+          slippageBps: slippage,
+          buyAmount: quote.buyAmount,
+          minBuyAmount: quote.minBuyAmount,
+          transaction: {
+            to: quote.transaction.to,
+            data: quote.transaction.data,
+            value: quote.transaction.value ?? '0',
+            gas: quote.transaction.gas ?? null
+          },
+          requiresApproval: !!allowanceSpender,
+          approvalAddress: allowanceSpender
+        },
+        null,
+        2
+      )
+    } catch (e) {
+      return JSON.stringify(
+        {
+          chain,
+          chainId,
+          executable: false,
+          error: e instanceof Error ? e.message : String(e),
+          note: 'Failed to reach the 0x aggregator.'
+        },
+        null,
+        2
+      )
+    }
   }
 }
 

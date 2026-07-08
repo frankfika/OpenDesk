@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } fr
 import type { MemoryStore } from '../../shared/types-memory'
 
 function getMemoryDir(): string {
-  const dir = join(app.getPath('userData'), 'opendesk', 'memory')
+  const dir = join(app.getPath('userData'), 'memory')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }

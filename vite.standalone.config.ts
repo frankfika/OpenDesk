@@ -10,6 +10,7 @@ import { resolve } from 'path'
 function apiProxyPlugin(): Plugin {
   const ROUTES: Array<{ prefix: string; upstream: string; strip: number }> = [
     { prefix: '/api/rpc', upstream: 'https://eth.merkle.io', strip: '/api/rpc'.length },
+    { prefix: '/api/coingecko', upstream: 'https://api.coingecko.com', strip: '/api/coingecko'.length },
     { prefix: '/api/ens', upstream: 'https://api.ensideas.com', strip: '/api/ens'.length },
     { prefix: '/api/base', upstream: 'https://base.publicnode.com', strip: '/api/base'.length },
     { prefix: '/api/arb', upstream: 'https://arbitrum-one.publicnode.com', strip: '/api/arb'.length },

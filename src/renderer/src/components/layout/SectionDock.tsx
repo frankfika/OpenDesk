@@ -24,7 +24,7 @@ export default function SectionDock({ className = '', assistantView }: SectionDo
   const def = SECTIONS.find((s) => s.id === activeSection)
 
   if (activeSection === 'assistant') {
-    return <div className={className}>{assistantView}</div>
+    return <div className={`h-full ${className}`}>{assistantView}</div>
   }
 
   if (activeSection === 'experts') {

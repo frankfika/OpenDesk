@@ -13,7 +13,7 @@ const healthRecords = new Map<string, HealthRecord>()
 let intervalId: NodeJS.Timeout | null = null
 
 function getConfigDir(): string {
-  const dir = join(app.getPath('userData'), 'opendesk')
+  const dir = app.getPath('userData')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }

@@ -5,7 +5,7 @@ import type { AppSettings, Message, Thread } from '../shared/types'
 import { settings, setSettings, defaultSettings } from './app-state'
 
 export function getConfigDir(): string {
-  const dir = join(app.getPath('userData'), 'opendesk')
+  const dir = app.getPath('userData')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -125,8 +125,14 @@ export function saveMessages(threadId: string, messages: Message[]): void {
 }
 
 export function initSettings(): void {
-  const migrated = loadSettingsFromDisk()
-  setSettings(migrated)
-  // Persist any migrated values (e.g. approvalMode) so the migration happens only once
-  saveSettingsToDisk(migrated)
+  try {
+    const migrated = loadSettingsFromDisk()
+    setSettings(migrated)
+    // Persist any migrated values (e.g. approvalMode) so the migration happens only once
+    saveSettingsToDisk(migrated)
+  } catch (err) {
+    // Don't let a disk/permission failure crash app startup. Fall back to defaults in memory.
+    console.error('[persistence] initSettings failed, falling back to defaults:', err)
+    setSettings({ ...defaultSettings })
+  }
 }

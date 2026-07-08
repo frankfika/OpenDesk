@@ -286,6 +286,25 @@ function shortAddr(a: string): string {
 export { shortAddr }
 
 /* ------------------------------------------------------------------ */
+/* Etherscan v2 unified endpoint                                         */
+/* ------------------------------------------------------------------ */
+// Etherscan sunset the per-chain v1 hosts (api.basescan.org, api.arbiscan.io …)
+// in favour of one multichain endpoint keyed by chainid. A single API key
+// works across all supported chains. Without a key the endpoint still answers
+// but is heavily rate-limited, so we degrade to empty results rather than crash.
+const ETHERSCAN_V2_BASE = 'https://api.etherscan.io/v2/api'
+const ETHERSCAN_API_KEY =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_ETHERSCAN_API_KEY ?? ''
+
+function explorerUrl(chain: ChainKey, params: Record<string, string | number>): string {
+  const sp = new URLSearchParams()
+  sp.set('chainid', String(CHAINS[chain].chain.id))
+  for (const [k, v] of Object.entries(params)) sp.set(k, String(v))
+  if (ETHERSCAN_API_KEY) sp.set('apikey', ETHERSCAN_API_KEY)
+  return `${ETHERSCAN_V2_BASE}?${sp.toString()}`
+}
+
+/* ------------------------------------------------------------------ */
 /* Async data fetching helper                                            */
 /* ------------------------------------------------------------------ */
 
@@ -429,8 +448,7 @@ interface EtherscanResponse<T> {
 export function useTokenList(address: string | null, chain: ChainKey): AsyncState<TokenHolding[]> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return []
-    const apiBase = CHAINS[chain].explorerApi
-    const url = `${apiBase}/api?module=account&action=tokenlist&address=${address}`
+    const url = explorerUrl(chain, { module: 'account', action: 'tokenlist', address })
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) throw new Error(`Etherscan HTTP ${res.status}`)
     const data = (await res.json()) as EtherscanResponse<EtherscanTokenRow>
@@ -508,14 +526,22 @@ const METHOD_SIG_MAP: Record<string, string> = {
 export function useActivity(address: string | null, chain: ChainKey, limit = 12): AsyncState<ActivityItem[]> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return []
-    const apiBase = CHAINS[chain].explorerApi
-    const url = `${apiBase}/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc`
+    const url = explorerUrl(chain, {
+      module: 'account',
+      action: 'txlist',
+      address,
+      startblock: 0,
+      endblock: 99999999,
+      page: 1,
+      offset: limit,
+      sort: 'desc'
+    })
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) throw new Error(`Etherscan HTTP ${res.status}`)
     const data = (await res.json()) as EtherscanResponse<EtherscanTxRow>
     if (data.status !== '1' || !Array.isArray(data.result)) return []
     const list: ActivityItem[] = (data.result as EtherscanTxRow[]).map((tx) => {
-      const ts = parseInt(tx.timeStamp, 16) * 1000
+      const ts = parseInt(tx.timeStamp, 10) * 1000
       const value = BigInt(tx.value || '0')
       const direction: 'in' | 'out' | 'self' =
         tx.from.toLowerCase() === address.toLowerCase() && tx.to.toLowerCase() === address.toLowerCase()
@@ -525,7 +551,7 @@ export function useActivity(address: string | null, chain: ChainKey, limit = 12)
           : 'in'
       return {
         hash: tx.hash,
-        blockNumber: parseInt(tx.blockNumber, 16),
+        blockNumber: parseInt(tx.blockNumber, 10),
         timestamp: ts,
         from: tx.from,
         to: tx.to,
@@ -564,8 +590,7 @@ export interface TokenTransfer {
 export function useTokenTransfers(address: string | null, chain: ChainKey, limit = 10): AsyncState<TokenTransfer[]> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return []
-    const apiBase = CHAINS[chain].explorerApi
-    const url = `${apiBase}/api?module=account&action=tokentx&address=${address}&page=1&offset=${limit}&sort=desc`
+    const url = explorerUrl(chain, { module: 'account', action: 'tokentx', address, page: 1, offset: limit, sort: 'desc' })
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) throw new Error(`Etherscan HTTP ${res.status}`)
     const data = (await res.json()) as EtherscanResponse<EtherscanTransferRow>
@@ -575,8 +600,8 @@ export function useTokenTransfers(address: string | null, chain: ChainKey, limit
       const value = BigInt(tx.value || '0')
       return {
         hash: tx.hash,
-        blockNumber: parseInt(tx.blockNumber, 16),
-        timestamp: parseInt(tx.timeStamp, 16) * 1000,
+        blockNumber: parseInt(tx.blockNumber, 10),
+        timestamp: parseInt(tx.timeStamp, 10) * 1000,
         from: tx.from,
         to: tx.to,
         value: value.toString(),

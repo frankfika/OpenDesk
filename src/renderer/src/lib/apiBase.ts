@@ -34,3 +34,17 @@ export const CHAIN_RPC: Record<string, string> = {
   scroll: API_BASE.scroll,
   mantle: API_BASE.mantle
 }
+
+// True only in the real Electron renderer. The browser preview loads a stub
+// `window.api` (see api-stub.ts) that intentionally omits `chat.send`, so we
+// key off that rather than `window.api` existence. Evaluated lazily because
+// the preload/stub may attach after this module is first imported.
+export function isElectron(): boolean {
+  return typeof window !== 'undefined' && !!(window as { api?: { chat?: { send?: unknown } } }).api?.chat?.send
+}
+
+// CoinGecko REST base. Electron has no CORS so we hit the API directly; the
+// browser preview routes through the Vite dev proxy (see vite.standalone.config.ts).
+export function coingeckoBase(): string {
+  return isElectron() ? 'https://api.coingecko.com/api/v3' : '/api/coingecko/api/v3'
+}

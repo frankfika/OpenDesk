@@ -38,10 +38,13 @@ export default function Web3Workbench(): JSX.Element {
         <TopBar />
       </div>
 
-      <div className="relative z-10 flex flex-1 min-h-0" style={{ background: '#0a0a0a' }}>
+      <div className="relative z-10 flex flex-1 min-h-0">
         <LeftSidebar />
 
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden" style={{ background: '#0a0a0a' }}>
+        <main
+          className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden"
+          style={{ background: 'linear-gradient(to bottom, rgba(10,10,10,0.85) 0%, #0a0a0a 40%)' }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeScenario}

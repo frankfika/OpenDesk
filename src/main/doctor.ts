@@ -21,7 +21,7 @@ function checkElectronVersion(): DoctorCheck {
 }
 
 function checkProviders(): DoctorCheck {
-  const settingsPath = join(app.getPath('userData'), 'opendesk', 'settings.json')
+  const settingsPath = join(app.getPath('userData'), 'settings.json')
   if (!existsSync(settingsPath)) {
     return { name: 'Provider Config', status: 'warn', message: 'No settings file found' }
   }

@@ -32,7 +32,12 @@ function createWindow(): BrowserWindow {
     backgroundColor,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: true,
+      // OS-level renderer sandbox is only safe in packaged builds. In dev,
+      // Electron's helper renderer is often blocked (sandbox initialization
+      // failed: Operation not permitted) on macOS, which crashes the GPU
+      // process and the whole window. Keep the same isolation guarantees
+      // (contextIsolation + nodeIntegration: false) regardless.
+      sandbox: !app.isPackaged ? false : true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -90,7 +95,7 @@ async function detectOllama(): Promise<{ available: boolean; models: string[] }>
 
 function loadSettings(): AppSettings {
   try {
-    const dir = join(app.getPath('userData'), 'opendesk')
+    const dir = app.getPath('userData')
     const path = join(dir, 'settings.json')
     if (!existsSync(path)) return {}
     return JSON.parse(readFileSync(path, 'utf-8')) as AppSettings
@@ -101,7 +106,7 @@ function loadSettings(): AppSettings {
 
 function saveSettings(settings: AppSettings): void {
   try {
-    const dir = join(app.getPath('userData'), 'opendesk')
+    const dir = app.getPath('userData')
     const path = join(dir, 'settings.json')
     writeFileSync(path, JSON.stringify(settings, null, 2))
   } catch {
