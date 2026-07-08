@@ -18,6 +18,7 @@ import { X } from 'lucide-react'
 interface SettingsModalProps {
   open: boolean
   onClose: () => void
+  initialTab?: string
 }
 
 const TAB_LIST = [
@@ -29,7 +30,7 @@ const TAB_LIST = [
   { id: 'about', label: 'About' }
 ]
 
-export default function SettingsModal({ open, onClose }: SettingsModalProps) {
+export default function SettingsModal({ open, onClose, initialTab }: SettingsModalProps) {
   const {
     settings,
     addProvider,
@@ -267,7 +268,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Dialog.Close>
               </div>
 
-              <Tabs.Root defaultValue="providers" className="flex flex-col flex-1 min-h-0">
+              <Tabs.Root defaultValue={initialTab ?? 'providers'} className="flex flex-col flex-1 min-h-0">
                 <Tabs.List className="flex px-5 gap-1 border-b border-[var(--border)] shrink-0 overflow-x-auto">
                   {TAB_LIST.map((tab) => (
                     <Tabs.Trigger

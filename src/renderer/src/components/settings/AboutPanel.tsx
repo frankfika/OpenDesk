@@ -1,4 +1,4 @@
-import { RefreshCw, ExternalLink, FileText, ChevronRight } from 'lucide-react'
+import { RefreshCw, ExternalLink, FileText, ChevronRight, Heart } from 'lucide-react'
 import { useToast } from '../../store/toast'
 import packageJson from '../../../../../package.json'
 
@@ -8,9 +8,33 @@ export default function AboutPanel() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="text-center py-4">
-        <div className="text-2xl font-bold mb-1 text-[var(--text-primary)]">OpenDesk</div>
-        <div className="text-[13px] text-[var(--text-muted)]">v{version} · Apache 2.0</div>
+      {/* Brand block */}
+      <div className="flex flex-col items-center gap-3 py-4">
+        <div
+          className="relative flex items-center justify-center rounded-2xl shadow-subtle overflow-hidden"
+          style={{
+            width: 88,
+            height: 88,
+            background:
+              'linear-gradient(135deg, rgba(29,140,128,0.12) 0%, rgba(29,140,128,0.04) 50%, rgba(29,140,128,0.18) 100%)',
+            border: '1px solid rgba(29,140,128,0.25)'
+          }}
+        >
+          <img
+            src="../../../resources/logo-1024.png"
+            alt="OpenDesk logo"
+            width={64}
+            height={64}
+            className="rounded-xl"
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+        <div className="text-center">
+          <div className="text-xl font-bold text-[var(--text-primary)] tracking-tight">OpenDesk</div>
+          <div className="text-[11px] text-[var(--text-muted)] mt-1">
+            v{version} · Apache 2.0 · Made with <Heart size={10} className="inline -mt-0.5 text-[var(--accent)]" /> for makers
+          </div>
+        </div>
       </div>
 
       <button

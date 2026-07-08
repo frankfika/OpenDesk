@@ -4,23 +4,30 @@ import { join } from 'path'
 let trayInstance: Tray | null = null
 
 function createIcon(): NativeImage {
-  // Try to use bundled icon
-  const iconPath = join(process.resourcesPath || __dirname, 'resources', 'icon.png')
-  if (existsSync(iconPath)) {
-    return nativeImage.createFromPath(iconPath)
+  // Try multiple candidate paths for dev + packaged environments.
+  const candidates = [
+    join(process.resourcesPath || '', 'resources', 'icon.png'),
+    join(process.resourcesPath || '', 'icon.png'),
+    join(app.getAppPath(), 'resources', 'icon.png'),
+    join(__dirname, '..', '..', 'resources', 'icon.png'),
+    join(__dirname, '..', '..', '..', 'resources', 'icon.png'),
+    join(__dirname, 'resources', 'icon.png')
+  ]
+  for (const p of candidates) {
+    if (p && fsExists(p)) {
+      const img = nativeImage.createFromPath(p)
+      if (!img.isEmpty()) return img
+    }
   }
 
-  // Fallback: generate a simple 16x16 template icon (transparent with a dot)
-  const size = { width: 16, height: 16 }
-  // Create a simple colored square as fallback
-  const canvas = nativeImage.createFromBuffer(Buffer.alloc(size.width * size.height * 4), size)
-  return canvas
+  // Fallback: empty 16x16 image (OS will render as a generic icon)
+  return nativeImage.createEmpty()
 }
 
-function existsSync(p: string): boolean {
+function fsExists(p: string): boolean {
   try {
-    const { existsSync: fsExists } = require('fs')
-    return fsExists(p)
+    const { existsSync } = require('fs')
+    return existsSync(p)
   } catch {
     return false
   }

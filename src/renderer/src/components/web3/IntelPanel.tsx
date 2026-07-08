@@ -9,6 +9,9 @@ const QUICK_PICKS = [
   { label: 'brantly.eth', address: '0x89622819d6efdc8b04899b66a1c93b1cb793ae16' }
 ]
 
+const ACCENT = 'var(--web3-intel)'
+const ACCENT_DIM = 'var(--web3-intel-dim)'
+
 export default function IntelPanel(): JSX.Element {
   const [input, setInput] = useState('')
 
@@ -27,14 +30,14 @@ export default function IntelPanel(): JSX.Element {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, rgba(98, 126, 234, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)' }}
+        style={{ background: `linear-gradient(180deg, ${ACCENT}1a 0%, rgba(0, 0, 0, 0.4) 100%)` }}
       >
         <div
           className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(98, 126, 234, 0.2) 0%, transparent 70%)' }}
+          style={{ background: `radial-gradient(circle, ${ACCENT}33 0%, transparent 70%)` }}
         />
         <div className="relative">
-          <div className="flex items-center gap-2 web3-label mb-2" style={{ color: '#627eea' }}>
+          <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
             <ScanLine size={11} />
             Chain Intel
           </div>
@@ -53,20 +56,20 @@ export default function IntelPanel(): JSX.Element {
               key={q.address}
               type="button"
               onClick={() => handleQuick(q.label)}
-              className="w-full text-left rounded-lg border border-[#1f1f23] bg-[#141416] hover:bg-[#1a1a1d] hover:border-[#627eea]/30 px-3 py-2.5 transition-colors group"
+              className="w-full text-left rounded-lg border border-[var(--web3-border)] bg-[var(--web3-card)] hover:bg-[var(--web3-card-hover)] hover:border-[var(--web3-border-strong)] px-3 py-2.5 transition-colors group"
             >
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(98, 126, 234, 0.15)', border: '1px solid rgba(98, 126, 234, 0.3)' }}
+                  style={{ background: `${ACCENT}26`, border: `1px solid ${ACCENT}4d` }}
                 >
-                  <User size={12} style={{ color: '#627eea' }} />
+                  <User size={12} style={{ color: ACCENT }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12.5px] font-mono font-semibold text-white">{q.label}</div>
                   <div className="web3-label web3-text-muted truncate">{q.address}</div>
                 </div>
-                <ArrowRight size={12} className="text-white/20 group-hover:text-[#627eea] group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight size={12} className="web3-text-muted opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" style={{ color: ACCENT }} />
               </div>
             </button>
           ))}
@@ -89,7 +92,7 @@ export default function IntelPanel(): JSX.Element {
             onClick={handleCustom}
             disabled={!input.trim()}
             className="web3-btn web3-btn-primary disabled:opacity-30"
-            style={{ background: 'linear-gradient(135deg, #627eea, #3b5dc7)' }}
+            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DIM})` }}
           >
             <Sparkles size={11} />
             Analyze
@@ -101,19 +104,19 @@ export default function IntelPanel(): JSX.Element {
         <div className="web3-label mb-2">What the report covers</div>
         <ul className="text-[11.5px] web3-text-body space-y-1">
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: '#627eea' }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
             Net worth across Ethereum, Base, Arbitrum, Optimism, Polygon, BNB
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: '#627eea' }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
             Top 10 tokens with USD value, 24h change, 7-day sparkline
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: '#627eea' }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
             Active token approvals with risk scoring
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: '#627eea' }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
             Recent transactions + verdict on wallet type
           </li>
         </ul>

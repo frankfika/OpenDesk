@@ -8,13 +8,46 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPublicClient, http, formatUnits, getAddress, formatEther } from 'viem'
 import type { Chain, PublicClient } from 'viem'
-import { mainnet, base, arbitrum, optimism, polygon, bsc, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy, bscTestnet } from 'viem/chains'
+import {
+  mainnet,
+  base,
+  arbitrum,
+  optimism,
+  polygon,
+  bsc,
+  zksync,
+  linea,
+  scroll,
+  mantle,
+  sepolia,
+  baseSepolia,
+  arbitrumSepolia,
+  optimismSepolia,
+  polygonAmoy,
+  bscTestnet
+} from 'viem/chains'
 
 /* ------------------------------------------------------------------ */
 /* Chain registry + clients                                              */
 /* ------------------------------------------------------------------ */
 
-export type ChainKey = 'ethereum' | 'base' | 'arbitrum' | 'optimism' | 'polygon' | 'bsc' | 'sepolia' | 'base-sepolia' | 'arbitrum-sepolia' | 'optimism-sepolia' | 'polygon-amoy' | 'bsc-testnet'
+export type ChainKey =
+  | 'ethereum'
+  | 'base'
+  | 'arbitrum'
+  | 'optimism'
+  | 'polygon'
+  | 'bsc'
+  | 'zksync'
+  | 'linea'
+  | 'scroll'
+  | 'mantle'
+  | 'sepolia'
+  | 'base-sepolia'
+  | 'arbitrum-sepolia'
+  | 'optimism-sepolia'
+  | 'polygon-amoy'
+  | 'bsc-testnet'
 
 interface ChainMeta {
   key: ChainKey
@@ -30,21 +63,201 @@ interface ChainMeta {
 }
 
 export const CHAINS: Record<ChainKey, ChainMeta> = {
-  ethereum: { key: 'ethereum', chain: mainnet, name: 'Ethereum', symbol: 'ETH', color: '#627eea', shortName: 'ETH', explorer: 'https://etherscan.io', explorerApi: 'https://api.etherscan.io', isTestnet: false, coingeckoPlatform: 'ethereum' },
-  base: { key: 'base', chain: base, name: 'Base', symbol: 'ETH', color: '#0052ff', shortName: 'Base', explorer: 'https://basescan.org', explorerApi: 'https://api.basescan.org', isTestnet: false, coingeckoPlatform: 'base' },
-  arbitrum: { key: 'arbitrum', chain: arbitrum, name: 'Arbitrum', symbol: 'ETH', color: '#28a0f0', shortName: 'Arb', explorer: 'https://arbiscan.io', explorerApi: 'https://api.arbiscan.io', isTestnet: false, coingeckoPlatform: 'arbitrum-one' },
-  optimism: { key: 'optimism', chain: optimism, name: 'Optimism', symbol: 'ETH', color: '#ff0420', shortName: 'OP', explorer: 'https://optimistic.etherscan.io', explorerApi: 'https://api-optimistic.etherscan.io', isTestnet: false, coingeckoPlatform: 'optimistic-ethereum' },
-  polygon: { key: 'polygon', chain: polygon, name: 'Polygon', symbol: 'POL', color: '#8247e5', shortName: 'POL', explorer: 'https://polygonscan.com', explorerApi: 'https://api.polygonscan.com', isTestnet: false, coingeckoPlatform: 'polygon-pos' },
-  bsc: { key: 'bsc', chain: bsc, name: 'BNB Chain', symbol: 'BNB', color: '#f3ba2f', shortName: 'BNB', explorer: 'https://bscscan.com', explorerApi: 'https://api.bscscan.com', isTestnet: false, coingeckoPlatform: 'binance-smart-chain' },
-  sepolia: { key: 'sepolia', chain: sepolia, name: 'Sepolia', symbol: 'ETH', color: '#627eea', shortName: 'Sep', explorer: 'https://sepolia.etherscan.io', explorerApi: 'https://api-sepolia.etherscan.io', isTestnet: true, coingeckoPlatform: 'ethereum' },
-  'base-sepolia': { key: 'base-sepolia', chain: baseSepolia, name: 'Base Sepolia', symbol: 'ETH', color: '#0052ff', shortName: 'Base-S', explorer: 'https://sepolia.basescan.org', explorerApi: 'https://api-sepolia.basescan.org', isTestnet: true, coingeckoPlatform: 'base' },
-  'arbitrum-sepolia': { key: 'arbitrum-sepolia', chain: arbitrumSepolia, name: 'Arb Sepolia', symbol: 'ETH', color: '#28a0f0', shortName: 'Arb-S', explorer: 'https://sepolia.arbiscan.io', explorerApi: 'https://api-sepolia.arbiscan.io', isTestnet: true, coingeckoPlatform: 'arbitrum-one' },
-  'optimism-sepolia': { key: 'optimism-sepolia', chain: optimismSepolia, name: 'OP Sepolia', symbol: 'ETH', color: '#ff0420', shortName: 'OP-S', explorer: 'https://sepolia-optimism.etherscan.io', explorerApi: 'https://api-sepolia-optimistic.etherscan.io', isTestnet: true, coingeckoPlatform: 'optimistic-ethereum' },
-  'polygon-amoy': { key: 'polygon-amoy', chain: polygonAmoy, name: 'Polygon Amoy', symbol: 'POL', color: '#8247e5', shortName: 'Amoy', explorer: 'https://amoy.polygonscan.com', explorerApi: 'https://api-amoy.polygonscan.com', isTestnet: true, coingeckoPlatform: 'polygon-pos' },
-  'bsc-testnet': { key: 'bsc-testnet', chain: bscTestnet, name: 'BNB Testnet', symbol: 'BNB', color: '#f3ba2f', shortName: 'BNB-S', explorer: 'https://testnet.bscscan.com', explorerApi: 'https://api-testnet.bscscan.com', isTestnet: true, coingeckoPlatform: 'binance-smart-chain' }
+  ethereum: {
+    key: 'ethereum',
+    chain: mainnet,
+    name: 'Ethereum',
+    symbol: 'ETH',
+    color: '#627eea',
+    shortName: 'ETH',
+    explorer: 'https://etherscan.io',
+    explorerApi: 'https://api.etherscan.io',
+    isTestnet: false,
+    coingeckoPlatform: 'ethereum'
+  },
+  base: {
+    key: 'base',
+    chain: base,
+    name: 'Base',
+    symbol: 'ETH',
+    color: '#0052ff',
+    shortName: 'Base',
+    explorer: 'https://basescan.org',
+    explorerApi: 'https://api.basescan.org',
+    isTestnet: false,
+    coingeckoPlatform: 'base'
+  },
+  arbitrum: {
+    key: 'arbitrum',
+    chain: arbitrum,
+    name: 'Arbitrum',
+    symbol: 'ETH',
+    color: '#28a0f0',
+    shortName: 'Arb',
+    explorer: 'https://arbiscan.io',
+    explorerApi: 'https://api.arbiscan.io',
+    isTestnet: false,
+    coingeckoPlatform: 'arbitrum-one'
+  },
+  optimism: {
+    key: 'optimism',
+    chain: optimism,
+    name: 'Optimism',
+    symbol: 'ETH',
+    color: '#ff0420',
+    shortName: 'OP',
+    explorer: 'https://optimistic.etherscan.io',
+    explorerApi: 'https://api-optimistic.etherscan.io',
+    isTestnet: false,
+    coingeckoPlatform: 'optimistic-ethereum'
+  },
+  polygon: {
+    key: 'polygon',
+    chain: polygon,
+    name: 'Polygon',
+    symbol: 'POL',
+    color: '#8247e5',
+    shortName: 'POL',
+    explorer: 'https://polygonscan.com',
+    explorerApi: 'https://api.polygonscan.com',
+    isTestnet: false,
+    coingeckoPlatform: 'polygon-pos'
+  },
+  bsc: {
+    key: 'bsc',
+    chain: bsc,
+    name: 'BNB Chain',
+    symbol: 'BNB',
+    color: '#f3ba2f',
+    shortName: 'BNB',
+    explorer: 'https://bscscan.com',
+    explorerApi: 'https://api.bscscan.com',
+    isTestnet: false,
+    coingeckoPlatform: 'binance-smart-chain'
+  },
+  zksync: {
+    key: 'zksync',
+    chain: zksync,
+    name: 'zkSync',
+    symbol: 'ETH',
+    color: '#8c8df7',
+    shortName: 'zkSync',
+    explorer: 'https://explorer.zksync.io',
+    explorerApi: 'https://block-explorer-api.mainnet.zksync.io',
+    isTestnet: false,
+    coingeckoPlatform: 'zksync'
+  },
+  linea: {
+    key: 'linea',
+    chain: linea,
+    name: 'Linea',
+    symbol: 'ETH',
+    color: '#121212',
+    shortName: 'Linea',
+    explorer: 'https://lineascan.build',
+    explorerApi: 'https://api.lineascan.build',
+    isTestnet: false,
+    coingeckoPlatform: 'linea'
+  },
+  scroll: {
+    key: 'scroll',
+    chain: scroll,
+    name: 'Scroll',
+    symbol: 'ETH',
+    color: '#ffdecb',
+    shortName: 'Scroll',
+    explorer: 'https://scrollscan.com',
+    explorerApi: 'https://api.scrollscan.com',
+    isTestnet: false,
+    coingeckoPlatform: 'scroll'
+  },
+  mantle: {
+    key: 'mantle',
+    chain: mantle,
+    name: 'Mantle',
+    symbol: 'MNT',
+    color: '#65b3ae',
+    shortName: 'Mantle',
+    explorer: 'https://explorer.mantle.xyz',
+    explorerApi: 'https://api.mantle.xyz',
+    isTestnet: false,
+    coingeckoPlatform: 'mantle'
+  },
+  sepolia: {
+    key: 'sepolia',
+    chain: sepolia,
+    name: 'Sepolia',
+    symbol: 'ETH',
+    color: '#627eea',
+    shortName: 'Sep',
+    explorer: 'https://sepolia.etherscan.io',
+    explorerApi: 'https://api-sepolia.etherscan.io',
+    isTestnet: true,
+    coingeckoPlatform: 'ethereum'
+  },
+  'base-sepolia': {
+    key: 'base-sepolia',
+    chain: baseSepolia,
+    name: 'Base Sepolia',
+    symbol: 'ETH',
+    color: '#0052ff',
+    shortName: 'Base-S',
+    explorer: 'https://sepolia.basescan.org',
+    explorerApi: 'https://api-sepolia.basescan.org',
+    isTestnet: true,
+    coingeckoPlatform: 'base'
+  },
+  'arbitrum-sepolia': {
+    key: 'arbitrum-sepolia',
+    chain: arbitrumSepolia,
+    name: 'Arb Sepolia',
+    symbol: 'ETH',
+    color: '#28a0f0',
+    shortName: 'Arb-S',
+    explorer: 'https://sepolia.arbiscan.io',
+    explorerApi: 'https://api-sepolia.arbiscan.io',
+    isTestnet: true,
+    coingeckoPlatform: 'arbitrum-one'
+  },
+  'optimism-sepolia': {
+    key: 'optimism-sepolia',
+    chain: optimismSepolia,
+    name: 'OP Sepolia',
+    symbol: 'ETH',
+    color: '#ff0420',
+    shortName: 'OP-S',
+    explorer: 'https://sepolia-optimism.etherscan.io',
+    explorerApi: 'https://api-sepolia-optimistic.etherscan.io',
+    isTestnet: true,
+    coingeckoPlatform: 'optimistic-ethereum'
+  },
+  'polygon-amoy': {
+    key: 'polygon-amoy',
+    chain: polygonAmoy,
+    name: 'Polygon Amoy',
+    symbol: 'POL',
+    color: '#8247e5',
+    shortName: 'Amoy',
+    explorer: 'https://amoy.polygonscan.com',
+    explorerApi: 'https://api-amoy.polygonscan.com',
+    isTestnet: true,
+    coingeckoPlatform: 'polygon-pos'
+  },
+  'bsc-testnet': {
+    key: 'bsc-testnet',
+    chain: bscTestnet,
+    name: 'BNB Testnet',
+    symbol: 'BNB',
+    color: '#f3ba2f',
+    shortName: 'BNB-S',
+    explorer: 'https://testnet.bscscan.com',
+    explorerApi: 'https://api-testnet.bscscan.com',
+    isTestnet: true,
+    coingeckoPlatform: 'binance-smart-chain'
+  }
 }
 
-const MAINNET_KEYS: ChainKey[] = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon', 'bsc']
+const MAINNET_KEYS: ChainKey[] = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon', 'bsc', 'zksync', 'linea', 'scroll', 'mantle']
 export { MAINNET_KEYS }
 
 const chainClients = new Map<ChainKey, PublicClient>()

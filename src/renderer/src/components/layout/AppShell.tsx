@@ -25,6 +25,7 @@ function genId() {
 
 export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [skillsPanelOpen, setSkillsPanelOpen] = useState(false)
   const [memoryPanelOpen, setMemoryPanelOpen] = useState(false)
@@ -120,6 +121,17 @@ export default function AppShell() {
       newThread()
     }
   }, [activeWorkspace, createThread, newThread])
+
+  // 监听来自 ChatHeader / CommandPalette 的"打开 Settings 并跳到指定 tab"
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string }>).detail
+      if (detail?.tab) setSettingsInitialTab(detail.tab)
+      setSettingsOpen(true)
+    }
+    window.addEventListener('opendesk:open-settings', handler)
+    return () => window.removeEventListener('opendesk:open-settings', handler)
+  }, [])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -263,7 +275,14 @@ export default function AppShell() {
         <AnimatePresence>
           {settingsOpen && (
             <ErrorBoundary>
-              <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+              <SettingsModal
+                open={settingsOpen}
+                onClose={() => {
+                  setSettingsOpen(false)
+                  setSettingsInitialTab(undefined)
+                }}
+                initialTab={settingsInitialTab}
+              />
             </ErrorBoundary>
           )}
         </AnimatePresence>

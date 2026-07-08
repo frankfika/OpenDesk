@@ -27,15 +27,17 @@ export interface PoolOptions {
   workers: Array<Pick<PoolWorker, 'providerId' | 'model' | 'threadId'>>
   /** Runner is called once per worker; it returns a Promise of the assistant text. */
   runner: (worker: PoolWorker) => Promise<string>
+  /** Optional: summarizes all results into one final answer. */
+  summarizer?: (results: Array<{ providerId: string; text: string }>) => Promise<string>
   onWorkerUpdate?: (worker: PoolWorker) => void
-  onComplete?: (workers: PoolWorker[]) => void
+  onComplete?: (workers: PoolWorker[], summary?: string) => void
 }
 
 export interface PoolHandle {
   id: string
   workers: PoolWorker[]
   cancel(): void
-  done: Promise<PoolWorker[]>
+  done: Promise<{ workers: PoolWorker[]; summary?: string }>
 }
 
 const uuid = (): string => {
@@ -63,7 +65,7 @@ export function runWorkerPool(opts: PoolOptions): PoolHandle {
     cancelled = true
   }
 
-  const done = (async (): Promise<PoolWorker[]> => {
+  const done = (async (): Promise<{ workers: PoolWorker[]; summary?: string }> => {
     await Promise.all(
       workers.map(async (w, idx) => {
         if (cancelled) {
@@ -87,8 +89,24 @@ export function runWorkerPool(opts: PoolOptions): PoolHandle {
         }
       })
     )
-    opts.onComplete?.(workers)
-    return workers
+
+    let summary: string | undefined
+    if (!cancelled && opts.summarizer) {
+      const successfulResults = workers
+        .filter((w) => w.status === 'success' && w.resultText)
+        .map((w) => ({ providerId: w.providerId, text: w.resultText! }))
+
+      if (successfulResults.length > 0) {
+        try {
+          summary = await opts.summarizer(successfulResults)
+        } catch (err) {
+          console.error('[WorkerPool] Summary failed:', err)
+        }
+      }
+    }
+
+    opts.onComplete?.(workers, summary)
+    return { workers, summary }
   })()
 
   return { id, workers, cancel, done }

@@ -15,7 +15,9 @@ function createWindow(): BrowserWindow {
   const settings = loadSettings()
   const theme = settings.theme ?? 'system'
   const isDark = theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
-  const backgroundColor = isDark ? '#0f0f0f' : '#ffffff'
+  // Web3 workbench is always dark — keep BrowserWindow background in sync
+  // so any unrendered area never flashes white during load or resize.
+  const backgroundColor = '#0a0a0a'
 
   const win = new BrowserWindow({
     width: 1200,

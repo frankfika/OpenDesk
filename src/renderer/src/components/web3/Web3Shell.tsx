@@ -18,6 +18,8 @@ import Web3Workbench from './Web3Workbench'
 import SectionRail from '../layout/SectionRail'
 import SectionDock from '../layout/SectionDock'
 
+import { initAutomationDriver } from '../../lib/automationDriver'
+
 export default function Web3Shell(): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
@@ -29,6 +31,11 @@ export default function Web3Shell(): JSX.Element {
   const { loadWorkspaces } = useWorkspaceStore()
   const { setTheme, toggleTheme } = useThemeStore()
   const toast = useToast()
+
+  // Initialize Automation Driver
+  useEffect(() => {
+    initAutomationDriver()
+  }, [])
 
   // Memory toast listener
   useEffect(() => {
@@ -117,9 +124,9 @@ export default function Web3Shell(): JSX.Element {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-screen overflow-hidden bg-transparent">
+      <div className="flex h-screen w-screen overflow-hidden" style={{ background: '#0a0a0a' }}>
         <SectionRail />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 min-h-0" style={{ background: '#0a0a0a' }}>
           <SectionDock
             assistantView={
               <ErrorBoundary>

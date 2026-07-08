@@ -42,7 +42,7 @@ export default function LeftSidebar(): JSX.Element {
   }
 
   return (
-    <div className="relative w-60 flex flex-col border-r" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
+    <div className="relative w-60 flex flex-col h-full min-h-0 border-r" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
       {/* Scenarios — primary nav */}
       <div className="px-3 pt-4 pb-2">
         <div className="flex items-center justify-between px-2 mb-2">

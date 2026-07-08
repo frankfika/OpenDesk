@@ -5,8 +5,7 @@ import {
   FolderOpen,
   Pencil,
   CheckCircle2,
-  Trash2,
-  Hexagon
+  Trash2
 } from 'lucide-react'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import FileTree from '../files/FileTree'
@@ -115,7 +114,25 @@ export default function LeftColumn() {
         style={{ height: 'var(--titlebar-height)' }}
       >
         <div className="no-drag flex items-center gap-2 mt-1" style={{ marginLeft: 72 }}>
-          <Hexagon size={15} className="text-[var(--text-primary)]" />
+          <div
+            className="flex items-center justify-center rounded-md overflow-hidden shrink-0"
+            style={{
+              width: 22,
+              height: 22,
+              background:
+                'linear-gradient(135deg, rgba(29,140,128,0.18) 0%, rgba(29,140,128,0.06) 100%)',
+              border: '1px solid rgba(29,140,128,0.35)'
+            }}
+            aria-hidden="true"
+          >
+            <img
+              src="../../../resources/logo-1024.png"
+              alt=""
+              width={16}
+              height={16}
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
           <span className="text-[13px] font-bold tracking-tight text-[var(--text-primary)]">OpenDesk</span>
         </div>
       </div>

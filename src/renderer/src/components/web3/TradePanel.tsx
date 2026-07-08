@@ -12,6 +12,8 @@ const EXAMPLES = [
   { text: 'Check gas for an Arbitrum swap', intent: 'Read current gas prices on Arbitrum' }
 ]
 
+const ACCENT = 'var(--web3-trade)'
+
 export default function TradePanel(): JSX.Element {
   const [input, setInput] = useState('')
   const { isConnected } = useAccount()
@@ -27,14 +29,14 @@ export default function TradePanel(): JSX.Element {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, rgba(29, 140, 128, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)' }}
+        style={{ background: `linear-gradient(180deg, ${ACCENT}1a 0%, rgba(0, 0, 0, 0.4) 100%)` }}
       >
         <div
           className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(29, 140, 128, 0.25) 0%, transparent 70%)' }}
+          style={{ background: `radial-gradient(circle, ${ACCENT}40 0%, transparent 70%)` }}
         />
         <div className="relative">
-          <div className="flex items-center gap-2 web3-label web3-status-accent mb-2">
+          <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
             <Zap size={11} />
             One-Liner Trade
           </div>
@@ -53,12 +55,12 @@ export default function TradePanel(): JSX.Element {
               key={i}
               type="button"
               onClick={() => handleExample(ex.text)}
-              className="w-full text-left rounded-lg border border-[#1f1f23] bg-[#141416] hover:bg-[#1a1a1d] hover:border-[#1D8C80]/30 px-3 py-2.5 transition-colors group"
+              className="w-full text-left rounded-lg border border-[var(--web3-border)] bg-[var(--web3-card)] hover:bg-[var(--web3-card-hover)] hover:border-[var(--web3-border-strong)] px-3 py-2.5 transition-colors group"
             >
               <div className="flex items-center gap-2">
-                <Send size={11} className="web3-status-accent opacity-60 group-hover:opacity-100" />
+                <Send size={11} className="opacity-60 group-hover:opacity-100" style={{ color: ACCENT }} />
                 <span className="text-[12px] font-mono web3-text-strong">{ex.text}</span>
-                <ChevronRight size={11} className="ml-auto text-white/20 group-hover:text-[#1D8C80] transition-colors" />
+                <ChevronRight size={11} className="ml-auto web3-text-muted opacity-50 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" style={{ color: ACCENT }} />
               </div>
               <div className="text-[10px] web3-text-muted mt-1 ml-5">→ {ex.intent}</div>
             </button>

@@ -2,48 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* OpenDesk Web3 workbench — dark only.
+   The legacy light token block is replaced by web3 dark tokens. */
 :root {
-  /* Surfaces — translucent so backdrop blur shows through */
-  --bg-sidebar: rgba(249, 249, 251, 0.64);
-  --bg-content: rgba(255, 255, 255, 0.72);
-  --bg-input: rgba(255, 255, 255, 0.60);
-  --text-primary: #111827;
-  --text-secondary: #52525b;
-  --text-muted: #a1a1aa;
-  --accent: #0f172a;
-  --accent-hover: #334155;
-  --border: rgba(228, 228, 231, 0.4);
-  --border-strong: rgba(212, 212, 216, 0.6);
-  --radius: 8px;
-  --sidebar-width: 260px;
-  --titlebar-height: 44px;
-  /* Semantic colors */
-  --success: #16a34a;
-  --success-bg: rgba(240, 253, 244, 0.5);
-  --success-border: rgba(187, 247, 208, 0.5);
-  --error: #dc2626;
-  --error-bg: rgba(254, 242, 242, 0.5);
-  --error-border: rgba(254, 202, 202, 0.5);
-  --info: #2563eb;
-  --info-bg: rgba(239, 246, 255, 0.5);
-  --info-border: rgba(191, 219, 254, 0.5);
-  --warning: #d97706;
-  --warning-bg: rgba(255, 251, 235, 0.5);
-  --warning-border: rgba(253, 230, 138, 0.5);
-}
-
-.dark {
+  /* Surfaces */
   --bg-sidebar: #0e0e10;
   --bg-content: #141416;
   --bg-input: #1a1a1d;
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
+  /* Brand teal */
   --accent: #1D8C80;
   --accent-hover: #16a085;
   --border: #2a2a2e;
   --border-strong: #3a3a3e;
-  /* Semantic colors dark */
+  --radius: 8px;
+  --sidebar-width: 260px;
+  --titlebar-height: 44px;
+  /* Semantic colors */
   --success: #4ade80;
   --success-bg: rgba(5, 46, 22, 0.5);
   --success-border: rgba(20, 83, 45, 0.5);
@@ -58,19 +35,18 @@
   --warning-border: rgba(120, 53, 15, 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.dark):not(.light) {
-    --bg-sidebar: #0e0e10;
-    --bg-content: #141416;
-    --bg-input: #1a1a1d;
-    --text-primary: #fafafa;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
-    --accent: #1D8C80;
-    --accent-hover: #16a085;
-    --border: #2a2a2e;
-    --border-strong: #3a3a3e;
-  }
+.dark {
+  /* Identical dark tokens — keep dark class as no-op for legacy code paths */
+  --bg-sidebar: #0e0e10;
+  --bg-content: #141416;
+  --bg-input: #1a1a1d;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent: #1D8C80;
+  --accent-hover: #16a085;
+  --border: #2a2a2e;
+  --border-strong: #3a3a3e;
 }
 
 * {
@@ -199,10 +175,16 @@ textarea {
   --web3-card-active: #1f1f23;
   --web3-border: #1f1f23;
   --web3-border-strong: #2a2a2e;
-  --web3-text-muted: rgba(255, 255, 255, 0.45);
-  --web3-text-secondary: rgba(255, 255, 255, 0.6);
-  --web3-text-body: rgba(255, 255, 255, 0.78);
-  --web3-text-strong: rgba(255, 255, 255, 0.95);
+  --web3-text-muted: rgba(255, 255, 255, 0.6);
+  --web3-text-secondary: rgba(255, 255, 255, 0.75);
+  --web3-text-body: rgba(255, 255, 255, 0.88);
+  --web3-text-strong: rgba(255, 255, 255, 1);
+  /* Scenario accents — single source of truth */
+  --web3-intel: #627eea;       /* Ethereum blue */
+  --web3-intel-dim: #3b5dc7;
+  --web3-trade: #1D8C80;       /* Brand teal */
+  --web3-doctor: #ffb250;      /* Amber */
+  --web3-doctor-dim: #d97706;
 }
 
 /* Card surfaces — solid color, clearly defined border */
@@ -219,9 +201,9 @@ textarea {
 /* Section labels — the only label style */
 .web3-label {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--web3-text-muted);
 }

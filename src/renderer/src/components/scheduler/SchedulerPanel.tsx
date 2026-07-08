@@ -7,7 +7,9 @@
  */
 
 import { useEffect, useState } from 'react'
-import { Clock, Plus, Trash2, Play, Pause, Pencil, X, Check } from 'lucide-react'
+import { Clock, Plus, Trash2, Play, Pause, Pencil, X, Check, Zap } from 'lucide-react'
+import { useWorkspaceStore } from '../../store/workspace'
+import type { Skill } from '@shared/types'
 
 interface ScheduledTask {
   id: string
@@ -103,11 +105,18 @@ export default function SchedulerPanel(): JSX.Element {
 }
 
 function TaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }): JSX.Element {
-  const [name, setName] = useState('每日日报')
-  const [cron, setCron] = useState('0 9 * * 1-5')
-  const [prompt, setPrompt] = useState('把昨天的销售数据生成日报，写到 ~/Reports/daily.md')
+  const [name, setName] = useState('定投策略')
+  const [cron, setCron] = useState('0 10 * * *')
+  const [kind, setKind] = useState<'skill' | 'prompt'>('skill')
+  const [skillId, setSkillId] = useState('dca-bot')
+  const [prompt, setPrompt] = useState('每期定投 100 USDC 购买 ETH (Base)')
   const [valid, setValid] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [skills, setSkills] = useState<Skill[]>([])
+
+  useEffect(() => {
+    void window.api.skills.list().then(setSkills)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -129,7 +138,7 @@ function TaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
       await window.api.app.scheduler.create({
         name,
         cron,
-        action: { kind: 'skill', skillId: 'weekly-report', prompt }
+        action: kind === 'skill' ? { kind: 'skill', skillId, prompt } : { kind: 'prompt', prompt }
       })
       onSaved()
     } catch (e) {
@@ -145,42 +154,97 @@ function TaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           <X size={11} />
         </button>
       </div>
-      <label className="block text-[10px] text-[var(--text-muted)] mt-1">任务名称</label>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full mt-0.5 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)]"
-      />
-      <label className="block text-[10px] text-[var(--text-muted)] mt-2">Cron 表达式</label>
-      <div className="flex items-center gap-2 mt-0.5">
-        <input
-          type="text"
-          value={cron}
-          onChange={(e) => setCron(e.target.value)}
-          className="flex-1 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)] font-mono"
-        />
-        <span className={`text-[10px] ${valid ? 'text-green-500' : 'text-red-500'}`}>
-          {valid === null ? '...' : valid ? '✓ 有效' : '✗ 无效'}
-        </span>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-[10px] text-[var(--text-muted)]">任务名称</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full mt-0.5 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] text-[var(--text-muted)]">Cron 表达式 (e.g. 0 10 * * * = 每天上午10点)</label>
+          <div className="flex items-center gap-2 mt-0.5">
+            <input
+              type="text"
+              value={cron}
+              onChange={(e) => setCron(e.target.value)}
+              className="flex-1 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)] font-mono"
+            />
+            <span className={`text-[10px] shrink-0 ${valid ? 'text-green-500' : 'text-red-500'}`}>
+              {valid === null ? '...' : valid ? '✓ 有效' : '✗ 无效'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 p-1 bg-[var(--bg-sidebar)]/50 rounded-md">
+          <button
+            type="button"
+            onClick={() => setKind('skill')}
+            className={`flex-1 py-1 text-[10px] rounded transition-colors ${
+              kind === 'skill' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            运行技能
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind('prompt')}
+            className={`flex-1 py-1 text-[10px] rounded transition-colors ${
+              kind === 'prompt' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            纯文本 Prompt
+          </button>
+        </div>
+
+        {kind === 'skill' && (
+          <div>
+            <label className="block text-[10px] text-[var(--text-muted)]">选择技能</label>
+            <select
+              value={skillId}
+              onChange={(e) => setSkillId(e.target.value)}
+              className="w-full mt-0.5 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)]"
+            >
+              <option value="">(无技能)</option>
+              {skills.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-[10px] text-[var(--text-muted)]">
+            {kind === 'skill' ? '技能参数 / 追加 Prompt' : '任务 Prompt'}
+          </label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={3}
+            className="w-full mt-0.5 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)]"
+            placeholder={kind === 'skill' ? 'e.g. 每期定投 100 USDC...' : 'e.g. 总结昨天的代码变更...'}
+          />
+        </div>
       </div>
-      <label className="block text-[10px] text-[var(--text-muted)] mt-2">提示词（触发时作为用户消息发送）</label>
-      <textarea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        rows={3}
-        className="w-full mt-0.5 px-2 py-1 text-[12px] rounded border border-[var(--border)] bg-[var(--bg-content)] text-[var(--text-primary)]"
-      />
-      {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
-      <div className="flex items-center gap-2 mt-3">
+
+      {error && <p className="text-[10px] text-red-500 mt-2">{error}</p>}
+
+      <div className="flex items-center gap-2 mt-4">
         <button
           type="button"
           onClick={handleCreate}
-          disabled={!valid}
+          disabled={!valid || (kind === 'skill' && !skillId)}
           className="flex items-center gap-1 px-3 py-1.5 text-[12px] rounded bg-[var(--accent)] text-white disabled:opacity-50"
         >
           <Check size={11} />
-          保存
+          保存任务
         </button>
         <button
           type="button"

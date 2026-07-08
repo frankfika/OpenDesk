@@ -46,7 +46,7 @@ export default function PortfolioView(): JSX.Element {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 pt-5 pb-3 border-b border-[#1f1f23]">
+      <div className="px-6 pt-5 pb-3 border-b border-[var(--web3-border)]">
         <div className="flex items-center gap-2 mb-1">
           <span className="web3-label">Watching</span>
           {!isConnected && <span className="web3-label web3-status-warn">SAMPLE · CONNECT TO USE YOURS</span>}
@@ -64,7 +64,7 @@ export default function PortfolioView(): JSX.Element {
             type="button"
             onClick={handleSearch}
             disabled={searching}
-            className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-white/5 hover:bg-[#2a2a2e] transition-colors disabled:opacity-50"
+            className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors disabled:opacity-50"
           >
             {searching ? '...' : 'Look up'}
           </button>
@@ -72,7 +72,7 @@ export default function PortfolioView(): JSX.Element {
             <button
               type="button"
               onClick={() => setViewAddress(address)}
-              className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-white/5 hover:bg-[#2a2a2e] transition-colors"
+              className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors"
             >
               My wallet
             </button>

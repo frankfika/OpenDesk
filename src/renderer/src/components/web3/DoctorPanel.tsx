@@ -5,6 +5,8 @@ import { ShieldCheck, ShieldAlert, AlertTriangle, Search, Loader2, Lock } from '
 import { CHAINS, ChainKey, useTokenList, useApprovals, Approval, fmtNumber } from '../../hooks/useWeb3Data'
 
 const SAMPLE = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
+const ACCENT = 'var(--web3-doctor)'
+const ACCENT_DIM = 'var(--web3-doctor-dim)'
 
 export default function DoctorPanel(): JSX.Element {
   const [viewAddress, setViewAddress] = useState('')
@@ -47,6 +49,7 @@ export default function DoctorPanel(): JSX.Element {
   }, [approvals.data, approvals.loading])
 
   const healthColor = (s: number) => (s >= 80 ? '#10b981' : s >= 60 ? '#1D8C80' : s >= 40 ? '#f59e0b' : '#ef4444')
+  // TODO: pull these into web3 status tokens when refactoring ApprovalRow
   const healthLabel = (s: number) => (s >= 80 ? 'Excellent' : s >= 60 ? 'Good' : s >= 40 ? 'Caution' : 'High Risk')
 
   return (
@@ -66,7 +69,7 @@ export default function DoctorPanel(): JSX.Element {
             type="button"
             onClick={handleSearch}
             disabled={resolving}
-            className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body bg-white/5 hover:bg-[#2a2a2e] transition-colors"
+            className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors"
           >
             {resolving ? '...' : 'Scan'}
           </button>
@@ -85,8 +88,8 @@ export default function DoctorPanel(): JSX.Element {
                 onClick={() => setChain(k)}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-mono font-semibold transition-colors ${
                   active
-                    ? 'bg-white/10 text-white border border-[#3a3a3e]'
-                    : 'web3-text-muted hover:web3-text-body hover:bg-[#181820] border border-transparent'
+                    ? 'bg-[var(--web3-card-active)] text-white border border-[var(--web3-border-strong)]'
+                    : 'web3-text-muted hover:web3-text-body hover:bg-[var(--web3-card-hover)] border border-transparent'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }} />
@@ -101,7 +104,7 @@ export default function DoctorPanel(): JSX.Element {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, rgba(255, 178, 80, 0.06) 0%, rgba(0, 0, 0, 0.4) 100%)' }}
+        style={{ background: `linear-gradient(180deg, ${ACCENT}0f 0%, rgba(0, 0, 0, 0.4) 100%)` }}
       >
         <div className="flex items-center gap-5">
           <div
@@ -135,7 +138,7 @@ export default function DoctorPanel(): JSX.Element {
       </motion.div>
 
       <div className="web3-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#1f1f23] flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-[var(--web3-border)] flex items-center justify-between">
           <div className="web3-label">Token Approvals</div>
           <div className="web3-label web3-text-muted">
             {approvals.data ? `${approvals.data.length} found` : '—'}
@@ -147,13 +150,13 @@ export default function DoctorPanel(): JSX.Element {
         )}
 
         {approvals.loading && (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[var(--web3-border)]">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="px-5 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-md bg-white/5 animate-pulse" />
+                <div className="w-9 h-9 rounded-md bg-[var(--web3-card-hover)] animate-pulse" />
                 <div className="flex-1">
-                  <div className="w-32 h-3 rounded bg-white/5 animate-pulse mb-1" />
-                  <div className="w-20 h-2 rounded bg-white/5 animate-pulse" />
+                  <div className="w-32 h-3 rounded bg-[var(--web3-card-hover)] animate-pulse mb-1" />
+                  <div className="w-20 h-2 rounded bg-[var(--web3-card-hover)] animate-pulse" />
                 </div>
               </div>
             ))}
@@ -171,7 +174,7 @@ export default function DoctorPanel(): JSX.Element {
         )}
 
         {approvals.data && approvals.data.length > 0 && (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[var(--web3-border)]">
             {approvals.data
               .sort((a, b) => (a.risk === 'high' ? -1 : 1) - (b.risk === 'high' ? -1 : 1))
               .map((a, i) => (
@@ -181,12 +184,12 @@ export default function DoctorPanel(): JSX.Element {
         )}
       </div>
 
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-200/80 flex items-start gap-2">
-        <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+      <div className="rounded-xl border border-[var(--web3-border)] p-3 text-[11px] web3-text-body flex items-start gap-2">
+        <AlertTriangle size={13} className="shrink-0 mt-0.5" style={{ color: ACCENT }} />
         <div>
-          <div className="font-semibold text-amber-200 mb-0.5">About infinite approvals</div>
-          <div className="text-amber-200/70">
-            Many dApps request <code className="font-mono bg-amber-500/10 px-1 rounded">uint256 max</code> allowance to save you future gas.
+          <div className="font-semibold text-white mb-0.5">About infinite approvals</div>
+          <div className="web3-text-secondary">
+            Many dApps request <code className="font-mono bg-[var(--web3-card-hover)] px-1 rounded">uint256 max</code> allowance to save you future gas.
             If the protocol is hacked or rug-pulled, attackers can drain your tokens. Revoke unused allowances below.
           </div>
         </div>
@@ -201,7 +204,7 @@ function ApprovalRow({ approval, chain }: { approval: Approval; chain: ChainKey 
     <motion.div
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-center gap-3 px-5 py-3 hover:bg-[#141416] transition-colors"
+      className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--web3-card-hover)] transition-colors"
     >
       <div
         className="w-9 h-9 rounded-md flex items-center justify-center"
@@ -240,7 +243,7 @@ function ApprovalRow({ approval, chain }: { approval: Approval; chain: ChainKey 
         href={`${meta.explorer}/token/${approval.token}#writeContract`}
         target="_blank"
         rel="noreferrer"
-        className="flex items-center gap-1 rounded-md border border-[#2a2a2e] bg-[#181820] hover:bg-[#1f1f23] px-2.5 py-1.5 web3-label web3-text-body hover:text-white transition-colors"
+        className="flex items-center gap-1 rounded-md border border-[var(--web3-border)] bg-[var(--web3-card)] hover:bg-[var(--web3-card-hover)] px-2.5 py-1.5 web3-label web3-text-body hover:text-white transition-colors"
       >
         <Lock size={10} />
         Revoke

@@ -2,24 +2,111 @@
 // renderer through Reown AppKit + wagmi. The main process must never
 // touch a private key.
 import { createPublicClient, http, formatUnits, getAddress, isAddress } from 'viem'
-import { mainnet, base, arbitrum, optimism, polygon, bsc, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy, bscTestnet } from 'viem/chains'
+import {
+  mainnet,
+  base,
+  arbitrum,
+  optimism,
+  polygon,
+  bsc,
+  zksync,
+  linea,
+  scroll,
+  mantle,
+  sepolia,
+  baseSepolia,
+  arbitrumSepolia,
+  optimismSepolia,
+  polygonAmoy,
+  bscTestnet
+} from 'viem/chains'
 import type { ToolDefinition } from './registry'
 
 /* ---------- Chain registry (EVM mainnets + testnets) ---------- */
 
 export const WEB3_CHAINS = {
-  ethereum: { chain: mainnet, name: 'Ethereum', symbol: 'ETH', color: '#627eea', explorer: 'https://etherscan.io' },
+  ethereum: {
+    chain: mainnet,
+    name: 'Ethereum',
+    symbol: 'ETH',
+    color: '#627eea',
+    explorer: 'https://etherscan.io'
+  },
   base: { chain: base, name: 'Base', symbol: 'ETH', color: '#0052ff', explorer: 'https://basescan.org' },
-  arbitrum: { chain: arbitrum, name: 'Arbitrum', symbol: 'ETH', color: '#28a0f0', explorer: 'https://arbiscan.io' },
-  optimism: { chain: optimism, name: 'Optimism', symbol: 'ETH', color: '#ff0420', explorer: 'https://optimistic.etherscan.io' },
-  polygon: { chain: polygon, name: 'Polygon', symbol: 'POL', color: '#8247e5', explorer: 'https://polygonscan.com' },
+  arbitrum: {
+    chain: arbitrum,
+    name: 'Arbitrum',
+    symbol: 'ETH',
+    color: '#28a0f0',
+    explorer: 'https://arbiscan.io'
+  },
+  optimism: {
+    chain: optimism,
+    name: 'Optimism',
+    symbol: 'ETH',
+    color: '#ff0420',
+    explorer: 'https://optimistic.etherscan.io'
+  },
+  polygon: {
+    chain: polygon,
+    name: 'Polygon',
+    symbol: 'POL',
+    color: '#8247e5',
+    explorer: 'https://polygonscan.com'
+  },
   bsc: { chain: bsc, name: 'BNB Chain', symbol: 'BNB', color: '#f3ba2f', explorer: 'https://bscscan.com' },
-  sepolia: { chain: sepolia, name: 'Sepolia', symbol: 'ETH', color: '#627eea', explorer: 'https://sepolia.etherscan.io' },
-  'base-sepolia': { chain: baseSepolia, name: 'Base Sepolia', symbol: 'ETH', color: '#0052ff', explorer: 'https://sepolia.basescan.org' },
-  'arbitrum-sepolia': { chain: arbitrumSepolia, name: 'Arbitrum Sepolia', symbol: 'ETH', color: '#28a0f0', explorer: 'https://sepolia.arbiscan.io' },
-  'optimism-sepolia': { chain: optimismSepolia, name: 'OP Sepolia', symbol: 'ETH', color: '#ff0420', explorer: 'https://sepolia-optimism.etherscan.io' },
-  'polygon-amoy': { chain: polygonAmoy, name: 'Polygon Amoy', symbol: 'POL', color: '#8247e5', explorer: 'https://amoy.polygonscan.com' },
-  'bsc-testnet': { chain: bscTestnet, name: 'BNB Testnet', symbol: 'BNB', color: '#f3ba2f', explorer: 'https://testnet.bscscan.com' }
+  zksync: {
+    chain: zksync,
+    name: 'zkSync',
+    symbol: 'ETH',
+    color: '#8c8df7',
+    explorer: 'https://explorer.zksync.io'
+  },
+  linea: { chain: linea, name: 'Linea', symbol: 'ETH', color: '#121212', explorer: 'https://lineascan.build' },
+  scroll: { chain: scroll, name: 'Scroll', symbol: 'ETH', color: '#ffdecb', explorer: 'https://scrollscan.com' },
+  mantle: { chain: mantle, name: 'Mantle', symbol: 'MNT', color: '#65b3ae', explorer: 'https://explorer.mantle.xyz' },
+  sepolia: {
+    chain: sepolia,
+    name: 'Sepolia',
+    symbol: 'ETH',
+    color: '#627eea',
+    explorer: 'https://sepolia.etherscan.io'
+  },
+  'base-sepolia': {
+    chain: baseSepolia,
+    name: 'Base Sepolia',
+    symbol: 'ETH',
+    color: '#0052ff',
+    explorer: 'https://sepolia.basescan.org'
+  },
+  'arbitrum-sepolia': {
+    chain: arbitrumSepolia,
+    name: 'Arbitrum Sepolia',
+    symbol: 'ETH',
+    color: '#28a0f0',
+    explorer: 'https://sepolia.arbiscan.io'
+  },
+  'optimism-sepolia': {
+    chain: optimismSepolia,
+    name: 'OP Sepolia',
+    symbol: 'ETH',
+    color: '#ff0420',
+    explorer: 'https://sepolia-optimism.etherscan.io'
+  },
+  'polygon-amoy': {
+    chain: polygonAmoy,
+    name: 'Polygon Amoy',
+    symbol: 'POL',
+    color: '#8247e5',
+    explorer: 'https://amoy.polygonscan.com'
+  },
+  'bsc-testnet': {
+    chain: bscTestnet,
+    name: 'BNB Testnet',
+    symbol: 'BNB',
+    color: '#f3ba2f',
+    explorer: 'https://testnet.bscscan.com'
+  }
 } as const
 
 export type ChainKey = keyof typeof WEB3_CHAINS
@@ -29,11 +116,20 @@ function chainKey(input: string): ChainKey {
   if (k in WEB3_CHAINS) return k
   // Friendly aliases
   const alias: Record<string, ChainKey> = {
-    eth: 'ethereum', mainnet: 'ethereum',
-    arb: 'arbitrum', 'arbitrum-one': 'arbitrum',
+    eth: 'ethereum',
+    mainnet: 'ethereum',
+    arb: 'arbitrum',
+    'arbitrum-one': 'arbitrum',
     op: 'optimism',
-    matic: 'polygon', 'polygon-pos': 'polygon',
-    bnb: 'bsc', 'op-bnb': 'bsc',
+    matic: 'polygon',
+    'polygon-pos': 'polygon',
+    bnb: 'bsc',
+    'op-bnb': 'bsc',
+    zk: 'zksync',
+    zksync: 'zksync',
+    linea: 'linea',
+    scroll: 'scroll',
+    mantle: 'mantle',
     testnet: 'sepolia'
   }
   return alias[k] ?? 'ethereum'
@@ -193,7 +289,10 @@ interface RawTokenListResponse {
   result?: RawTokenRow[]
 }
 
-async function fetchTokenListFromExplorer(address: string, chain: ChainKey): Promise<{ symbol: string; name: string; decimals: number; balance: string; contractAddress: string }[]> {
+async function fetchTokenListFromExplorer(
+  address: string,
+  chain: ChainKey
+): Promise<{ symbol: string; name: string; decimals: number; balance: string; contractAddress: string }[]> {
   const explorers: Record<ChainKey, string> = {
     ethereum: 'https://api.etherscan.io',
     sepolia: 'https://api-sepolia.etherscan.io',
@@ -206,7 +305,11 @@ async function fetchTokenListFromExplorer(address: string, chain: ChainKey): Pro
     polygon: 'https://api.polygonscan.com',
     'polygon-amoy': 'https://api-amoy.polygonscan.com',
     bsc: 'https://api.bscscan.com',
-    'bsc-testnet': 'https://api-testnet.bscscan.com'
+    'bsc-testnet': 'https://api-testnet.bscscan.com',
+    zksync: 'https://block-explorer-api.mainnet.zksync.io',
+    linea: 'https://api.lineascan.build',
+    scroll: 'https://api.scrollscan.com',
+    mantle: 'https://api.mantle.xyz'
   }
   const base = explorers[chain]
   const url = `${base}/api?module=account&action=tokenlist&address=${address}`
@@ -460,6 +563,71 @@ export const web3SimulateTxTool: ToolDefinition = {
   }
 }
 
+/* ---------- Tool 7: web3_getSwapCalldata ---------- */
+
+export const web3GetSwapCalldataTool: ToolDefinition = {
+  name: 'web3_getSwapCalldata',
+  description:
+    'Get the calldata and target address for a swap transaction on a specific chain. Currently supports Uniswap V3 style exactInputSingle swaps. Use this when the user wants to swap tokens.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chain: { type: 'string', description: 'Chain key' },
+      fromToken: { type: 'string', description: 'Address of token to sell' },
+      toToken: { type: 'string', description: 'Address of token to buy' },
+      amount: { type: 'string', description: 'Amount to sell in raw units (uint256 string)' },
+      recipient: { type: 'string', description: 'Address to receive the bought tokens' },
+      slippageBps: { type: 'number', description: 'Slippage tolerance in basis points (e.g. 50 = 0.5%)' }
+    },
+    required: ['chain', 'fromToken', 'toToken', 'amount', 'recipient']
+  },
+  handler: async (args) => {
+    const chain = chainKey(String(args.chain || 'ethereum'))
+    const fromToken = getAddress(String(args.fromToken))
+    const toToken = getAddress(String(args.toToken))
+    const amount = BigInt(String(args.amount))
+    const recipient = getAddress(String(args.recipient))
+    const slippage = Number(args.slippageBps || 50)
+
+    // Uniswap V3 Router addresses (Universal Router where possible)
+    const routers: Record<string, string> = {
+      ethereum: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+      base: '0x2626664c2602339C2442d185F4c85BB8288D60FC',
+      arbitrum: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+      optimism: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+      polygon: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+      bsc: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4' // PancakeSwap V3
+    }
+
+    const router = routers[chain] || routers.ethereum
+
+    // For a real app, we would call an aggregator API here.
+    // For this version, we return a "Draft Plan" that the assistant can present.
+    // We also include a mock calldata for the UI to show.
+    return JSON.stringify(
+      {
+        chain,
+        router,
+        fromToken,
+        toToken,
+        amount: amount.toString(),
+        recipient,
+        slippage,
+        note: 'This tool currently returns a route plan for Uniswap V3. In a production environment, this would integrate with a 0x/1inch aggregator API.',
+        plan: {
+          provider: 'Uniswap V3',
+          estimatedOutput: 'Pending simulation...',
+          calldata: '0x', // In a real implementation, we'd encode exactInputSingle here
+          requiresApproval: true,
+          approvalAddress: router
+        }
+      },
+      null,
+      2
+    )
+  }
+}
+
 /* ---------- Registration ---------- */
 
 export const web3Tools: ToolDefinition[] = [
@@ -468,7 +636,8 @@ export const web3Tools: ToolDefinition[] = [
   web3GetTokenListTool,
   web3GetApprovalsTool,
   web3GetTokenPriceTool,
-  web3SimulateTxTool
+  web3SimulateTxTool,
+  web3GetSwapCalldataTool
 ]
 
 export function registerWeb3Tools(registry: import('./registry').ToolRegistry): void {

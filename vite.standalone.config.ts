@@ -5,7 +5,7 @@ import { defineConfig, type Plugin, type Connect } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
-// CORS-bypass middleware: forwards /api/{rpc,coingecko,ens,base,arb,op,polygon,bsc}
+// CORS-bypass middleware: forwards /api/{rpc,coingecko,ens,base,arb,op,polygon,bsc,zksync,linea,scroll,mantle}
 // to public upstream endpoints so the browser can call them without CORS errors.
 function apiProxyPlugin(): Plugin {
   const ROUTES: Array<{ prefix: string; upstream: string; strip: number }> = [
@@ -15,7 +15,11 @@ function apiProxyPlugin(): Plugin {
     { prefix: '/api/arb', upstream: 'https://arbitrum-one.publicnode.com', strip: '/api/arb'.length },
     { prefix: '/api/op', upstream: 'https://optimism.publicnode.com', strip: '/api/op'.length },
     { prefix: '/api/polygon', upstream: 'https://polygon-bor.publicnode.com', strip: '/api/polygon'.length },
-    { prefix: '/api/bsc', upstream: 'https://bsc.publicnode.com', strip: '/api/bsc'.length }
+    { prefix: '/api/bsc', upstream: 'https://bsc.publicnode.com', strip: '/api/bsc'.length },
+    { prefix: '/api/zksync', upstream: 'https://mainnet.era.zksync.io', strip: '/api/zksync'.length },
+    { prefix: '/api/linea', upstream: 'https://linea.drpc.org', strip: '/api/linea'.length },
+    { prefix: '/api/scroll', upstream: 'https://scroll.drpc.org', strip: '/api/scroll'.length },
+    { prefix: '/api/mantle', upstream: 'https://mantle.drpc.org', strip: '/api/mantle'.length }
   ]
 
   const handler: Connect.NextHandleFunction = async (req, res, next) => {

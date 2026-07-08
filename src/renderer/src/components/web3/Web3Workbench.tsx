@@ -22,23 +22,15 @@ export default function Web3Workbench(): JSX.Element {
 
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden" style={{ background: '#0a0a0a' }}>
-      <div className="pointer-events-none absolute inset-0 z-0">
+      {/* Ambient glow — kept subtle so it doesn't fight opaque cards */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
-          className="absolute inset-0 opacity-[0.15]"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(29, 140, 128, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(29, 140, 128, 0.25) 1px, transparent 1px)',
-            backgroundSize: '64px 64px',
-            maskImage: 'radial-gradient(ellipse at 50% 30%, black 0%, transparent 75%)'
-          }}
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(circle, rgba(29, 140, 128, 0.1) 0%, transparent 70%)' }}
         />
         <div
-          className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(29, 140, 128, 0.18) 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(98, 126, 234, 0.14) 0%, transparent 70%)' }}
+          className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(circle, rgba(98, 126, 234, 0.08) 0%, transparent 70%)' }}
         />
       </div>
 
@@ -46,10 +38,10 @@ export default function Web3Workbench(): JSX.Element {
         <TopBar />
       </div>
 
-      <div className="relative z-10 flex flex-1 min-h-0">
+      <div className="relative z-10 flex flex-1 min-h-0" style={{ background: '#0a0a0a' }}>
         <LeftSidebar />
 
-        <main className="flex-1 min-w-0 flex flex-col">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden" style={{ background: '#0a0a0a' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeScenario}
@@ -57,7 +49,7 @@ export default function Web3Workbench(): JSX.Element {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 min-h-0"
+              className="flex-1 min-h-0 flex flex-col overflow-hidden"
             >
               {activeScenario === 'intel' && <IntelPanel />}
               {activeScenario === 'trade' && <TradePanel />}

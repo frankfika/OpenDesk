@@ -6,7 +6,7 @@
 // "agent reply" in the chat. This is the demo path so the workbench feels
 // end-to-end without a real LLM.
 import { createPublicClient, http, formatUnits, isAddress, type Address, type PublicClient } from 'viem'
-import { mainnet, base, arbitrum, optimism, polygon, bsc, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy, bscTestnet } from 'viem/chains'
+import { mainnet, base, arbitrum, optimism, polygon, bsc, zksync, linea, scroll, mantle, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy, bscTestnet } from 'viem/chains'
 import { CHAINS, type ChainKey } from '../hooks/useWeb3Data'
 import { fetchTokenPrices, type PriceInfo } from './tokenPrices'
 import { CHAIN_RPC } from './apiBase'
@@ -22,6 +22,10 @@ const CHAIN_CLIENTS: Record<ChainKey, PublicClient> = {
   optimism: makeClient(optimism, CHAIN_RPC.optimism),
   polygon: makeClient(polygon, CHAIN_RPC.polygon),
   bsc: makeClient(bsc, CHAIN_RPC.bsc),
+  zksync: makeClient(zksync, CHAIN_RPC.zksync),
+  linea: makeClient(linea, CHAIN_RPC.linea),
+  scroll: makeClient(scroll, CHAIN_RPC.scroll),
+  mantle: makeClient(mantle, CHAIN_RPC.mantle),
   sepolia: makeClient(sepolia),
   'base-sepolia': makeClient(baseSepolia),
   'arbitrum-sepolia': makeClient(arbitrumSepolia),
@@ -99,7 +103,13 @@ const TOKENS_BY_CHAIN: Record<ChainKey, { address: Address; symbol: string; deci
   'arbitrum-sepolia': [],
   'optimism-sepolia': [],
   'polygon-amoy': [],
-  'bsc-testnet': []
+  'bsc-testnet': [],
+  // Token discovery on these chains goes through the explorer APIs in the main
+  // process; the browser-demo handler only reads native balances here.
+  zksync: [],
+  linea: [],
+  scroll: [],
+  mantle: []
 }
 
 const ENS_RESOLVER = '/api/ens/ens/resolve'

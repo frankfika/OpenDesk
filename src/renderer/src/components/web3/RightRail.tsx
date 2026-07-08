@@ -169,7 +169,7 @@ export default function RightRail(): JSX.Element {
   }
 
   return (
-    <div className="relative w-[400px] flex flex-col border-l" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
+    <div className="relative w-[360px] flex flex-col h-full min-h-0 border-l" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f1f23]">
         <div className="flex items-center gap-2">
           <div

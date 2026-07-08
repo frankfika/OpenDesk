@@ -13,12 +13,15 @@ import {
   FileText,
   Plug,
   Wrench,
-  Brain
+  Brain,
+  Stethoscope
 } from 'lucide-react'
 import { useChatStore } from '../../store/chat'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useSettingsStore } from '../../store/settings'
 import { useThemeStore } from '../../store/theme'
+import { useToast } from '../../store/toast'
+import { useRunDiagnostics } from '../../lib/runDiagnostics'
 import { cn } from '../../lib/utils'
 
 interface CommandItem {
@@ -49,6 +52,8 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMem
     useWorkspaceStore()
   const _settings = useSettingsStore((state) => state.settings)
   const { theme, toggleTheme } = useThemeStore()
+  const toast = useToast()
+  const runDiagnostics = useRunDiagnostics()
 
   const commands = useMemo<CommandItem[]>(() => {
     const list: CommandItem[] = []
@@ -91,12 +96,10 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMem
       group: 'Workspaces',
       icon: Plus,
       label: 'Open new folder...',
-      action: () => {
-        // Triggered via workspace store
-        const path = prompt('Enter folder path:')
-        if (path) {
-          useWorkspaceStore.getState().addWorkspace(path)
-        }
+      action: async () => {
+        setOpen(false)
+        const ws = await window.api?.workspace?.add?.()
+        if (ws) toast.success('新工作区已添加')
       }
     })
 
@@ -153,19 +156,32 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMem
       group: 'Actions',
       icon: ArrowUpRight,
       label: 'Capture screenshot',
-      action: () => {
-        window.api?.desktop?.capture?.().catch(console.error)
+      action: async () => {
         setOpen(false)
+        try {
+          const base64 = await window.api?.desktop?.capture?.()
+          if (!base64) {
+            toast.error('截图失败：未授权或无可捕获画面')
+            return
+          }
+          toast.success('截图已添加为附件')
+          // 通知 InputBar 加载这张图 — 沿用既有事件机制
+          window.dispatchEvent(
+            new CustomEvent('opendesk:paste-screenshot', { detail: { base64 } })
+          )
+        } catch (e) {
+          toast.error(`截图失败：${e instanceof Error ? e.message : String(e)}`)
+        }
       }
     })
     list.push({
       id: 'action-diagnostics',
       group: 'Actions',
-      icon: Wrench,
-      label: 'Run diagnostics',
-      action: () => {
+      icon: Stethoscope,
+      label: '运行分析 · Run diagnostics',
+      action: async () => {
         setOpen(false)
-        window.api?.doctor?.run?.().catch(console.error)
+        await runDiagnostics()
       }
     })
     list.push({
@@ -176,7 +192,10 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMem
       action: () => {
         setOpen(false)
         const msgs = messages
-        if (!msgs.length) return
+        if (!msgs.length) {
+          toast.info('当前对话为空，无法导出')
+          return
+        }
         const markdown = msgs
           .map((m) => {
             const role = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'Assistant' : m.role
@@ -190,6 +209,7 @@ export default function CommandPalette({ onOpenSettings, onOpenSkills, onOpenMem
         a.download = `thread-export-${new Date().toISOString().slice(0, 10)}.md`
         a.click()
         URL.revokeObjectURL(url)
+        toast.success('对话已导出为 Markdown')
       }
     })
 

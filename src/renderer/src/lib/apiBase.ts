@@ -13,6 +13,10 @@ export const API_BASE = {
   optimism: '/api/op',
   polygon: '/api/polygon',
   bsc: '/api/bsc',
+  zksync: '/api/zksync',
+  linea: '/api/linea',
+  scroll: '/api/scroll',
+  mantle: '/api/mantle',
 
   // Aggregators
   ens: '/api/ens'
@@ -24,5 +28,9 @@ export const CHAIN_RPC: Record<string, string> = {
   arbitrum: API_BASE.arbitrum,
   optimism: API_BASE.optimism,
   polygon: API_BASE.polygon,
-  bsc: API_BASE.bsc
+  bsc: API_BASE.bsc,
+  zksync: API_BASE.zksync,
+  linea: API_BASE.linea,
+  scroll: API_BASE.scroll,
+  mantle: API_BASE.mantle
 }

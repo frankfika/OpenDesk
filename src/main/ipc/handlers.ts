@@ -41,7 +41,6 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerSchedulerHandlers()
   registerChangeLogHandlers()
   registerMarketplaceHandlers()
-  registerRAGHandlers()
   registerClawHandlers(win)
 
   /* ===== Health Checks ===== */

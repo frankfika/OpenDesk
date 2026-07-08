@@ -8,7 +8,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Play, Loader2, Check, AlertCircle, Layers } from 'lucide-react'
+import { X, Play, Loader2, Check, AlertCircle, Layers, Zap } from 'lucide-react'
 import { runWorkerPool, type PoolWorker, type PoolHandle } from '../../lib/workerPool'
 import { runChat } from '../../lib/chatPipeline'
 import { useSettingsStore } from '../../store/settings'
@@ -22,7 +22,9 @@ interface WorkerPoolPanelProps {
 export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPanelProps): JSX.Element | null {
   const settings = useSettingsStore((s) => s.settings)
   const [workers, setWorkers] = useState<PoolWorker[]>([])
+  const [summary, setSummary] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
+  const [summarizing, setSummarizing] = useState(false)
   const [pool, setPool] = useState<PoolHandle | null>(null)
   const [tickAt, setTickAt] = useState<number>(0)
 
@@ -41,7 +43,9 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
   const handleRun = useCallback(() => {
     if (running) return
     setRunning(true)
+    setSummarizing(false)
     setWorkers([])
+    setSummary(null)
     const poolId = `pool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const handle = runWorkerPool({
       prompt,
@@ -60,6 +64,20 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
         if (!result.ok) throw new Error(result.error ?? 'chat failed')
         return result.text ?? ''
       },
+      summarizer: async (results) => {
+        setSummarizing(true)
+        const summaryPrompt = `I have several answers from different AI models for the prompt: "${prompt}".\n\n` +
+          results.map((r, i) => `--- Answer ${i + 1} (${r.providerId}) ---\n${r.text}`).join('\n\n') +
+          `\n\nPlease provide a final, consolidated summary or best answer based on the above perspectives.`
+
+        const result = await runChat({
+          providerId: enabledProviders[0].id, // Use the first enabled provider for summary
+          prompt: summaryPrompt,
+          threadId: `${poolId}-summary`
+        })
+        setSummarizing(false)
+        return result.text ?? 'Failed to generate summary'
+      },
       onWorkerUpdate: (w) => {
         setWorkers((prev) => {
           const idx = prev.findIndex((x) => x.id === w.id)
@@ -69,7 +87,10 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
           return next
         })
       },
-      onComplete: () => setRunning(false)
+      onComplete: (workers, finalSummary) => {
+        setRunning(false)
+        if (finalSummary) setSummary(finalSummary)
+      }
     })
     setPool(handle)
     void handle.done
@@ -153,6 +174,28 @@ export default function WorkerPoolPanel({ open, onClose, prompt }: WorkerPoolPan
                   </div>
                 )
               })}
+
+              {(summarizing || summary) && (
+                <div className="mt-4 border-t-2 border-[var(--accent)]/20 pt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {summarizing ? (
+                      <Loader2 size={14} className="text-[var(--accent)] animate-spin" />
+                    ) : (
+                      <Zap size={14} className="text-[var(--accent)]" />
+                    )}
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {summarizing ? '正在生成汇总结论…' : '汇总结论 (Consolidated Summary)'}
+                    </span>
+                  </div>
+                  {summary && (
+                    <div className="p-4 rounded-lg bg-[var(--accent)]/5 border border-[var(--accent)]/20">
+                      <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">
+                        {summary}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
