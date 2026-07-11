@@ -87,13 +87,14 @@ const MAX_TREE_FILES = 1000
 async function buildTreeRecursively(
   path: string,
   depth: number,
-  countRef: { value: number }
+  countRef: { value: number },
+  allowedBase: string
 ): Promise<DirectoryNode[]> {
   if (depth > MAX_TREE_DEPTH || countRef.value > MAX_TREE_FILES) return []
   if (!window.api?.tools?.listDirectory) return []
 
   try {
-    const result = await window.api.tools.listDirectory(path)
+    const result = await window.api.tools.listDirectory(path, allowedBase)
     if (!result.success || !result.entries) return []
 
     const sorted = result.entries.sort((a: FileEntry, b: FileEntry) =>
@@ -116,7 +117,7 @@ async function buildTreeRecursively(
       }
 
       if (entry.isDirectory && depth < MAX_TREE_DEPTH) {
-        node.children = await buildTreeRecursively(entry.path, depth + 1, countRef)
+        node.children = await buildTreeRecursively(entry.path, depth + 1, countRef, allowedBase)
       }
 
       nodes.push(node)
@@ -327,7 +328,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ fileTreeLoading: true, fileTreeError: null })
     try {
       const countRef = { value: 0 }
-      const tree = await buildTreeRecursively(ws.folderPath, 0, countRef)
+      const tree = await buildTreeRecursively(ws.folderPath, 0, countRef, ws.folderPath)
       // Ignore stale results if the user switched workspaces while loading
       if (get().activeWorkspaceId !== targetId) return
       const expandedPaths = new Set<string>()
@@ -371,7 +372,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         set({ fileContent: '', fileSaveStatus: 'idle', fileReadError: null })
         return
       }
-      const result = await window.api.tools.readFile(path)
+      const result = await window.api.tools.readFile(path, get().activeWorkspace()?.folderPath)
       if (result.success && typeof result.content === 'string') {
         set({ fileContent: result.content, fileSaveStatus: 'idle', fileReadError: null })
       } else {

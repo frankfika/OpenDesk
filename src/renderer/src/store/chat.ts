@@ -7,6 +7,7 @@ import type {
   ChatMode,
   ArbitrationMode
 } from '@shared/types'
+import { computeCostUsd } from '@shared/model-pricing'
 import { useSettingsStore } from './settings'
 import { useWorkspaceStore } from './workspace'
 import { registerChatStore } from './chat-actions'
@@ -537,8 +538,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!agent) return s
       const inputTokens = metrics.inputTokens ?? agent.inputTokens ?? 0
       const outputTokens = metrics.outputTokens ?? agent.outputTokens ?? 0
-      // Rough cost estimate: $3 per 1M input tokens, $15 per 1M output tokens (blended)
-      const estimatedCostUsd = (inputTokens * 3 + outputTokens * 15) / 1_000_000
+      // Per-model USD cost (see src/shared/model-pricing.ts). Replaces the old
+      // blended $3/$15 estimate that ignored the actual model/provider.
+      const estimatedCostUsd = computeCostUsd(
+        inputTokens,
+        outputTokens,
+        agent.providerId,
+        agent.model
+      )
       return {
         ensembleRuns: {
           ...s.ensembleRuns,

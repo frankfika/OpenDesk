@@ -26,24 +26,17 @@ export default function IntelPanel(): JSX.Element {
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-5">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{ background: `linear-gradient(180deg, ${ACCENT}1a 0%, rgba(0, 0, 0, 0.4) 100%)` }}
-      >
-        <div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${ACCENT}33 0%, transparent 70%)` }}
-        />
-        <div className="relative">
-          <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
-            <ScanLine size={11} />
-            Chain Intel
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="web3-card web3-card-pad">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
+              <ScanLine size={11} />
+              Chain Intel
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">On-chain dossier</h2>
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-2">On-chain dossier in 30 seconds.</h2>
-          <p className="text-[12.5px] web3-text-body leading-relaxed max-w-md">
-            Drop any address or ENS. The agent pulls balances across every EVM chain, ranks tokens, flags risky approvals, and writes a one-pager.
+          <p className="text-[12px] web3-text-body leading-relaxed max-w-md sm:text-right">
+            Address profile, token ranking, approval risks, recent activity.
           </p>
         </div>
       </motion.div>
@@ -69,7 +62,11 @@ export default function IntelPanel(): JSX.Element {
                   <div className="text-[12.5px] font-mono font-semibold text-white">{q.label}</div>
                   <div className="web3-label web3-text-muted truncate">{q.address}</div>
                 </div>
-                <ArrowRight size={12} className="web3-text-muted opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" style={{ color: ACCENT }} />
+                <ArrowRight
+                  size={12}
+                  className="web3-text-muted opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+                  style={{ color: ACCENT }}
+                />
               </div>
             </button>
           ))}
@@ -104,19 +101,27 @@ export default function IntelPanel(): JSX.Element {
         <div className="web3-label mb-2">What the report covers</div>
         <ul className="text-[11.5px] web3-text-body space-y-1">
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>
+              ·
+            </span>
             Net worth across Ethereum, Base, Arbitrum, Optimism, Polygon, BNB
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>
+              ·
+            </span>
             Top 10 tokens with USD value, 24h change, 7-day sparkline
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>
+              ·
+            </span>
             Active token approvals with risk scoring
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-0.5" style={{ color: ACCENT }}>·</span>
+            <span className="mt-0.5" style={{ color: ACCENT }}>
+              ·
+            </span>
             Recent transactions + verdict on wallet type
           </li>
         </ul>

@@ -8,6 +8,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPublicClient, http, formatUnits, getAddress, formatEther } from 'viem'
 import type { Chain, PublicClient } from 'viem'
+import { CHAIN_RPC, isElectron } from '../lib/apiBase'
 import {
   mainnet,
   base,
@@ -257,14 +258,25 @@ export const CHAINS: Record<ChainKey, ChainMeta> = {
   }
 }
 
-const MAINNET_KEYS: ChainKey[] = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon', 'bsc', 'zksync', 'linea', 'scroll', 'mantle']
+const MAINNET_KEYS: ChainKey[] = [
+  'ethereum',
+  'base',
+  'arbitrum',
+  'optimism',
+  'polygon',
+  'bsc',
+  'zksync',
+  'linea',
+  'scroll',
+  'mantle'
+]
 export { MAINNET_KEYS }
 
 const chainClients = new Map<ChainKey, PublicClient>()
 export function clientFor(key: ChainKey): PublicClient {
   let c = chainClients.get(key)
   if (!c) {
-    c = createPublicClient({ chain: CHAINS[key].chain, transport: http() })
+    c = createPublicClient({ chain: CHAINS[key].chain, transport: http(CHAIN_RPC[key] ?? undefined) })
     chainClients.set(key, c)
   }
   return c
@@ -292,7 +304,9 @@ export { shortAddr }
 // in favour of one multichain endpoint keyed by chainid. A single API key
 // works across all supported chains. Without a key the endpoint still answers
 // but is heavily rate-limited, so we degrade to empty results rather than crash.
-const ETHERSCAN_V2_BASE = 'https://api.etherscan.io/v2/api'
+function etherscanV2Base(): string {
+  return isElectron() ? 'https://api.etherscan.io/v2/api' : '/api/etherscan/v2/api'
+}
 const ETHERSCAN_API_KEY =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_ETHERSCAN_API_KEY ?? ''
 
@@ -301,7 +315,7 @@ function explorerUrl(chain: ChainKey, params: Record<string, string | number>): 
   sp.set('chainid', String(CHAINS[chain].chain.id))
   for (const [k, v] of Object.entries(params)) sp.set(k, String(v))
   if (ETHERSCAN_API_KEY) sp.set('apikey', ETHERSCAN_API_KEY)
-  return `${ETHERSCAN_V2_BASE}?${sp.toString()}`
+  return `${etherscanV2Base()}?${sp.toString()}`
 }
 
 /* ------------------------------------------------------------------ */
@@ -357,13 +371,28 @@ function useAsync<T>(fetcher: () => Promise<T>, deps: unknown[]): AsyncState<T> 
 /* 1. Native balance                                                     */
 /* ------------------------------------------------------------------ */
 
-export function useNativeBalance(address: string | null, chain: ChainKey): AsyncState<{ balance: string; balanceUsd: number | null }> {
+export function useNativeBalance(
+  address: string | null,
+  chain: ChainKey
+): AsyncState<{ balance: string; balanceUsd: number | null }> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return { balance: '0', balanceUsd: null }
     const client = clientFor(chain)
     const bal = await client.getBalance({ address: address as `0x${string}` })
     const formatted = formatEther(bal)
-    return { balance: formatted, balanceUsd: null }
+    // Cross-check with the live price feed so the balance shows a real
+    // USD value. If the price call fails or the symbol isn't covered,
+    // we return `null` for the USD side rather than fake a number.
+    let balanceUsd: number | null = null
+    try {
+      const symbol = CHAINS[chain].symbol
+      const prices = await fetchPrices([symbol])
+      const usd = prices[symbol]?.usd
+      if (typeof usd === 'number') balanceUsd = parseFloat(formatted) * usd
+    } catch {
+      // ignore — keep balanceUsd null
+    }
+    return { balance: formatted, balanceUsd }
   }, [address, chain])
   return useAsync(fetcher, [address, chain])
 }
@@ -547,8 +576,8 @@ export function useActivity(address: string | null, chain: ChainKey, limit = 12)
         tx.from.toLowerCase() === address.toLowerCase() && tx.to.toLowerCase() === address.toLowerCase()
           ? 'self'
           : tx.from.toLowerCase() === address.toLowerCase()
-          ? 'out'
-          : 'in'
+            ? 'out'
+            : 'in'
       return {
         hash: tx.hash,
         blockNumber: parseInt(tx.blockNumber, 10),
@@ -590,7 +619,14 @@ export interface TokenTransfer {
 export function useTokenTransfers(address: string | null, chain: ChainKey, limit = 10): AsyncState<TokenTransfer[]> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return []
-    const url = explorerUrl(chain, { module: 'account', action: 'tokentx', address, page: 1, offset: limit, sort: 'desc' })
+    const url = explorerUrl(chain, {
+      module: 'account',
+      action: 'tokentx',
+      address,
+      page: 1,
+      offset: limit,
+      sort: 'desc'
+    })
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) throw new Error(`Etherscan HTTP ${res.status}`)
     const data = (await res.json()) as EtherscanResponse<EtherscanTransferRow>
@@ -644,10 +680,23 @@ const KNOWN_SPENDERS: Record<string, string> = {
 }
 
 const ERC20_ALLOWANCE_ABI = [
-  { type: 'function', name: 'allowance', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ type: 'uint256' }] }
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' }
+    ],
+    outputs: [{ type: 'uint256' }]
+  }
 ] as const
 
-export function useApprovals(address: string | null, chain: ChainKey, tokenList: TokenHolding[]): AsyncState<Approval[]> {
+export function useApprovals(
+  address: string | null,
+  chain: ChainKey,
+  tokenList: TokenHolding[]
+): AsyncState<Approval[]> {
   const fetcher = useCallback(async () => {
     if (!address || !isLikelyAddress(address)) return []
     const client = clientFor(chain)
@@ -699,15 +748,31 @@ export interface GasInfo {
 export function useGas(chain: ChainKey): AsyncState<GasInfo> {
   const fetcher = useCallback(async () => {
     const client = clientFor(chain)
+    // Pull the latest block (for baseFee) and the legacy gas price in
+    // parallel, then attempt an EIP-1559 fee estimate. On chains that
+    // haven't adopted 1559 the estimate action throws and we fall back
+    // to the legacy `gasPrice`.
     const [gasPrice, block] = await Promise.all([
       client.getGasPrice().catch(() => null),
       client.getBlock({ blockTag: 'latest' }).catch(() => null)
     ])
     if (!gasPrice) throw new Error('No gas price')
+
+    let maxFeePerGas: bigint | null = null
+    let maxPriorityFeePerGas: bigint | null = null
+    try {
+      const fees = await client.estimateFeesPerGas()
+      maxFeePerGas = fees.maxFeePerGas ?? null
+      maxPriorityFeePerGas = fees.maxPriorityFeePerGas ?? null
+    } catch {
+      // Pre-1559 chain or RPC missing the action — keep nulls; the
+      // legacy `gasPrice` above is the authoritative answer in that case.
+    }
+
     return {
       gasPrice,
-      maxFeePerGas: null,
-      maxPriorityFeePerGas: null,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
       baseFee: block?.baseFeePerGas ?? null
     }
   }, [chain])
@@ -796,9 +861,21 @@ export interface TokenMeta {
 export async function fetchTokenMeta(chain: ChainKey, address: string): Promise<TokenMeta> {
   const client = clientFor(chain)
   const [symbol, name, decimals] = await Promise.all([
-    client.readContract({ address: address as `0x${string}`, abi: ERC20_META_ABI, functionName: 'symbol' }) as Promise<string>,
-    client.readContract({ address: address as `0x${string}`, abi: ERC20_META_ABI, functionName: 'name' }) as Promise<string>,
-    client.readContract({ address: address as `0x${string}`, abi: ERC20_META_ABI, functionName: 'decimals' }) as Promise<number>
+    client.readContract({
+      address: address as `0x${string}`,
+      abi: ERC20_META_ABI,
+      functionName: 'symbol'
+    }) as Promise<string>,
+    client.readContract({
+      address: address as `0x${string}`,
+      abi: ERC20_META_ABI,
+      functionName: 'name'
+    }) as Promise<string>,
+    client.readContract({
+      address: address as `0x${string}`,
+      abi: ERC20_META_ABI,
+      functionName: 'decimals'
+    }) as Promise<number>
   ])
   return { symbol, name, decimals: Number(decimals) }
 }

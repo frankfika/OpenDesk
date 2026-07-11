@@ -2,25 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* OpenDesk Web3 workbench — dark only.
-   The legacy light token block is replaced by web3 dark tokens. */
+/* OpenDesk — single source of truth for design tokens.
+   Legacy alias names (--text-muted, --border, --accent, etc.) all forward
+   to the web3 token block below. Adding a new alias is cheap; adding a
+   drift between the two is the bug. */
 :root {
-  /* Surfaces */
-  --bg-sidebar: #0e0e10;
-  --bg-content: #141416;
-  --bg-input: #1a1a1d;
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  /* Brand teal */
-  --accent: #1D8C80;
-  --accent-hover: #16a085;
-  --border: #2a2a2e;
-  --border-strong: #3a3a3e;
   --radius: 8px;
   --sidebar-width: 260px;
   --titlebar-height: 44px;
-  /* Semantic colors */
+  /* Semantic colors (semantic meaning, not visual — see web3-* for values) */
   --success: #4ade80;
   --success-bg: rgba(5, 46, 22, 0.5);
   --success-border: rgba(20, 83, 45, 0.5);
@@ -35,18 +25,9 @@
   --warning-border: rgba(120, 53, 15, 0.5);
 }
 
+/* The dark class is a no-op; we ship dark-only. */
 .dark {
-  /* Identical dark tokens — keep dark class as no-op for legacy code paths */
-  --bg-sidebar: #0e0e10;
-  --bg-content: #141416;
-  --bg-input: #1a1a1d;
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  --accent: #1D8C80;
-  --accent-hover: #16a085;
-  --border: #2a2a2e;
-  --border-strong: #3a3a3e;
+  /* intentionally empty — keep the class valid, no token overrides. */
 }
 
 * {
@@ -65,23 +46,13 @@ body,
   font-size: 14px;
   overflow: hidden;
   user-select: none;
-  background: #0a0a0a;
+  background: var(--web3-bg);
 }
 
-/* Subtle background for depth */
 body {
-  background-color: #0a0a0a;
+  background-color: var(--web3-bg);
   background-attachment: fixed;
-}
-
-.dark body {
-  background-color: #0a0a0a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.dark):not(.light) body {
-    background-color: #0a0a0a;
-  }
+  color: var(--web3-text-body);
 }
 
 .selectable {
@@ -160,14 +131,12 @@ textarea {
 }
 
 /* ==========================================================================
-   Web3 Workbench — unified design tokens
+   OpenDesk design tokens — single source of truth.
    Apply these utility classes everywhere instead of ad-hoc Tailwind values.
    ========================================================================== */
 
 :root {
-  --web3-accent: #1D8C80;
-  --web3-accent-dim: #16a085;
-  --web3-accent-deep: #0d6e63;
+  /* Surfaces */
   --web3-bg: #0a0a0a;
   --web3-panel: #0e0e10;
   --web3-card: #141416;
@@ -175,16 +144,35 @@ textarea {
   --web3-card-active: #1f1f23;
   --web3-border: #1f1f23;
   --web3-border-strong: #2a2a2e;
+  /* Text */
   --web3-text-muted: rgba(255, 255, 255, 0.6);
   --web3-text-secondary: rgba(255, 255, 255, 0.75);
   --web3-text-body: rgba(255, 255, 255, 0.88);
   --web3-text-strong: rgba(255, 255, 255, 1);
+  /* Brand teal */
+  --web3-accent: #1D8C80;
+  --web3-accent-dim: #16a085;
+  --web3-accent-deep: #0d6e63;
   /* Scenario accents — single source of truth */
   --web3-intel: #627eea;       /* Ethereum blue */
   --web3-intel-dim: #3b5dc7;
   --web3-trade: #1D8C80;       /* Brand teal */
   --web3-doctor: #ffb250;      /* Amber */
   --web3-doctor-dim: #d97706;
+
+  /* Legacy aliases — forward to web3-* so pre-existing references stay
+     visually consistent. Prefer web3-* (or the .web3-* utility classes)
+     for new code. */
+  --bg-sidebar: var(--web3-panel);
+  --bg-content: var(--web3-card);
+  --bg-input: var(--web3-card-hover);
+  --text-primary: var(--web3-text-strong);
+  --text-secondary: var(--web3-text-secondary);
+  --text-muted: var(--web3-text-muted);
+  --accent: var(--web3-accent);
+  --accent-hover: var(--web3-accent-dim);
+  --border: var(--web3-border);
+  --border-strong: var(--web3-border-strong);
 }
 
 /* Card surfaces — solid color, clearly defined border */
@@ -276,13 +264,8 @@ textarea {
 .web3-status-error { color: rgb(248, 113, 113); }
 .web3-status-accent { color: var(--web3-accent); }
 
-/* App-wide dark background — overrides light theme */
-body {
-  background-color: var(--web3-bg) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
+/* (body + #root backgrounds already set above using --web3-bg.) */
 #root {
-  background-color: var(--web3-bg);
   min-height: 100vh;
 }
 
@@ -383,4 +366,52 @@ code:not(pre code) {
 }
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* ------------------------------------------------------------------ */
+/* Trade workbench                                                      */
+/* ------------------------------------------------------------------ */
+
+/* Ticker-tape marquee. Linear, infinite, deliberately slow (60s) so
+   traders can actually read prices as they scroll. */
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Price flash on update. A 250ms background tint on the cell, faded
+   out, lets the eye catch the change without overwhelming the watchlist. */
+@keyframes trade-flash-up {
+  0% {
+    background: rgba(16, 185, 129, 0.35);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes trade-flash-down {
+  0% {
+    background: rgba(239, 68, 68, 0.35);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.trade-flash-up {
+  animation: trade-flash-up 0.4s ease-out;
+}
+.trade-flash-down {
+  animation: trade-flash-down 0.4s ease-out;
+}
+
+/* Tighter, monospaced numbers in the trade panes (vs. the chat-friendly
+   sans-serif default). */
+.trade-num {
+  font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }

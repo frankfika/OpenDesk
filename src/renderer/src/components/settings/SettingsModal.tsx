@@ -11,6 +11,7 @@ import WorkspaceMCPPanel from './WorkspaceMCPPanel'
 import GeneralPanel from './GeneralPanel'
 import AboutPanel from './AboutPanel'
 import WorkflowPanel from './WorkflowPanel'
+import BrandLockup from '../ui/BrandLockup'
 import type { ProviderConfig } from '@shared/types'
 
 import { X } from 'lucide-react'
@@ -255,7 +256,10 @@ export default function SettingsModal({ open, onClose, initialTab }: SettingsMod
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
-                <Dialog.Title className="text-sm font-semibold">Settings</Dialog.Title>
+                <div className="flex items-center gap-3">
+                  <BrandLockup mode="SETTINGS" size="compact" />
+                  <Dialog.Title className="sr-only">Settings</Dialog.Title>
+                </div>
                 <Dialog.Description className="sr-only">
                   Configure AI providers, ensemble settings, workspaces, and app preferences.
                 </Dialog.Description>

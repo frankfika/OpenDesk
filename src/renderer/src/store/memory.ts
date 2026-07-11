@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { MemoryEntry } from '@shared/types-memory'
+import type { MemoryEntry } from '@shared/types'
 
 type MemoryCategory = 'user' | 'identity' | 'soul'
 

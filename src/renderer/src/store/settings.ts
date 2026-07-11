@@ -5,42 +5,12 @@ import type {
   ModelInfo,
   MCPServerConfig,
   MCPTool,
-  AgentRole,
-  AgentRoleConfig
+  AgentRole
 } from '@shared/types'
+import { AGENT_ROLES, getRolePrompt, getRoleName } from '@shared/agent-roles'
 
 let healthListenerRegistered = false
 
-const AGENT_ROLES: AgentRoleConfig[] = [
-  {
-    id: 'generalist',
-    name: 'Generalist',
-    prompt: 'You are a helpful general-purpose assistant. Provide a balanced, accurate answer.'
-  },
-  {
-    id: 'coder',
-    name: 'Coder',
-    prompt:
-      'You are an expert software engineer. Focus on code correctness, best practices, and edge cases. Always reason through the code carefully.'
-  },
-  {
-    id: 'reviewer',
-    name: 'Reviewer',
-    prompt:
-      'You are a skeptical reviewer. Your job is to find mistakes, omissions, and weaknesses in the proposed solution. Be concise and critical.'
-  },
-  {
-    id: 'researcher',
-    name: 'Researcher',
-    prompt:
-      'You are a thorough researcher. Gather context, compare alternatives, and cite relevant facts. Be comprehensive.'
-  },
-  {
-    id: 'writer',
-    name: 'Writer',
-    prompt: 'You are a clear technical writer. Produce well-structured, easy-to-read output with good examples.'
-  }
-]
 
 interface SettingsState {
   settings: AppSettings
@@ -235,9 +205,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     await get().update({ agentRoleAssignments: next })
   },
 
-  getRolePrompt: (role: AgentRole) => {
-    return AGENT_ROLES.find((r) => r.id === role)?.prompt ?? ''
-  },
+  // Re-export from @shared/agent-roles so callers don't have to import
+  // directly. The previous inline copy drifted from the main-process copy.
+  getRolePrompt,
+
+  getRoleName,
 
   fetchModels: async (providerId) => {
     const provider = get().settings.providers.find((p) => p.id === providerId)

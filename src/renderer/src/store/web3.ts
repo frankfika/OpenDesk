@@ -26,7 +26,7 @@ interface Web3State {
 }
 
 export const useWeb3Store = create<Web3State>((set) => ({
-  activeScenario: 'intel',
+  activeScenario: 'chat',
   setActiveScenario: (id) => set({ activeScenario: id }),
   selectedChain: 'ethereum',
   setSelectedChain: (chain) => set({ selectedChain: chain }),

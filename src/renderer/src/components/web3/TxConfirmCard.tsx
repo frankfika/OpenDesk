@@ -7,7 +7,8 @@ import { useWeb3Store } from '../../store/web3'
 import ChainBadge from './ChainBadge'
 
 const CHAIN_ID_MAP: Record<string, number> = {
-  ethereum: 1, mainnet: 1,
+  ethereum: 1,
+  mainnet: 1,
   base: 8453,
   arbitrum: 42161,
   optimism: 10,
@@ -55,7 +56,8 @@ export default function TxConfirmCard(): JSX.Element | null {
 
   const requiredChainId = CHAIN_ID_MAP[pendingTx.chain] ?? 1
   const chainMatches = chainId === requiredChainId
-  const isTestnet = pendingTx.chain.includes('sepolia') || pendingTx.chain.includes('amoy') || pendingTx.chain.includes('testnet')
+  const isTestnet =
+    pendingTx.chain.includes('sepolia') || pendingTx.chain.includes('amoy') || pendingTx.chain.includes('testnet')
 
   const handleSign = async () => {
     if (!isConnected || !address) {
@@ -79,23 +81,30 @@ export default function TxConfirmCard(): JSX.Element | null {
         chainName: pendingTx.chainName,
         explorer: getExplorer(pendingTx.chain)
       })
+      await window.api?.web3
+        ?.txResult?.({
+          id: pendingTx.id,
+          result: {
+            txHash: hash,
+            chain: pendingTx.chain,
+            chainName: pendingTx.chainName,
+            explorer: getExplorer(pendingTx.chain)
+          }
+        })
+        .catch(() => undefined)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
   }
 
-  const handleClose = () => {
-    if (result) {
-      window.api?.web3?.prepareTx?.({
-        // No-op: tell main we're done — actually we should send the result back.
-        // For now we just close the modal.
-        chain: pendingTx.chain,
-        from: pendingTx.from,
-        to: pendingTx.to,
-        data: pendingTx.data,
-        value: pendingTx.value,
-        description: pendingTx.description
-      }).catch(() => undefined)
+  const handleClose = async () => {
+    if (!result) {
+      await window.api?.web3
+        ?.txResult?.({
+          id: pendingTx.id,
+          error: 'User rejected or closed the transaction request'
+        })
+        .catch(() => undefined)
     }
     setPendingTx(null)
     setResult(null)
@@ -168,13 +177,26 @@ export default function TxConfirmCard(): JSX.Element | null {
                   {pendingTx.value && pendingTx.value !== '0' && (
                     <Row
                       label="Value"
-                      value={<span className="text-white">{formatEther(BigInt(pendingTx.value))} {pendingTx.chainName === 'BNB Chain' ? 'BNB' : pendingTx.chainName === 'Polygon' ? 'POL' : 'ETH'}</span>}
+                      value={
+                        <span className="text-white">
+                          {formatEther(BigInt(pendingTx.value))}{' '}
+                          {pendingTx.chainName === 'BNB Chain'
+                            ? 'BNB'
+                            : pendingTx.chainName === 'Polygon'
+                              ? 'POL'
+                              : 'ETH'}
+                        </span>
+                      }
                     />
                   )}
                   {pendingTx.data && pendingTx.data !== '0x' && (
                     <Row
                       label="Calldata"
-                      value={<span className="web3-text-muted">{pendingTx.data.slice(0, 10)}…({(pendingTx.data.length - 2) / 2} bytes)</span>}
+                      value={
+                        <span className="web3-text-muted">
+                          {pendingTx.data.slice(0, 10)}…({(pendingTx.data.length - 2) / 2} bytes)
+                        </span>
+                      }
                     />
                   )}
                 </div>
@@ -239,7 +261,11 @@ export default function TxConfirmCard(): JSX.Element | null {
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(16, 185, 129, 0.15)' }}
                   >
-                    {isConfirmed ? <Check size={16} className="text-emerald-400" /> : <Loader2 size={16} className="text-emerald-400 animate-spin" />}
+                    {isConfirmed ? (
+                      <Check size={16} className="text-emerald-400" />
+                    ) : (
+                      <Loader2 size={16} className="text-emerald-400 animate-spin" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-semibold text-white">

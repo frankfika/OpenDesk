@@ -4,9 +4,7 @@ import { motion } from 'framer-motion'
 import { ShieldCheck, ShieldAlert, AlertTriangle, Search, Loader2, Lock } from 'lucide-react'
 import { CHAINS, ChainKey, useTokenList, useApprovals, Approval, fmtNumber } from '../../hooks/useWeb3Data'
 
-const SAMPLE = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
 const ACCENT = 'var(--web3-doctor)'
-const ACCENT_DIM = 'var(--web3-doctor-dim)'
 
 export default function DoctorPanel(): JSX.Element {
   const [viewAddress, setViewAddress] = useState('')
@@ -15,8 +13,15 @@ export default function DoctorPanel(): JSX.Element {
   const [resolving, setResolving] = useState(false)
 
   useEffect(() => {
-    if (!viewAddress) setViewAddress(SAMPLE)
-  }, [viewAddress])
+    const handler = (e: Event) => {
+      const next = (e as CustomEvent<{ address?: string; chain?: ChainKey }>).detail
+      if (next?.address) setViewAddress(next.address)
+      if (next?.chain) setChain(next.chain)
+      setInput('')
+    }
+    window.addEventListener('opendesk:web3:set-doctor-address', handler)
+    return () => window.removeEventListener('opendesk:web3:set-doctor-address', handler)
+  }, [])
 
   const handleSearch = async () => {
     const v = input.trim()
@@ -25,7 +30,9 @@ export default function DoctorPanel(): JSX.Element {
     try {
       let resolved = v
       if (v.toLowerCase().endsWith('.eth')) {
-        const ens = await fetch(`/api/ens/ens/resolve/${v}`).then((r) => r.json()).catch(() => null)
+        const ens = await fetch(`/api/ens/ens/resolve/${v}`)
+          .then((r) => r.json())
+          .catch(() => null)
         if (ens?.address) resolved = ens.address
       } else if (!/^0x[a-fA-F0-9]{40}$/.test(v)) {
         return
@@ -74,9 +81,7 @@ export default function DoctorPanel(): JSX.Element {
             {resolving ? '...' : 'Scan'}
           </button>
         </div>
-        <div className="mt-2 web3-label web3-text-muted break-all">
-          {viewAddress}
-        </div>
+        <div className="mt-2 web3-label web3-text-muted break-all">{viewAddress}</div>
         <div className="flex items-center gap-1.5 mt-3 flex-wrap">
           {(['ethereum', 'base', 'arbitrum', 'optimism', 'polygon', 'bsc'] as ChainKey[]).map((k) => {
             const meta = CHAINS[k]
@@ -92,7 +97,10 @@ export default function DoctorPanel(): JSX.Element {
                     : 'web3-text-muted hover:web3-text-body hover:bg-[var(--web3-card-hover)] border border-transparent'
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }} />
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }}
+                />
                 {meta.shortName}
               </button>
             )
@@ -140,14 +148,10 @@ export default function DoctorPanel(): JSX.Element {
       <div className="web3-card overflow-hidden">
         <div className="px-5 py-3 border-b border-[var(--web3-border)] flex items-center justify-between">
           <div className="web3-label">Token Approvals</div>
-          <div className="web3-label web3-text-muted">
-            {approvals.data ? `${approvals.data.length} found` : '—'}
-          </div>
+          <div className="web3-label web3-text-muted">{approvals.data ? `${approvals.data.length} found` : '—'}</div>
         </div>
 
-        {approvals.error && (
-          <div className="px-5 py-4 text-[11px] text-red-300 font-mono">{approvals.error}</div>
-        )}
+        {approvals.error && <div className="px-5 py-4 text-[11px] text-red-300 font-mono">{approvals.error}</div>}
 
         {approvals.loading && (
           <div className="divide-y divide-[var(--web3-border)]">
@@ -189,8 +193,9 @@ export default function DoctorPanel(): JSX.Element {
         <div>
           <div className="font-semibold text-white mb-0.5">About infinite approvals</div>
           <div className="web3-text-secondary">
-            Many dApps request <code className="font-mono bg-[var(--web3-card-hover)] px-1 rounded">uint256 max</code> allowance to save you future gas.
-            If the protocol is hacked or rug-pulled, attackers can drain your tokens. Revoke unused allowances below.
+            Many dApps request <code className="font-mono bg-[var(--web3-card-hover)] px-1 rounded">uint256 max</code>{' '}
+            allowance to save you future gas. If the protocol is hacked or rug-pulled, attackers can drain your tokens.
+            Revoke unused allowances below.
           </div>
         </div>
       </div>

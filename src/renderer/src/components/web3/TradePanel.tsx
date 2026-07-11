@@ -6,10 +6,10 @@ import { useAccount } from 'wagmi'
 import { CHAINS } from '../../hooks/useWeb3Data'
 
 const EXAMPLES = [
-  { text: 'Swap 0.05 ETH for USDC on Base', intent: 'Swap 0.05 ETH (~$170) → USDC on Base via Uniswap V3' },
-  { text: 'Send 10 USDC to vitalik.eth', intent: 'Transfer 10 USDC → 0xd8da…6045' },
-  { text: 'Bridge 0.1 ETH from Ethereum to Arbitrum', intent: 'Bridge 0.1 ETH Ethereum → Arbitrum' },
-  { text: 'Check gas for an Arbitrum swap', intent: 'Read current gas prices on Arbitrum' }
+  { text: 'Send 0 ETH to myself on Ethereum', intent: 'Open a real Ethereum signature card' },
+  { text: 'Send 0 ETH to myself on Base', intent: 'Open a Base signature card' },
+  { text: 'Send 0 ETH to myself on Arbitrum', intent: 'Open an Arbitrum signature card' },
+  { text: 'Send 0.001 ETH to vitalik.eth on Ethereum', intent: 'Resolve ENS, prepare native transfer' }
 ]
 
 const ACCENT = 'var(--web3-trade)'
@@ -25,24 +25,17 @@ export default function TradePanel(): JSX.Element {
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-5">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{ background: `linear-gradient(180deg, ${ACCENT}1a 0%, rgba(0, 0, 0, 0.4) 100%)` }}
-      >
-        <div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${ACCENT}40 0%, transparent 70%)` }}
-        />
-        <div className="relative">
-          <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
-            <Zap size={11} />
-            One-Liner Trade
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="web3-card web3-card-pad">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 web3-label mb-2" style={{ color: ACCENT }}>
+              <Zap size={11} />
+              One-Liner Trade
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">Prepare a native transfer</h2>
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-2">Say it, sign it, done.</h2>
-          <p className="text-[12.5px] web3-text-body leading-relaxed max-w-md">
-            Tell the AI what you want in plain English. The agent picks the route, simulates the transaction, and pops a signature card. Your keys, your call.
+          <p className="text-[12px] web3-text-body leading-relaxed max-w-md sm:text-right">
+            Native-token transfers now open a real wallet confirmation card.
           </p>
         </div>
       </motion.div>
@@ -60,7 +53,11 @@ export default function TradePanel(): JSX.Element {
               <div className="flex items-center gap-2">
                 <Send size={11} className="opacity-60 group-hover:opacity-100" style={{ color: ACCENT }} />
                 <span className="text-[12px] font-mono web3-text-strong">{ex.text}</span>
-                <ChevronRight size={11} className="ml-auto web3-text-muted opacity-50 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" style={{ color: ACCENT }} />
+                <ChevronRight
+                  size={11}
+                  className="ml-auto web3-text-muted opacity-50 group-hover:opacity-100 transition-all group-hover:translate-x-0.5"
+                  style={{ color: ACCENT }}
+                />
               </div>
               <div className="text-[10px] web3-text-muted mt-1 ml-5">→ {ex.intent}</div>
             </button>
@@ -69,18 +66,18 @@ export default function TradePanel(): JSX.Element {
       </div>
 
       <div className="web3-card web3-card-pad">
-        <div className="web3-label mb-2">Or describe your trade</div>
+        <div className="web3-label mb-2">Or describe a native transfer</div>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           rows={3}
-          placeholder="e.g. Swap 100 USDC to ETH on Ethereum mainnet, gas under 30 gwei"
+          placeholder="e.g. Send 0.001 ETH to vitalik.eth on Ethereum"
           className="web3-input align-top"
           style={{ minHeight: 80, resize: 'none' }}
         />
         <div className="flex items-center justify-between mt-2">
           <span className="web3-label web3-text-muted">
-            {!isConnected ? 'Connect a wallet to sign transactions' : 'Sent to AI agent →'}
+            {!isConnected ? 'Connect a wallet to open the signature card' : 'Sent to AI agent →'}
           </span>
           <button
             type="button"
@@ -104,7 +101,10 @@ export default function TradePanel(): JSX.Element {
             const meta = CHAINS[k]
             return (
               <div key={k} className="rounded-lg border border-[#1f1f23] bg-[#141416] p-2.5 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }} />
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] font-semibold text-white">{meta.name}</div>
                   <div className="web3-label web3-text-muted">{meta.symbol}</div>
@@ -115,7 +115,10 @@ export default function TradePanel(): JSX.Element {
         </div>
         <div className="mt-3 flex items-start gap-2 text-[10.5px] web3-text-body">
           <AlertCircle size={11} className="shrink-0 mt-0.5" />
-          <span>All transactions are signed in your own wallet (MetaMask / Rabby / WalletConnect). Private keys never enter OpenDesk.</span>
+          <span>
+            Native transfers are fully wired to the signature card. Swaps and bridges are hidden until their route +
+            simulation flow is fully connected.
+          </span>
         </div>
       </div>
     </div>

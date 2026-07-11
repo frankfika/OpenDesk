@@ -8,7 +8,9 @@ import { useSettingsStore } from '../../store/settings'
 import { useSkillsStore } from '../../store/skills'
 import { useWeb3Store, type Web3ScenarioId } from '../../store/web3'
 import { useAccount } from 'wagmi'
+import { isAddress, parseEther } from 'viem'
 import { runWeb3Agent } from '../../lib/web3Chat'
+import { CHAINS, type ChainKey } from '../../hooks/useWeb3Data'
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -27,25 +29,61 @@ const SCENARIO_PROMPTS: Record<Web3ScenarioId, string[]> = {
     'Show portfolio for 0xd8da6bf26964af9d7eed9e03e53415d37aa96045',
     'What does brantly.eth hold?'
   ],
-  trade: [
-    'Swap 0.05 ETH for USDC on Base',
-    'Send 10 USDC to vitalik.eth',
-    'Check gas for an Arbitrum swap'
-  ],
+  trade: ['Send 0 ETH to myself on Ethereum', 'Send 0 ETH to myself on Base', 'Send 0 ETH to myself on Arbitrum'],
   doctor: [
     'Scan 0xd8da6bf26964af9d7eed9e03e53415d37aa96045 for risky approvals',
     'Find infinite allowances on vitalik.eth',
     'Show me which protocols can still move my USDC'
   ],
   chat: [
-    'What is a smart contract?',
-    'Explain gas fees',
-    'Compare L2 chains'
+    'Analyze vitalik.eth',
+    'Scan 0xd8da6bf26964af9d7eed9e03e53415d37aa96045 for risky approvals',
+    'Explain recent activity for 0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
   ]
 }
 
+function pickNativeTransferChain(text: string): ChainKey {
+  const t = text.toLowerCase()
+  if (t.includes('arbitrum') || t.includes('arb')) return 'arbitrum'
+  if (t.includes('base')) return 'base'
+  if (t.includes('optimism') || t.includes(' op ')) return 'optimism'
+  if (t.includes('polygon') || t.includes('matic') || t.includes('pol')) return 'polygon'
+  if (t.includes('bsc') || t.includes('bnb')) return 'bsc'
+  return 'ethereum'
+}
+
+function parseNativeTransferAmount(text: string): string | null {
+  const amountWithSymbol = text.match(/(?:send|transfer)\s+([0-9]+(?:\.[0-9]+)?)\s*(eth|bnb|pol|matic)?/i)
+  if (amountWithSymbol?.[1]) return amountWithSymbol[1]
+  return null
+}
+
+function parseRecipientToken(text: string): string | null {
+  const toMatch = text.match(/\bto\s+([^\s,]+)/i)
+  if (toMatch?.[1]) return toMatch[1]
+  if (/\b(myself|self|me)\b/i.test(text)) return 'myself'
+  return null
+}
+
+function isNativeTransferPrompt(text: string): boolean {
+  return /\b(send|transfer)\b/i.test(text) && parseNativeTransferAmount(text) !== null
+}
+
+async function resolveRecipient(token: string, ownAddress: string): Promise<string | null> {
+  const normalized = token.trim()
+  if (/^(myself|self|me)$/i.test(normalized)) return ownAddress
+  if (isAddress(normalized)) return normalized
+  if (normalized.toLowerCase().endsWith('.eth')) {
+    const result = await fetch(`/api/ens/ens/resolve/${normalized}`)
+      .then((r) => r.json())
+      .catch(() => null)
+    return result?.address && isAddress(result.address) ? result.address : null
+  }
+  return null
+}
+
 export default function RightRail(): JSX.Element {
-  const { isConnected } = useAccount()
+  const { address, isConnected } = useAccount()
   const streaming = useChatStore((s) => s.streaming)
   const messages = useChatStore((s) => s.messages)
   const addMessage = useChatStore((s) => s.addMessage)
@@ -55,6 +93,7 @@ export default function RightRail(): JSX.Element {
   const settings = useSettingsStore()
   const { activeSkillIds, activateSkill } = useSkillsStore()
   const activeScenario = useWeb3Store((s) => s.activeScenario)
+  const setPendingTxRequest = useWeb3Store((s) => s.setPendingTxRequest)
   const [input, setInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -92,6 +131,57 @@ export default function RightRail(): JSX.Element {
     }
     addMessage(userMsg)
     setInput('')
+
+    if (activeScenario === 'trade' && isNativeTransferPrompt(text)) {
+      if (!isConnected || !address) {
+        addMessage({
+          id: genId(),
+          role: 'assistant' as const,
+          content:
+            'Connect a wallet first. Then I can prepare a real transaction card for you to review, reject, or sign.',
+          timestamp: Date.now()
+        })
+        return
+      }
+
+      const amount = parseNativeTransferAmount(text)
+      const recipientToken = parseRecipientToken(text)
+      const recipient = recipientToken ? await resolveRecipient(recipientToken, address) : null
+      if (!amount || !recipient) {
+        addMessage({
+          id: genId(),
+          role: 'assistant' as const,
+          content:
+            'I need a native-token amount and recipient. Try: `Send 0 ETH to myself on Ethereum` or `Send 0.001 ETH to 0x... on Base`.',
+          timestamp: Date.now()
+        })
+        return
+      }
+
+      const chain = pickNativeTransferChain(text)
+      const value = parseEther(amount).toString()
+      setPendingTxRequest({
+        id: `local-native-transfer-${Date.now()}`,
+        chain,
+        chainName: CHAINS[chain].name,
+        from: address,
+        to: recipient,
+        data: '0x',
+        value,
+        description:
+          `Native transfer on ${CHAINS[chain].name}: send ${amount} ${CHAINS[chain].symbol} ` +
+          `to ${recipient === address ? 'your own wallet' : recipient}. Review the wallet popup before signing.`
+      })
+      addMessage({
+        id: genId(),
+        role: 'assistant' as const,
+        content:
+          `Prepared a real ${CHAINS[chain].name} transaction card for ${amount} ${CHAINS[chain].symbol}. ` +
+          'Review it carefully; you can reject it safely or sign from your wallet.',
+        timestamp: Date.now()
+      })
+      return
+    }
 
     // ── Browser-mode path: run the web3 agent directly. ──────────────────
     // No Electron IPC, no LLM provider — just on-chain reads + a synthesized
@@ -155,7 +245,24 @@ export default function RightRail(): JSX.Element {
       setError(e instanceof Error ? e.message : String(e))
       setStreaming(false)
     }
-  }, [input, streaming, activeScenario, activeWorkspace, activeThreadId, createThread, setActiveThread, updateThread, settings, activeSkillIds, activateSkill, addMessage, setStreaming])
+  }, [
+    input,
+    streaming,
+    activeScenario,
+    activeWorkspace,
+    activeThreadId,
+    createThread,
+    setActiveThread,
+    updateThread,
+    settings,
+    activeSkillIds,
+    activateSkill,
+    addMessage,
+    setStreaming,
+    isConnected,
+    address,
+    setPendingTxRequest
+  ])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -169,7 +276,10 @@ export default function RightRail(): JSX.Element {
   }
 
   return (
-    <div className="relative w-[360px] flex flex-col h-full min-h-0 border-l" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
+    <div
+      className="relative w-[360px] flex flex-col h-full min-h-0 border-l"
+      style={{ background: '#0e0e10', borderColor: '#1f1f23' }}
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f1f23]">
         <div className="flex items-center gap-2">
           <div
@@ -186,7 +296,9 @@ export default function RightRail(): JSX.Element {
           </div>
           <div>
             <div className="text-[12px] font-bold text-white">AI Agent</div>
-            <div className={`web3-label ${streaming ? 'web3-status-live' : isConnected ? 'web3-status-accent' : 'web3-text-muted'}`}>
+            <div
+              className={`web3-label ${streaming ? 'web3-status-live' : isConnected ? 'web3-status-accent' : 'web3-text-muted'}`}
+            >
               {streaming ? '● THINKING' : isConnected ? '● READY' : '● IDLE'}
             </div>
           </div>
@@ -243,7 +355,9 @@ export default function RightRail(): JSX.Element {
           <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[11px] text-red-300">
             <AlertCircle size={12} className="shrink-0 mt-0.5" />
             <div className="flex-1">{error}</div>
-            <button type="button" onClick={() => setError(null)} className="text-red-300/60 hover:text-red-300">×</button>
+            <button type="button" onClick={() => setError(null)} className="text-red-300/60 hover:text-red-300">
+              ×
+            </button>
           </div>
         )}
       </div>
@@ -259,9 +373,7 @@ export default function RightRail(): JSX.Element {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              isConnected
-                ? 'Ask the agent… (Enter to send)'
-                : 'Connect a wallet to start — or ask anything…'
+              isConnected ? 'Ask the agent… (Enter to send)' : 'Connect a wallet to start — or ask anything…'
             }
             rows={2}
             disabled={streaming}

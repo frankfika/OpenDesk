@@ -26,10 +26,20 @@ interface ChatAPI {
   regenerate: (payload: ChatSendPayload) => void
   editMessage: (payload: ChatSendPayload & { editIndex: number }) => void
   onToken: (cb: (payload: { token: string; threadId?: string }) => void) => () => void
-  onToolCall: (cb: (payload: { id: string; name: string; arguments: Record<string, unknown>; threadId?: string }) => void) => () => void
-  onToolResult: (cb: (payload: { toolCallId: string; content: string; isError?: boolean; threadId?: string }) => void) => () => void
+  onToolCall: (
+    cb: (payload: { id: string; name: string; arguments: Record<string, unknown>; threadId?: string }) => void
+  ) => () => void
+  onToolResult: (
+    cb: (payload: { toolCallId: string; content: string; isError?: boolean; threadId?: string }) => void
+  ) => () => void
   onDone: (
-    cb: (meta: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string; error?: string }) => void
+    cb: (meta: {
+      regenerate?: boolean
+      editIndex?: number
+      workspaceId?: string
+      threadId?: string
+      error?: string
+    }) => void
   ) => () => void
   onError: (cb: (error: { message: string; type: string }) => void) => () => void
   onAgentToken: (
@@ -165,13 +175,17 @@ interface MemoryAPI {
 
 interface ToolsAPI {
   listDirectory: (
-    path: string
+    path: string,
+    workspacePath?: string
   ) => Promise<{
     success: boolean
     entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>
     error?: string
   }>
-  readFile: (path: string, maxSizeBytes?: number) => Promise<{ success: boolean; content?: string; error?: string }>
+  readFile: (
+    path: string,
+    workspacePath?: string
+  ) => Promise<{ success: boolean; content?: string; error?: string }>
   writeFile: (path: string, content: string, workspacePath?: string) => Promise<{ success: boolean; error?: string }>
   executeShell: (
     command: string,
@@ -202,8 +216,67 @@ interface Web3API {
     value?: string
     description: string
   }) => Promise<{ txHash?: string; signedTx?: string; error?: string }>
-  explainCalldata: (payload: { chain: string; data: string }) => Promise<{ selector?: string; length?: number; note?: string; error?: string }>
+  txResult: (payload: { id: string; result?: unknown; error?: string }) => Promise<{ success: boolean; error?: string }>
+  explainCalldata: (payload: {
+    chain: string
+    data: string
+  }) => Promise<{ selector?: string; length?: number; note?: string; error?: string }>
   onTxRequest: (cb: (req: Web3TxRequest) => void) => () => void
+}
+
+interface StockQuote {
+  symbol: string
+  shortName?: string
+  longName?: string
+  exchange: 'NASDAQ' | 'NYSE' | 'AMEX' | 'OTHER'
+  currency: string
+  regularMarketPrice: number
+  regularMarketChange: number
+  regularMarketChangePercent: number
+  regularMarketTime: number
+  marketState: 'PRE' | 'REGULAR' | 'POST' | 'CLOSED'
+  preMarketPrice?: number
+  postMarketPrice?: number
+  fiftyTwoWeekHigh?: number
+  fiftyTwoWeekLow?: number
+  dayHigh?: number
+  dayLow?: number
+  volume?: number
+}
+
+interface StockSearchResult {
+  symbol: string
+  shortName: string
+  longName?: string
+  exchange: 'NASDAQ' | 'NYSE' | 'AMEX' | 'OTHER'
+  type: string
+}
+
+interface StockHistoryCandle {
+  t: number
+  o: number
+  h: number
+  l: number
+  c: number
+  v: number
+}
+
+interface StockNewsItem {
+  title: string
+  link: string
+  pubDate: string
+  source?: string
+}
+
+interface StocksAPI {
+  quote: (symbol: string) => Promise<{ quote?: StockQuote; error?: string }>
+  search: (query: string, limit?: number) => Promise<{ results?: StockSearchResult[]; error?: string }>
+  history: (
+    symbol: string,
+    range?: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '5y',
+    interval?: '1m' | '5m' | '15m' | '1h' | '1d' | '1wk' | '1mo'
+  ) => Promise<{ history?: { symbol: string; candles: StockHistoryCandle[] }; error?: string }>
+  news: (symbol: string) => Promise<{ items: StockNewsItem[] }>
 }
 
 declare global {
@@ -221,7 +294,11 @@ declare global {
       memory: MemoryAPI
       tools: ToolsAPI
       web3: Web3API
+      stocks: StocksAPI
       app: {
+        analysis: {
+          run: (prompt: string) => Promise<{ content?: string; error?: string }>
+        }
         onNewChat: (cb: () => void) => () => void
         onOpenSettings: (cb: () => void) => () => void
         onFocusInput: (cb: () => void) => () => void
@@ -231,30 +308,115 @@ declare global {
         onFocusModel: (cb: () => void) => () => void
         onHealthChanged: (cb: (payload: { providerId: string; result: boolean }) => void) => () => void
         artifact: {
-          export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }) =>
-            Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }>
+          export: (args: {
+            format: 'docx' | 'xlsx' | 'pptx' | 'md'
+            title?: string
+            content: string
+          }) => Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }>
         }
         marketplace: {
-          list: () => Promise<Array<{
-            id: string; name: string; description: string
-            category: string; tags: string[]; author: string
-            githubPath: string; skillSubpath: string
-            stars?: number; installs?: number; version?: string; verified?: boolean
-          }>>
+          list: () => Promise<
+            Array<{
+              id: string
+              name: string
+              description: string
+              category: string
+              tags: string[]
+              author: string
+              githubPath: string
+              skillSubpath: string
+              stars?: number
+              installs?: number
+              version?: string
+              verified?: boolean
+            }>
+          >
           install: (entry: {
-            id: string; name: string; description: string
-            category: string; tags: string[]; author: string
-            githubPath: string; skillSubpath: string
-            stars?: number; installs?: number; version?: string; verified?: boolean
-          }) => Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string; record?: { id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } }>
-          installed: () => Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>
+            id: string
+            name: string
+            description: string
+            category: string
+            tags: string[]
+            author: string
+            githubPath: string
+            skillSubpath: string
+            stars?: number
+            installs?: number
+            version?: string
+            verified?: boolean
+          }) => Promise<{
+            ok: boolean
+            skillId?: string
+            error?: string
+            traceId: string
+            record?: {
+              id: string
+              name: string
+              version: string
+              installedAt: number
+              lastCheckedAt: number
+              latestVersion?: string
+              updateAvailable?: boolean
+              path: string
+            }
+          }>
+          installed: () => Promise<
+            Array<{
+              id: string
+              name: string
+              version: string
+              installedAt: number
+              lastCheckedAt: number
+              latestVersion?: string
+              updateAvailable?: boolean
+              path: string
+            }>
+          >
           uninstall: (id: string) => Promise<boolean>
-          checkUpdates: () => Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>
-          findInstalled: (id: string) => Promise<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } | null>
+          checkUpdates: () => Promise<
+            Array<{
+              id: string
+              name: string
+              version: string
+              installedAt: number
+              lastCheckedAt: number
+              latestVersion?: string
+              updateAvailable?: boolean
+              path: string
+            }>
+          >
+          findInstalled: (id: string) => Promise<{
+            id: string
+            name: string
+            version: string
+            installedAt: number
+            lastCheckedAt: number
+            latestVersion?: string
+            updateAvailable?: boolean
+            path: string
+          } | null>
         }
         claw: {
-          getConfig: () => Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>
-          updateConfig: (patch: { telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }) => Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>
+          getConfig: () => Promise<{
+            telegramToken?: string
+            allowedChatIds?: number[]
+            pollingTimeout?: number
+            bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+            enabled?: boolean
+          }>
+          updateConfig: (patch: {
+            telegramToken?: string
+            allowedChatIds?: number[]
+            pollingTimeout?: number
+            bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+            enabled?: boolean
+          }) => Promise<{
+            telegramToken?: string
+            allowedChatIds?: number[]
+            pollingTimeout?: number
+            bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+            enabled?: boolean
+          }>
           start: () => Promise<void>
           stop: () => Promise<void>
           sendMessage: (chatId: number, text: string) => Promise<void>
@@ -264,28 +426,46 @@ declare global {
           onError: (cb: (e: { message: string }) => void) => () => void
         }
         changelog: {
-          record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) => Promise<{ id: string }>
-          update: (id: string, patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>) => Promise<void>
-          list: (opts?: { threadId?: string | null; limit?: number; sinceTs?: number }) => Promise<Array<{
-            id: string; threadId: string | null; ts: number
+          record: (entry: {
+            threadId?: string | null
             kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'
-            title: string; detail: string | null
-            status: 'pending' | 'success' | 'error'; error: string | null
-          }>>
+            title: string
+            detail?: string
+            status: 'pending' | 'success' | 'error'
+            error?: string
+          }) => Promise<{ id: string }>
+          update: (
+            id: string,
+            patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>
+          ) => Promise<void>
+          list: (opts?: { threadId?: string | null; limit?: number; sinceTs?: number }) => Promise<
+            Array<{
+              id: string
+              threadId: string | null
+              ts: number
+              kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'
+              title: string
+              detail: string | null
+              status: 'pending' | 'success' | 'error'
+              error: string | null
+            }>
+          >
           clear: (opts?: { threadId?: string }) => Promise<number>
         }
         experts: {
-          list: () => Promise<Array<{
-            id: string
-            name: string
-            domain: string
-            description: string
-            icon: string
-            color: string
-            skillId: string
-            systemPrompt: string
-            starters: string[]
-          }>>
+          list: () => Promise<
+            Array<{
+              id: string
+              name: string
+              domain: string
+              description: string
+              icon: string
+              color: string
+              skillId: string
+              systemPrompt: string
+              starters: string[]
+            }>
+          >
           get: (id: string) => Promise<{
             id: string
             name: string
@@ -299,25 +479,49 @@ declare global {
           } | null>
         }
         scheduler: {
-          list: () => Promise<Array<{
+          list: () => Promise<
+            Array<{
+              id: string
+              name: string
+              cron: string
+              enabled: boolean
+              createdAt: number
+              lastRunAt?: number
+              lastRunStatus?: 'success' | 'error'
+              lastRunError?: string
+            }>
+          >
+          create: (input: {
+            name: string
+            cron: string
+            action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+          }) => Promise<{
             id: string
             name: string
             cron: string
             enabled: boolean
             createdAt: number
-            lastRunAt?: number
-            lastRunStatus?: 'success' | 'error'
-            lastRunError?: string
-          }>>
-          create: (input: { name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string } }) => Promise<{
-            id: string; name: string; cron: string; enabled: boolean; createdAt: number
           }>
-          update: (id: string, patch: Partial<{ name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; enabled: boolean }>) => Promise<unknown>
+          update: (
+            id: string,
+            patch: Partial<{
+              name: string
+              cron: string
+              action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+              enabled: boolean
+            }>
+          ) => Promise<unknown>
           delete: (id: string) => Promise<boolean>
           run: (id: string) => Promise<void>
           validate: (expr: string) => Promise<boolean>
           reportFinished: (id: string, status: 'success' | 'error', error?: string) => Promise<void>
-          onTaskRunning: (cb: (payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }) => void) => () => void
+          onTaskRunning: (
+            cb: (payload: {
+              id: string
+              action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+              startedAt: number
+            }) => void
+          ) => () => void
         }
       }
     }

@@ -15,7 +15,7 @@ import {
   Globe,
   Type
 } from 'lucide-react'
-import CodeBlock from '../chat/CodeBlock'
+import CodeBlock from '../ui/CodeBlock'
 
 export type ArtifactType = 'html' | 'react' | 'mermaid' | 'svg' | 'code' | 'markdown'
 

@@ -39,11 +39,16 @@ export default function Web3Shell(): JSX.Element {
 
   // Memory toast listener
   useEffect(() => {
+    let pendingToast: ReturnType<typeof setTimeout> | null = null
     const off = window.api?.memory?.onUpdated?.(({ count, categories }) => {
       const catLabels = categories
         .map((c) => (c === 'user' ? 'User' : c === 'identity' ? 'Identity' : 'Soul'))
         .join(', ')
-      setTimeout(() => {
+      // Defer the toast so it doesn't pop mid-render. Track the timer so
+      // we can clear it on unmount (prevents the toast firing after the
+      // user has navigated away).
+      pendingToast = setTimeout(() => {
+        pendingToast = null
         toast.info(`Memory updated: ${count} new ${count === 1 ? 'entry' : 'entries'} saved to ${catLabels}`, {
           label: 'View',
           onClick: () => setMemoryPanelOpen(true)
@@ -51,6 +56,7 @@ export default function Web3Shell(): JSX.Element {
       }, 500)
     })
     return () => {
+      if (pendingToast) clearTimeout(pendingToast)
       off?.()
     }
   }, [toast])
@@ -65,11 +71,9 @@ export default function Web3Shell(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsLoaded, loadSettings, loadWorkspaces, setTheme])
 
-  // Onboarding gate — Web3 workbench doesn't need AI provider onboarding.
-  // The user is prompted to connect their wallet from the top bar instead.
-  useEffect(() => {
-    // intentionally left empty: Web3 workbench uses wallet connection, not providers
-  }, [])
+  // Onboarding gate — Web3 workbench doesn't need AI provider onboarding;
+  // the user is prompted to connect their wallet from the top bar instead.
+  // (No effect needed — the top bar surfaces wallet connect directly.)
 
   // Global shortcut listener
   useEffect(() => {

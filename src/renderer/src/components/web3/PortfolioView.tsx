@@ -1,99 +1,90 @@
 // PortfolioView — main "home" view. Shows real balance, token list, activity.
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, ExternalLink, AlertCircle, Search, RefreshCw, Layers, Activity as ActivityIcon } from 'lucide-react'
+import { useAppKit } from '@reown/appkit/react'
+import {
+  TrendingUp,
+  TrendingDown,
+  ExternalLink,
+  AlertCircle,
+  Search,
+  ArrowRight,
+  RefreshCw,
+  Layers,
+  Activity as ActivityIcon,
+  ScanLine,
+  ShieldCheck,
+  Zap,
+  type LucideIcon
+} from 'lucide-react'
 import { useAccount } from 'wagmi'
 import {
-  CHAINS, ChainKey, MAINNET_KEYS,
-  useNativeBalance, useTokenList, useTokenPrices, useActivity, useTokenTransfers,
-  fmtUsd, fmtNumber, fmtPct, timeAgo, shortAddr
+  CHAINS,
+  ChainKey,
+  MAINNET_KEYS,
+  useNativeBalance,
+  useTokenList,
+  useTokenPrices,
+  useActivity,
+  useTokenTransfers,
+  fmtUsd,
+  fmtNumber,
+  fmtPct,
+  timeAgo,
+  shortAddr
 } from '../../hooks/useWeb3Data'
+import { useWeb3Store, type Web3ScenarioId } from '../../store/web3'
 import Sparkline from './Sparkline'
-
-const SAMPLE_ADDRESS = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
 
 export default function PortfolioView(): JSX.Element {
   const { address, isConnected } = useAccount()
   const [viewAddress, setViewAddress] = useState<string>('')
-  const [inputValue, setInputValue] = useState('')
-  const [searching, setSearching] = useState(false)
 
+  // When the user connects their wallet, default the view to their own
+  // address. Until they connect, leave the field empty — the user is
+  // expected to type or paste the address they want to inspect. (An older
+  // version of this file used vitalik.eth as a default "demo" address,
+  // which made the workbench look like it was inspecting someone else's
+  // wallet; that was removed for the v1 cutover.)
   useEffect(() => {
     if (isConnected && address && !viewAddress) {
       setViewAddress(address)
-    } else if (!isConnected && !viewAddress) {
-      setViewAddress(SAMPLE_ADDRESS)
     }
   }, [isConnected, address, viewAddress])
 
-  const handleSearch = async () => {
-    const v = inputValue.trim()
-    if (!v) return
-    setSearching(true)
-    try {
-      let resolved = v
-      if (v.toLowerCase().endsWith('.eth')) {
-        const ens = await fetch(`/api/ens/ens/resolve/${v}`).then((r) => r.json()).catch(() => null)
-        if (ens?.address) resolved = ens.address
-      } else if (!/^0x[a-fA-F0-9]{40}$/.test(v)) {
-        return
-      }
-      setViewAddress(resolved)
-    } finally {
-      setSearching(false)
-    }
-  }
-
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 pt-5 pb-3 border-b border-[var(--web3-border)]">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="web3-label">Watching</span>
-          {!isConnected && <span className="web3-label web3-status-warn">SAMPLE · CONNECT TO USE YOURS</span>}
-        </div>
-        <div className="web3-input">
-          <Search size={12} className="web3-text-muted shrink-0" />
-          <input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
-            placeholder="Paste address or ENS (e.g. vitalik.eth)"
-            className="flex-1 bg-transparent outline-none text-[12px] font-mono text-white placeholder:web3-text-muted min-w-0"
-          />
-          <button
-            type="button"
-            onClick={handleSearch}
-            disabled={searching}
-            className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors disabled:opacity-50"
-          >
-            {searching ? '...' : 'Look up'}
-          </button>
-          {isConnected && address && (
-            <button
-              type="button"
-              onClick={() => setViewAddress(address)}
-              className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body hover:text-white bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors"
-            >
-              My wallet
-            </button>
-          )}
-        </div>
-        <div className="mt-2 web3-label web3-text-muted break-all">
-          {viewAddress}
-        </div>
-      </div>
-
-      <PortfolioContent address={viewAddress} />
+      <PortfolioContent
+        address={viewAddress}
+        connectedAddress={address}
+        isConnected={isConnected}
+        onSetAddress={setViewAddress}
+      />
     </div>
   )
 }
 
-function PortfolioContent({ address }: { address: string }): JSX.Element {
+function PortfolioContent({
+  address,
+  connectedAddress,
+  isConnected,
+  onSetAddress
+}: {
+  address: string
+  connectedAddress?: `0x${string}`
+  isConnected: boolean
+  onSetAddress: (address: string) => void
+}): JSX.Element {
   const [activeChain, setActiveChain] = useState<ChainKey>('ethereum')
+  const [taskInput, setTaskInput] = useState('')
+  const [resolving, setResolving] = useState(false)
   const native = useNativeBalance(address, activeChain)
   const tokens = useTokenList(address, activeChain)
   const activity = useActivity(address, activeChain, 8)
   const transfers = useTokenTransfers(address, activeChain, 8)
+  const setActiveScenario = useWeb3Store((s) => s.setActiveScenario)
+  const setPendingTxRequest = useWeb3Store((s) => s.setPendingTxRequest)
+  const { open } = useAppKit()
 
   const symbols = useMemo(() => {
     const s = new Set<string>([CHAINS[activeChain].symbol])
@@ -106,7 +97,8 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
     let total = 0
     const ethPrice = prices.data?.ETH?.usd ?? 0
     if (native.data) {
-      const nativeUsd = parseFloat(native.data.balance) * (activeChain === 'bsc' ? prices.data?.BNB?.usd ?? 0 : ethPrice)
+      const nativeUsd =
+        parseFloat(native.data.balance) * (activeChain === 'bsc' ? (prices.data?.BNB?.usd ?? 0) : ethPrice)
       total += nativeUsd
     }
     if (tokens.data) {
@@ -120,47 +112,225 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
 
   const ethChange = prices.data?.ETH?.usd_24h_change ?? null
   const totalChange = ethChange ?? 0
+  const runScenario = (scenario: Web3ScenarioId, prompt: string) => {
+    setActiveScenario(scenario)
+    window.dispatchEvent(new CustomEvent('opendesk:fill-input', { detail: { text: prompt } }))
+  }
+
+  const runDoctorScan = (target: string) => {
+    setActiveScenario('doctor')
+    window.dispatchEvent(
+      new CustomEvent('opendesk:web3:set-doctor-address', { detail: { address: target, chain: activeChain } })
+    )
+    window.dispatchEvent(
+      new CustomEvent('opendesk:fill-input', { detail: { text: `Scan ${target} for risky approvals` } })
+    )
+  }
+
+  const openSignerCheck = () => {
+    setActiveScenario('trade')
+    if (!connectedAddress) {
+      void open({ view: 'Connect' })
+      window.dispatchEvent(
+        new CustomEvent('opendesk:fill-input', {
+          detail: { text: 'Connect a wallet, then run signer check again.' }
+        })
+      )
+      return
+    }
+    setPendingTxRequest({
+      id: `local-signer-check-${Date.now()}`,
+      chain: activeChain,
+      chainName: CHAINS[activeChain].name,
+      from: connectedAddress,
+      to: connectedAddress,
+      data: '0x',
+      value: '0',
+      description:
+        `Signer check on ${CHAINS[activeChain].name}: prepare a 0 ${CHAINS[activeChain].symbol} self-transaction. ` +
+        'Review the wallet popup carefully; signing may still spend gas, and you can reject safely.'
+    })
+    window.dispatchEvent(
+      new CustomEvent('opendesk:fill-input', {
+        detail: { text: `Signer check ready on ${CHAINS[activeChain].name}. Review the transaction card.` }
+      })
+    )
+  }
+
+  const resolveAddress = async (value: string) => {
+    if (value.toLowerCase().endsWith('.eth')) {
+      const ens = await fetch(`/api/ens/ens/resolve/${value}`)
+        .then((r) => r.json())
+        .catch(() => null)
+      return ens?.address || null
+    }
+    return /^0x[a-fA-F0-9]{40}$/.test(value) ? value : null
+  }
+
+  const submitTask = async () => {
+    const value = taskInput.trim()
+    if (!value) return
+    setResolving(true)
+    try {
+      const resolved = await resolveAddress(value)
+      if (resolved) {
+        onSetAddress(resolved)
+        runScenario('intel', `Analyze ${resolved}`)
+        setTaskInput('')
+        return
+      }
+      runScenario('chat', value)
+      setTaskInput('')
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  const missions = [
+    {
+      icon: ScanLine,
+      title: 'Whale teardown',
+      detail: 'Analyze vitalik.eth across chains',
+      cta: 'Run report',
+      onClick: () => runScenario('intel', 'Analyze vitalik.eth')
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Approval danger check',
+      detail: 'Find spenders that can move tokens',
+      cta: 'Scan risk',
+      onClick: () => runDoctorScan(address)
+    },
+    {
+      icon: Zap,
+      title: 'Signer check',
+      detail: 'Open a real wallet confirmation card',
+      cta: 'Open signer',
+      onClick: openSignerCheck
+    },
+    {
+      icon: ActivityIcon,
+      title: 'Explain activity',
+      detail: 'Turn transactions into plain English',
+      cta: 'Explain',
+      onClick: () => runScenario('chat', `Explain the recent activity for ${address}`)
+    }
+  ]
 
   return (
     <div className="p-6 space-y-5">
-      {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="web3-card web3-card-pad-lg relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(180deg, rgba(29, 140, 128, 0.08) 0%, rgba(0, 0, 0, 0.4) 100%)'
-        }}
+        className="web3-card overflow-hidden"
       >
-        <div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(29, 140, 128, 0.2) 0%, transparent 70%)' }}
-        />
-        <div className="relative">
-          <div className="flex items-center gap-2 web3-label web3-status-live mb-1.5">
-            <ActivityIcon size={10} />
-            Net Worth · {CHAINS[activeChain].name}
+        <div className="px-6 pt-5 pb-6">
+          <div className="web3-label web3-status-accent mb-3">Command center</div>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="text-[28px] font-bold leading-[1.15] text-white tracking-tight">
+                Pick a mission. <span className="web3-text-muted">OpenDesk turns wallet noise into action.</span>
+              </h1>
+              <p className="mt-2 text-[12.5px] web3-text-body leading-relaxed">
+                Drop a wallet, ask a task, or run a live example. The agent will analyze, explain, and prepare the next
+                move.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {isConnected && connectedAddress && (
+                <button type="button" onClick={() => onSetAddress(connectedAddress)} className="web3-btn">
+                  My wallet
+                </button>
+              )}
+              <span className="web3-label web3-text-muted">
+                {isConnected ? 'Wallet connected' : 'Sample wallet active'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-baseline gap-3 mb-2">
-            <div className="text-5xl font-bold text-white tracking-tight font-mono">
-              {tokens.loading || prices.loading ? (
-                <span className="inline-block w-32 h-12 rounded-md bg-white/5 animate-pulse" />
-              ) : (
-                fmtUsd(totalUsd)
+
+          <div
+            className="mt-5 flex items-center gap-3 rounded-xl px-3 py-2.5"
+            style={{
+              background: '#0a0a0a',
+              border: '1px solid var(--web3-border)',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset'
+            }}
+          >
+            <Search size={15} className="web3-text-muted shrink-0" />
+            <input
+              value={taskInput}
+              onChange={(e) => setTaskInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void submitTask()}
+              placeholder="Paste vitalik.eth, 0x..., or ask: Find risky approvals"
+              className="min-w-0 flex-1 bg-transparent text-[13.5px] text-white outline-none placeholder:web3-text-muted"
+            />
+            <button
+              type="button"
+              onClick={submitTask}
+              disabled={!taskInput.trim() || resolving}
+              className="web3-btn web3-btn-primary disabled:opacity-30"
+            >
+              {resolving ? 'Checking' : 'Run'}
+              <ArrowRight size={11} />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Missions — 2x2 independent cards (not divide-style list items) */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {missions.map((mission) => (
+          <MissionButton
+            key={mission.title}
+            icon={mission.icon}
+            title={mission.title}
+            detail={mission.detail}
+            cta={mission.cta}
+            onClick={mission.onClick}
+          />
+        ))}
+      </div>
+
+      <div className="web3-card web3-card-pad overflow-hidden">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 web3-label web3-text-muted mb-1.5">
+              <ActivityIcon size={10} />
+              Current wallet snapshot · {CHAINS[activeChain].name}
+            </div>
+            <div className="flex items-end gap-3">
+              <div className="text-[32px] font-bold text-white tracking-tight font-mono leading-none">
+                {tokens.loading || prices.loading ? (
+                  <span className="inline-block w-28 h-8 rounded-md bg-white/5 animate-pulse" />
+                ) : (
+                  fmtUsd(totalUsd)
+                )}
+              </div>
+              {ethChange != null && totalUsd > 0 && (
+                <div
+                  className={`flex items-center gap-1 pb-1 text-[12px] font-mono font-bold ${totalChange >= 0 ? 'web3-status-live' : 'web3-status-error'}`}
+                >
+                  {totalChange >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                  {fmtPct(totalChange, 2)}
+                  <span className="web3-text-muted font-normal text-[10px] ml-0.5">24h</span>
+                </div>
               )}
             </div>
-            {ethChange != null && totalUsd > 0 && (
-              <div className={`flex items-center gap-1 text-[14px] font-mono font-bold ${totalChange >= 0 ? 'web3-status-live' : 'web3-status-error'}`}>
-                {totalChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                {fmtPct(totalChange, 2)}
-                <span className="web3-text-muted font-normal text-[11px] ml-1">24h</span>
-              </div>
-            )}
+            <div className="mt-2 flex items-center gap-2 text-[11px] web3-text-muted font-mono">
+              <span className="truncate" title={address}>
+                {shortAddr(address)}
+              </span>
+              <span className="opacity-50">·</span>
+              <span>{CHAINS[activeChain].symbol} {fmtNumber(parseFloat(native.data?.balance ?? '0'), 4)}</span>
+              <span className="opacity-50">·</span>
+              <span>{tokens.data?.length ?? 0} tokens</span>
+              <span className="opacity-50">·</span>
+              <span>{activity.data?.length ?? 0} tx</span>
+            </div>
           </div>
-          <div className="web3-label web3-text-muted">{shortAddr(address)}</div>
 
-          <div className="flex items-center gap-1.5 mt-4 flex-wrap">
-            {MAINNET_KEYS.map((k) => {
+          <div className="flex items-center gap-1.5 flex-wrap xl:justify-end xl:max-w-[360px]">
+            {MAINNET_KEYS.slice(0, 5).map((k) => {
               const meta = CHAINS[k]
               const active = activeChain === k
               return (
@@ -174,35 +344,21 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
                       : 'web3-text-muted hover:web3-text-body hover:bg-[#181820] border border-transparent'
                   }`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }}
+                  />
                   {meta.shortName}
                 </button>
               )
             })}
+            {MAINNET_KEYS.length > 5 && (
+              <span className="px-1.5 py-1 text-[10.5px] font-mono web3-text-muted">
+                +{MAINNET_KEYS.length - 5} more
+              </span>
+            )}
           </div>
         </div>
-      </motion.div>
-
-      {/* 3-up stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard
-          label="Native"
-          value={`${fmtNumber(parseFloat(native.data?.balance ?? '0'), 4)} ${CHAINS[activeChain].symbol}`}
-          sub={fmtUsd(parseFloat(native.data?.balance ?? '0') * (prices.data?.[CHAINS[activeChain].symbol]?.usd ?? 0))}
-          loading={native.loading}
-        />
-        <StatCard
-          label="Tokens"
-          value={String(tokens.data?.length ?? 0)}
-          sub="held"
-          loading={tokens.loading}
-        />
-        <StatCard
-          label="Activity"
-          value={String(activity.data?.length ?? 0)}
-          sub="recent tx"
-          loading={activity.loading}
-        />
       </div>
 
       {/* Token list */}
@@ -214,7 +370,11 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
 
         {tokens.error && <ErrorRow message={tokens.error} onRetry={tokens.refetch} />}
         {!tokens.loading && tokens.data && tokens.data.length === 0 && (
-          <EmptyRow icon={Layers} title="No tokens held" hint="This address has no ERC-20 token balance on this chain." />
+          <EmptyRow
+            icon={Layers}
+            title="No tokens held"
+            hint="This address has no ERC-20 token balance on this chain."
+          />
         )}
 
         {tokens.loading && (
@@ -258,13 +418,21 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
                     <div className="web3-label web3-text-muted truncate">{t.name}</div>
                   </div>
                   {price?.sparkline && price.sparkline.length > 1 && (
-                    <Sparkline data={price.sparkline} width={56} height={18} positive={(change ?? 0) >= 0} className="opacity-80" />
+                    <Sparkline
+                      data={price.sparkline}
+                      width={56}
+                      height={18}
+                      positive={(change ?? 0) >= 0}
+                      className="opacity-80"
+                    />
                   )}
                   <div className="text-right min-w-[80px]">
                     <div className="text-[12px] font-mono font-semibold text-white">
                       {fmtNumber(parseFloat(t.balanceFormatted), 4)}
                     </div>
-                    <div className={`text-[10px] font-mono ${change != null ? (change >= 0 ? 'web3-status-live' : 'web3-status-error') : 'web3-text-muted'}`}>
+                    <div
+                      className={`text-[10px] font-mono ${change != null ? (change >= 0 ? 'web3-status-live' : 'web3-status-error') : 'web3-text-muted'}`}
+                    >
                       {usd != null ? fmtUsd(usd, { compact: true }) : '—'}
                       {change != null && ` ${fmtPct(change, 1)}`}
                     </div>
@@ -291,9 +459,17 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
           </a>
         </div>
         {activity.error && <ErrorRow message={activity.error} onRetry={activity.refetch} />}
-        {!activity.loading && activity.data && activity.data.length === 0 && transfers.data && transfers.data.length === 0 && (
-          <EmptyRow icon={ActivityIcon} title="No activity" hint="This address has no transactions or token transfers on this chain." />
-        )}
+        {!activity.loading &&
+          activity.data &&
+          activity.data.length === 0 &&
+          transfers.data &&
+          transfers.data.length === 0 && (
+            <EmptyRow
+              icon={ActivityIcon}
+              title="No activity"
+              hint="This address has no transactions or token transfers on this chain."
+            />
+          )}
         {(activity.loading || transfers.loading) && (
           <div className="divide-y divide-white/5">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -317,9 +493,28 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
               .slice(0, 10)
               .map((item, i) =>
                 item.kind === 'tx' ? (
-                  <ActivityRow key={`tx-${item.data.hash}-${i}`} hash={item.data.hash} method={item.data.method ?? 'Tx'} time={item.data.timestamp} value={item.data.valueFormatted} symbol={CHAINS[activeChain].symbol} isError={item.data.isError} direction={item.data.direction} chain={activeChain} />
+                  <ActivityRow
+                    key={`tx-${item.data.hash}-${i}`}
+                    hash={item.data.hash}
+                    method={item.data.method ?? 'Tx'}
+                    time={item.data.timestamp}
+                    value={item.data.valueFormatted}
+                    symbol={CHAINS[activeChain].symbol}
+                    isError={item.data.isError}
+                    direction={item.data.direction}
+                    chain={activeChain}
+                  />
                 ) : (
-                  <TransferRow key={`tt-${item.data.hash}-${i}`} hash={item.data.hash} symbol={item.data.tokenSymbol} value={item.data.valueFormatted} time={item.data.timestamp} to={item.data.to} chain={activeChain} address={address} />
+                  <TransferRow
+                    key={`tt-${item.data.hash}-${i}`}
+                    hash={item.data.hash}
+                    symbol={item.data.tokenSymbol}
+                    value={item.data.valueFormatted}
+                    time={item.data.timestamp}
+                    to={item.data.to}
+                    chain={activeChain}
+                    address={address}
+                  />
                 )
               )}
           </div>
@@ -329,17 +524,37 @@ function PortfolioContent({ address }: { address: string }): JSX.Element {
   )
 }
 
-function StatCard({ label, value, sub, loading }: { label: string; value: string; sub: string; loading?: boolean }): JSX.Element {
+function MissionButton({
+  icon: Icon,
+  title,
+  detail,
+  cta,
+  onClick
+}: {
+  icon: LucideIcon
+  title: string
+  detail: string
+  cta: string
+  onClick: () => void
+}): JSX.Element {
   return (
-    <div className="web3-card web3-card-pad">
-      <div className="web3-label mb-1.5">{label}</div>
-      {loading ? (
-        <div className="w-20 h-5 rounded bg-white/5 animate-pulse mb-0.5" />
-      ) : (
-        <div className="text-[15px] font-mono font-bold text-white">{value}</div>
-      )}
-      <div className="text-[10px] web3-text-muted mt-0.5">{sub}</div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex min-h-[112px] items-start gap-3 rounded-xl border border-[var(--web3-border)] bg-[var(--web3-card)] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1D8C80]/60 hover:shadow-[0_8px_24px_-12px_rgba(29,140,128,0.5)] active:translate-y-0"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#1D8C80]/30 bg-[#1D8C80]/15 text-[#1D8C80] transition-colors group-hover:bg-[#1D8C80]/25">
+        <Icon size={17} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-semibold text-white tracking-tight">{title}</div>
+        <div className="mt-1 text-[11px] web3-text-muted leading-relaxed">{detail}</div>
+        <div className="mt-3 flex items-center gap-1 text-[10.5px] font-mono font-bold tracking-wider uppercase text-[#1D8C80]">
+          {cta}
+          <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+        </div>
+      </div>
+    </button>
   )
 }
 
@@ -355,7 +570,16 @@ function TokenLogo({ symbol, color }: { symbol: string; color: string }): JSX.El
   )
 }
 
-function ActivityRow({ hash, method, time, value, symbol, isError, direction, chain }: {
+function ActivityRow({
+  hash,
+  method,
+  time,
+  value,
+  symbol,
+  isError,
+  direction,
+  chain
+}: {
   hash: string
   method: string
   time: number
@@ -375,10 +599,14 @@ function ActivityRow({ hash, method, time, value, symbol, isError, direction, ch
       <DirectionArrow direction={direction} />
       <div className="flex-1 min-w-0">
         <div className="text-[12px] font-semibold text-white">{method}</div>
-        <div className="web3-label web3-text-muted">{timeAgo(time)} · {shortAddr(hash)}</div>
+        <div className="web3-label web3-text-muted">
+          {timeAgo(time)} · {shortAddr(hash)}
+        </div>
       </div>
       <div className="text-right">
-        <div className={`text-[11.5px] font-mono font-semibold ${direction === 'in' ? 'web3-status-live' : direction === 'out' ? 'web3-text-strong' : 'web3-text-body'}`}>
+        <div
+          className={`text-[11.5px] font-mono font-semibold ${direction === 'in' ? 'web3-status-live' : direction === 'out' ? 'web3-text-strong' : 'web3-text-body'}`}
+        >
           {direction === 'in' ? '+' : direction === 'out' ? '-' : ''}
           {fmtNumber(parseFloat(value), 4)} {symbol}
         </div>
@@ -389,7 +617,15 @@ function ActivityRow({ hash, method, time, value, symbol, isError, direction, ch
   )
 }
 
-function TransferRow({ hash, symbol, value, time, to, chain, address }: {
+function TransferRow({
+  hash,
+  symbol,
+  value,
+  time,
+  to,
+  chain,
+  address
+}: {
   hash: string
   symbol: string
   value: string
@@ -409,7 +645,9 @@ function TransferRow({ hash, symbol, value, time, to, chain, address }: {
       <DirectionArrow direction={incoming ? 'in' : 'out'} />
       <div className="flex-1 min-w-0">
         <div className="text-[12px] font-semibold text-white">Transfer {symbol}</div>
-        <div className="web3-label web3-text-muted">{timeAgo(time)} · {shortAddr(hash)}</div>
+        <div className="web3-label web3-text-muted">
+          {timeAgo(time)} · {shortAddr(hash)}
+        </div>
       </div>
       <div className="text-right">
         <div className={`text-[11.5px] font-mono font-semibold ${incoming ? 'web3-status-live' : 'web3-text-strong'}`}>
@@ -449,12 +687,22 @@ function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }
     <div className="px-5 py-4 flex items-center gap-2 text-[11px] text-red-300">
       <AlertCircle size={12} className="shrink-0" />
       <span className="flex-1 font-mono">{message}</span>
-      <button type="button" onClick={onRetry} className="web3-text-secondary hover:text-white">Retry</button>
+      <button type="button" onClick={onRetry} className="web3-text-secondary hover:text-white">
+        Retry
+      </button>
     </div>
   )
 }
 
-function EmptyRow({ icon: Icon, title, hint }: { icon: typeof ActivityIcon | typeof Layers; title: string; hint: string }): JSX.Element {
+function EmptyRow({
+  icon: Icon,
+  title,
+  hint
+}: {
+  icon: typeof ActivityIcon | typeof Layers
+  title: string
+  hint: string
+}): JSX.Element {
   return (
     <div className="px-5 py-6 text-center">
       <Icon size={20} className="mx-auto web3-text-muted opacity-40 mb-2" />

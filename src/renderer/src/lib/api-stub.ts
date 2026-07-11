@@ -89,6 +89,9 @@ if (typeof window !== 'undefined' && !window.api) {
       callTool: async () => ''
     },
     app: {
+      analysis: {
+        run: async () => ({ content: '[stub] Configure a provider in Settings to get a real LLM analysis.' })
+      },
       onNewChat: noop,
       onOpenSettings: noop,
       onFocusInput: noop,
@@ -121,6 +124,12 @@ if (typeof window !== 'undefined' && !window.api) {
       delete: async () => false,
       getBuiltins: async () => [],
       create: async () => ({ success: false, error: 'Not available in browser mode' })
+    },
+    stocks: {
+      quote: async () => ({ error: 'Not available in browser mode' }),
+      search: async () => ({ results: [] }),
+      history: async () => ({ history: { symbol: '', candles: [] } }),
+      news: async () => ({ items: [] })
     }
   }
 }

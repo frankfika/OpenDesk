@@ -1,6 +1,6 @@
 // LeftSidebar — primary nav. Scenarios are top-level entries (not tabs).
 import { motion } from 'framer-motion'
-import { ScanLine, Zap, ShieldCheck, Plus, Layers, History, type LucideIcon } from 'lucide-react'
+import { Activity, ScanLine, Zap, ShieldCheck, Plus, Layers, History, type LucideIcon } from 'lucide-react'
 import { useWeb3Store, type Web3ScenarioId } from '../../store/web3'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useChatStore } from '../../store/chat'
@@ -15,6 +15,7 @@ interface NavItem {
 }
 
 const SCENARIOS: NavItem[] = [
+  { id: 'chat', label: 'Portfolio Watch', short: 'WATCH', icon: Activity, color: '#1D8C80', skill: '' },
   { id: 'intel', label: 'Chain Intel', short: 'INTEL', icon: ScanLine, color: '#627eea', skill: 'web3-intel' },
   { id: 'trade', label: 'One-Liner Trade', short: 'TRADE', icon: Zap, color: '#1D8C80', skill: 'web3-trader' },
   { id: 'doctor', label: 'Wallet Doctor', short: 'DOCTOR', icon: ShieldCheck, color: '#ffb250', skill: 'web3-intel' }
@@ -42,12 +43,15 @@ export default function LeftSidebar(): JSX.Element {
   }
 
   return (
-    <div className="relative w-60 flex flex-col h-full min-h-0 border-r" style={{ background: '#0e0e10', borderColor: '#1f1f23' }}>
+    <div
+      className="relative w-60 flex flex-col h-full min-h-0 border-r"
+      style={{ background: '#0e0e10', borderColor: '#1f1f23' }}
+    >
       {/* Scenarios — primary nav */}
       <div className="px-3 pt-4 pb-2">
         <div className="flex items-center justify-between px-2 mb-2">
-          <span className="web3-label">Scenarios</span>
-          <span className="web3-label web3-status-accent">3</span>
+          <span className="web3-label">Workspace</span>
+          <span className="web3-label web3-status-accent">WEB3</span>
         </div>
         <div className="space-y-1">
           {SCENARIOS.map((s) => {
@@ -104,9 +108,7 @@ export default function LeftSidebar(): JSX.Element {
           </button>
         </div>
         {threads.length === 0 ? (
-          <div className="px-2 py-4 text-center web3-label web3-text-muted">
-            No threads yet
-          </div>
+          <div className="px-2 py-4 text-center web3-label web3-text-muted">No threads yet</div>
         ) : (
           <div className="space-y-0.5">
             {threads.slice(0, 30).map((t) => (

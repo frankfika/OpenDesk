@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import LeftColumn from './LeftColumn'
 import MiddleColumn from './MiddleColumn'
+import ViewRail from './ViewRail'
 import ChatPanel from '../chat/ChatPanel'
+import TradeWorkbench from '../trade/TradeWorkbench'
+import Web3Workbench from '../web3/Web3Workbench'
 import SkillsPanel from '../skills/SkillsPanel'
 import MemoryPanel from '../memory/MemoryPanel'
 import SettingsModal from '../settings/SettingsModal'
@@ -13,6 +16,7 @@ import ShortcutHelp from '../ui/ShortcutHelp'
 import ErrorBoundary from '../ui/ErrorBoundary'
 import { ToastContainer } from '../ui/Toast'
 import { useChatStore } from '../../store/chat'
+import { useViewStore } from '../../store/view'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useSettingsStore } from '../../store/settings'
 import { useThemeStore } from '../../store/theme'
@@ -32,6 +36,7 @@ export default function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const newThread = useChatStore((state) => state.newThread)
+  const view = useViewStore((state) => state.view)
   const { createThread, activeWorkspace, loadWorkspaces } = useWorkspaceStore()
   const { settings, load: loadSettings, loaded: settingsLoaded } = useSettingsStore()
   const { setTheme, toggleTheme } = useThemeStore()
@@ -171,53 +176,75 @@ export default function AppShell() {
   return (
     <ErrorBoundary>
       <div className="flex h-screen w-screen overflow-hidden text-[var(--text-primary)] bg-transparent">
-        <AnimatePresence initial={false}>
-          {!leftCollapsed && (
-            <motion.div
-              key="left-column"
-              className="shrink-0 overflow-hidden border-r border-[var(--border)]"
-              initial={{ width: 0 }}
-              animate={{ width: 240 }}
-              exit={{ width: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
-            >
-              <div style={{ width: 240 }}>
-                <LeftColumn />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ViewRail />
 
-        <AnimatePresence initial={false}>
-          {!middleCollapsed && (
-            <motion.div
-              key="middle-column"
-              className="shrink-0 overflow-hidden border-r border-[var(--border)]"
-              initial={{ width: 0 }}
-              animate={{ width: 240 }}
-              exit={{ width: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
-            >
-              <div style={{ width: 240 }}>
-                <MiddleColumn onNewThread={handleNewThread} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {view === 'assistant' && (
+          <>
+            <AnimatePresence initial={false}>
+              {!leftCollapsed && (
+                <motion.div
+                  key="left-column"
+                  className="shrink-0 overflow-hidden border-r border-[var(--border)]"
+                  initial={{ width: 0 }}
+                  animate={{ width: 240 }}
+                  exit={{ width: 0 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+                >
+                  <div style={{ width: 240 }}>
+                    <LeftColumn />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        <main
-          role="main"
-          aria-label="Chat"
-          className="flex flex-col flex-1 overflow-hidden relative bg-[var(--bg-content)] min-w-[400px]"
-        >
-          <ErrorBoundary>
-            <ChatPanel
-              onOpenSettings={() => setSettingsOpen(true)}
-              onOpenMemory={() => setMemoryPanelOpen(true)}
-              onOpenSkills={() => setSkillsPanelOpen(true)}
-            />
-          </ErrorBoundary>
-        </main>
+            <AnimatePresence initial={false}>
+              {!middleCollapsed && (
+                <motion.div
+                  key="middle-column"
+                  className="shrink-0 overflow-hidden border-r border-[var(--border)]"
+                  initial={{ width: 0 }}
+                  animate={{ width: 240 }}
+                  exit={{ width: 0 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
+                >
+                  <div style={{ width: 240 }}>
+                    <MiddleColumn onNewThread={handleNewThread} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <main
+              role="main"
+              aria-label="Chat"
+              className="flex flex-col flex-1 overflow-hidden relative bg-[var(--bg-content)] min-w-[400px]"
+            >
+              <ErrorBoundary>
+                <ChatPanel
+                  onOpenSettings={() => setSettingsOpen(true)}
+                  onOpenMemory={() => setMemoryPanelOpen(true)}
+                  onOpenSkills={() => setSkillsPanelOpen(true)}
+                />
+              </ErrorBoundary>
+            </main>
+          </>
+        )}
+
+        {view === 'trade' && (
+          <main role="main" aria-label="Trade" className="flex min-w-0 flex-1 overflow-hidden">
+            <ErrorBoundary>
+              <TradeWorkbench />
+            </ErrorBoundary>
+          </main>
+        )}
+
+        {view === 'web3' && (
+          <main role="main" aria-label="Web3" className="flex min-w-0 flex-1 overflow-hidden">
+            <ErrorBoundary>
+              <Web3Workbench />
+            </ErrorBoundary>
+          </main>
+        )}
 
         {/* Backdrop for auxiliary panels */}
         <AnimatePresence>
