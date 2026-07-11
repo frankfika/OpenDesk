@@ -13,7 +13,11 @@ import { registerWeb3Tools } from './web3-tools'
 
 /* ---------- Shell security ---------- */
 
-const SHELL_WHITELIST = new Set([
+// SHELL_WHITELIST / DANGEROUS_PATTERNS / validateShellCommand are exported so
+// the IPC `tools:executeShell` handler (src/main/ipc/tools.ts) can reuse the
+// same validation the tool executor applies. Two surfaces, one rule.
+
+export const SHELL_WHITELIST = new Set([
   'ls',
   'cat',
   'grep',
@@ -490,7 +494,7 @@ const SHELL_WHITELIST = new Set([
   'journalbeat'
 ])
 
-const DANGEROUS_PATTERNS = [
+export const DANGEROUS_PATTERNS = [
   /rm\s+-rf\s+\//,
   /rm\s+-rf\s+\/\S*/,
   /mkfs\./,
@@ -519,7 +523,7 @@ const DANGEROUS_PATTERNS = [
   /osascript.*-e.*restart/i
 ]
 
-function validateShellCommand(command: string): { valid: boolean; error?: string } {
+export function validateShellCommand(command: string): { valid: boolean; error?: string } {
   // Block dangerous metacharacters that enable command chaining
   const blockedChars = /[;&`$]/
   if (blockedChars.test(command)) {

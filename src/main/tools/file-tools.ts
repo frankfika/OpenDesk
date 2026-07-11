@@ -24,8 +24,11 @@ function isSafePath(filePath: string, allowedBase?: string): { safe: boolean; er
 
 export function readFile(
   path: string,
-  maxSizeBytes = 5 * 1024 * 1024
+  maxSizeBytes = 5 * 1024 * 1024,
+  allowedBase?: string
 ): { success: boolean; content?: string; error?: string } {
+  const check = isSafePath(path, allowedBase)
+  if (!check.safe) return { success: false, error: check.error }
   try {
     if (!existsSync(path)) return { success: false, error: 'File not found' }
     const stats = statSync(path)
@@ -63,7 +66,12 @@ export interface DirEntry {
   mtime: number
 }
 
-export function listDirectory(path: string): { success: boolean; entries?: DirEntry[]; error?: string } {
+export function listDirectory(
+  path: string,
+  allowedBase?: string
+): { success: boolean; entries?: DirEntry[]; error?: string } {
+  const check = isSafePath(path, allowedBase)
+  if (!check.safe) return { success: false, error: check.error }
   try {
     if (!existsSync(path)) return { success: false, error: 'Directory not found' }
     const stats = statSync(path)

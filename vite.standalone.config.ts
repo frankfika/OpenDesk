@@ -20,12 +20,15 @@ function apiProxyPlugin(): Plugin {
     { prefix: '/api/zksync', upstream: 'https://mainnet.era.zksync.io', strip: '/api/zksync'.length },
     { prefix: '/api/linea', upstream: 'https://linea.drpc.org', strip: '/api/linea'.length },
     { prefix: '/api/scroll', upstream: 'https://scroll.drpc.org', strip: '/api/scroll'.length },
-    { prefix: '/api/mantle', upstream: 'https://mantle.drpc.org', strip: '/api/mantle'.length }
+    { prefix: '/api/mantle', upstream: 'https://mantle.drpc.org', strip: '/api/mantle'.length },
+    { prefix: '/api/etherscan', upstream: 'https://api.etherscan.io', strip: '/api/etherscan'.length }
   ]
 
   const handler: Connect.NextHandleFunction = async (req, res, next) => {
     const url = req.url || ''
-    const route = ROUTES.find((r) => url === r.prefix || url.startsWith(r.prefix + '/') || url.startsWith(r.prefix + '?'))
+    const route = ROUTES.find(
+      (r) => url === r.prefix || url.startsWith(r.prefix + '/') || url.startsWith(r.prefix + '?')
+    )
     if (!route) return next()
 
     const pathPart = url.slice(route.strip) || '/'

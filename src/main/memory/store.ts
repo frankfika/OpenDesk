@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs'
-import type { MemoryStore } from '../../shared/types-memory'
+import type { MemoryStore } from '../../shared/types'
 
 function getMemoryDir(): string {
   const dir = join(app.getPath('userData'), 'memory')

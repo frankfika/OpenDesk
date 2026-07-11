@@ -4,7 +4,7 @@ import type { Provider } from '../providers/base'
 import { AnthropicProvider } from '../providers/anthropic'
 import { OpenAIProvider } from '../providers/openai'
 import { OLLAMA_BASE_URL, OLLAMA_TAGS_BASE_URL, DEFAULT_OPENAI_BASE_URL } from '../../shared/providers'
-import { settings, patchSettings } from '../app-state'
+import { getSettings, patchSettings } from '../app-state'
 import { loadKeys, saveKeys, loadDraft, saveDraft, saveSettingsToDisk } from '../persistence'
 
 const channels = [
@@ -74,7 +74,7 @@ async function fetchModels(type: string, baseUrl?: string, apiKey?: string): Pro
 export function registerSettingsHandlers(_win: BrowserWindow): void {
   removeStaleListeners()
 
-  ipcMain.handle('settings:get', () => ({ ...settings }))
+  ipcMain.handle('settings:get', () => ({ ...getSettings() }))
 
   ipcMain.handle('settings:set', (_e, next: Partial<AppSettings>) => {
     patchSettings(next)

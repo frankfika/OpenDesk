@@ -2,15 +2,17 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { Provider, Tool, ToolCall } from './base'
 import type { Message } from '../../shared/types'
 
-// The modern @anthropic-ai/sdk no longer exports `ContentBlockParam` as a
-// single union — it was split into TextBlockParam | ImageBlockParam |
-// ToolUseBlockParam | ToolResultBlockParam. We alias the union locally so
-// the rest of the file stays close to the upstream docs.
+// In SDK 0.30 the message-content union is exposed as `BetaContentBlockParam`
+// (re-exported under the `Beta.Messages` namespace). Earlier SDK versions
+// exported the same shape as `Messages.ContentBlockParam`, which was removed
+// when the messages API moved to its current location. The `Beta` prefix is
+// the SDK's marker for "shape may evolve" — for our use case the shape has
+// been stable for many minor versions, so importing it via Beta is safe.
 type ContentBlockParam =
-  | Anthropic.TextBlockParam
-  | Anthropic.ImageBlockParam
-  | Anthropic.ToolUseBlockParam
-  | Anthropic.ToolResultBlockParam
+  | Anthropic.Beta.Messages.BetaTextBlockParam
+  | Anthropic.Beta.Messages.BetaImageBlockParam
+  | Anthropic.Beta.Messages.BetaToolUseBlockParam
+  | Anthropic.Beta.Messages.BetaToolResultBlockParam
 
 export class AnthropicProvider implements Provider {
   private client: Anthropic
@@ -66,25 +68,33 @@ export class AnthropicProvider implements Provider {
     const formatted = this.formatMessages(messages)
     const systemMsg = messages.find((m) => m.role === 'system')
 
-    const stream = await this.client.messages.stream({
-      model: this.model,
-      max_tokens: 8096,
-      system: systemMsg?.content,
-      messages: formatted,
-      tools:
-        tools && tools.length > 0
-          ? tools.map((t) => ({
-              name: t.name,
-              description: t.description,
-              input_schema: t.parameters as unknown as Anthropic.Messages.Tool['input_schema']
-            }))
-          : undefined
-    })
+    // Pass `signal` to the SDK so an in-flight HTTP request is actually
+    // cancelled when the caller aborts — without this, the for-await
+    // below just stops consuming tokens and the upstream call keeps
+    // running (and burning cost) in the background.
+    const response = await this.client.messages.create(
+      {
+        model: this.model,
+        max_tokens: 8096,
+        system: systemMsg?.content,
+        messages: formatted,
+        tools:
+          tools && tools.length > 0
+            ? tools.map((t) => ({
+                name: t.name,
+                description: t.description,
+                input_schema: t.parameters as unknown as Anthropic.Messages.Tool['input_schema']
+              }))
+            : undefined,
+        stream: true
+      },
+      { signal }
+    )
 
     let currentToolCall: ToolCall | null = null
     let currentToolArgs = ''
 
-    for await (const event of stream) {
+    for await (const event of response) {
       if (signal.aborted) break
 
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
@@ -122,11 +132,16 @@ export class AnthropicProvider implements Provider {
   }
 
   async test(): Promise<boolean> {
-    await this.client.messages.create({
-      model: this.model,
-      max_tokens: 1,
-      messages: [{ role: 'user', content: 'hi' }]
-    })
+    // Health checks must not block forever — cap each ping with a 5 s
+    // timeout so a wedged provider doesn't stop the interval rotation.
+    await this.client.messages.create(
+      {
+        model: this.model,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'hi' }]
+      },
+      { signal: AbortSignal.timeout(5_000) }
+    )
     return true
   }
 }

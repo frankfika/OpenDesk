@@ -15,12 +15,21 @@ export const defaultSettings: AppSettings = {
   showThinking: false
 }
 
-export let settings: AppSettings = { ...defaultSettings }
+// Single source of truth for the in-process AppSettings instance. Replaces
+// the previous `export let settings` pattern, which made the reference
+// dangerous to capture (callers could pin a stale snapshot before
+// `setSettings` reassigned the binding). Use `getSettings()` to read the
+// current value; the returned reference is stable until the next set/patch.
+let _settings: AppSettings = { ...defaultSettings }
+
+export function getSettings(): AppSettings {
+  return _settings
+}
 
 export function setSettings(next: AppSettings): void {
-  settings = next
+  _settings = next
 }
 
 export function patchSettings(patch: Partial<AppSettings>): void {
-  settings = { ...settings, ...patch }
+  _settings = { ..._settings, ...patch }
 }

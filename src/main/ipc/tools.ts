@@ -1,157 +1,102 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { promises as fs, createReadStream } from 'fs'
-import { join, resolve } from 'path'
-import { spawn } from 'child_process'
+import { exec } from 'child_process'
+import { createReadStream } from 'fs'
 import { Parse, type Entry } from 'unzipper'
+import {
+  readFile as safeReadFile,
+  writeFile as safeWriteFile,
+  listDirectory as safeListDirectory
+} from '../tools/file-tools'
+import { validateShellCommand } from '../tools/builtins'
 
-interface FileEntry {
-  name: string
-  path: string
-  isDirectory: boolean
-  size: number
-  mtime: number
+const MAX_STDOUT_BYTES = 100_000
+const MAX_STDERR_BYTES = 50_000
+
+/**
+ * Quote a single shell argument. Splits on shell-meaningful characters and
+ * wraps anything non-trivial in single quotes (with embedded `'` escaped
+ * via the standard `'\''` trick). Used when joining the `args[]` array from
+ * the legacy IPC signature into a single command string for `validateShellCommand`.
+ */
+function quoteArg(arg: string): string {
+  if (arg === '') return "''"
+  // Allow these characters as-is; anything else needs quoting.
+  if (/^[\w@./:=+,-]+$/.test(arg)) return arg
+  return `'${arg.replace(/'/g, "'\\''")}'`
 }
 
-// Whitelist of safe executables for CodeRunner
-const SAFE_EXECUTORS = new Set([
-  'python3', 'python', 'node', 'node.exe', 'bash', 'sh', 'zsh',
-  '/usr/bin/python3', '/usr/bin/node', '/bin/bash', '/bin/sh'
-])
-
-function isSafeCommand(command: string): boolean {
-  const base = command.split('/').pop() || command
-  return SAFE_EXECUTORS.has(command) || SAFE_EXECUTORS.has(base)
-}
-
-function isWithinWorkspace(filePath: string, workspacePath: string): boolean {
-  const resolvedFile = resolve(filePath)
-  const resolvedWorkspace = resolve(workspacePath)
-  return resolvedFile === resolvedWorkspace || resolvedFile.startsWith(resolvedWorkspace + '/')
-}
-
-async function executeShell(
+async function executeShellValidated(
   command: string,
   args: string[],
   options?: { timeout?: number; cwd?: string; env?: Record<string, string> }
 ): Promise<{ success: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }> {
-  if (!isSafeCommand(command)) {
-    return { success: false, error: `Command not allowed: ${command}. Allowed: python3, node, bash, sh` }
+  // Re-join into a single string so the same validator used by the tool
+  // executor's `shell` tool can check it. This is intentionally simple —
+  // the dangerous-pattern checks in `validateShellCommand` (e.g. blocking
+  // `;&`$`) prevent the obvious shell escapes.
+  const fullCommand = args.length > 0 ? `${command} ${args.map(quoteArg).join(' ')}` : command
+
+  const validation = validateShellCommand(fullCommand)
+  if (!validation.valid) {
+    return { success: false, error: validation.error }
   }
 
-  const timeout = options?.timeout ?? 30000
-  const cwd = options?.cwd
+  const timeout = options?.timeout ?? 30_000
 
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
-      cwd,
-      env: { ...process.env, ...options?.env },
-      shell: false
-    })
-
-    let stdout = ''
-    let stderr = ''
-    let killed = false
-
-    const timer = setTimeout(() => {
-      killed = true
-      child.kill('SIGTERM')
-      setTimeout(() => {
-        if (!child.killed) child.kill('SIGKILL')
-      }, 2000)
-    }, timeout)
-
-    child.stdout?.on('data', (data) => {
-      stdout += data.toString()
-      if (stdout.length > 100000) {
-        stdout = stdout.slice(0, 100000) + '\n... (output truncated)'
-        child.kill('SIGTERM')
+    let timedOut = false
+    const child = exec(
+      fullCommand,
+      {
+        cwd: options?.cwd,
+        env: { ...process.env, ...options?.env },
+        timeout
+      },
+      (error, stdout, stderr) => {
+        if (timedOut) return // already resolved
+        const killed = error?.killed || (error as { signal?: string } | null)?.signal === 'SIGTERM'
+        const truncatedStdout =
+          stdout && stdout.length > MAX_STDOUT_BYTES
+            ? stdout.slice(0, MAX_STDOUT_BYTES) + '\n... (output truncated)'
+            : stdout
+        const truncatedStderr =
+          stderr && stderr.length > MAX_STDERR_BYTES
+            ? stderr.slice(0, MAX_STDERR_BYTES) + '\n... (stderr truncated)'
+            : stderr
+        if (error) {
+          resolve({
+            success: false,
+            stdout: truncatedStdout || undefined,
+            stderr: truncatedStderr || undefined,
+            exitCode: typeof error.code === 'number' ? error.code : undefined,
+            error: killed ? 'Execution timed out' : error.message
+          })
+          return
+        }
+        resolve({
+          success: true,
+          stdout: truncatedStdout || undefined,
+          stderr: truncatedStderr || undefined,
+          exitCode: 0
+        })
       }
-    })
+    )
 
-    child.stderr?.on('data', (data) => {
-      stderr += data.toString()
-      if (stderr.length > 50000) {
-        stderr = stderr.slice(0, 50000) + '\n... (stderr truncated)'
+    // When the process doesn't exit within `timeout` ms, `exec` will
+    // signal SIGTERM and (per its docs) try SIGKILL. The callback may
+    // still fire after a brief delay; if we never get the callback we
+    // resolve anyway so the IPC reply doesn't hang.
+    setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) {
+        timedOut = true
+        try { child.kill('SIGKILL') } catch { /* already dead */ }
+        resolve({
+          success: false,
+          error: 'Execution timed out'
+        })
       }
-    })
-
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      resolve({ success: false, error: err.message })
-    })
-
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      if (killed && code === null) {
-        resolve({ success: true, stdout, stderr: stderr || undefined, exitCode: -1, error: 'Execution timed out' })
-      } else {
-        resolve({ success: true, stdout, stderr: stderr || undefined, exitCode: code ?? undefined })
-      }
-    })
+    }, timeout + 5_000).unref()
   })
-}
-
-async function listDirectory(dirPath: string): Promise<{ success: boolean; entries?: FileEntry[]; error?: string }> {
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true })
-    const result: FileEntry[] = []
-    for (const entry of entries) {
-      const fullPath = join(dirPath, entry.name)
-      let size = 0
-      let mtime = 0
-      try {
-        const stat = await fs.stat(fullPath)
-        size = stat.size
-        mtime = stat.mtimeMs
-      } catch {
-        // ignore stat errors
-      }
-      result.push({
-        name: entry.name,
-        path: fullPath,
-        isDirectory: entry.isDirectory(),
-        size,
-        mtime
-      })
-    }
-    return { success: true, entries: result }
-  } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : String(e) }
-  }
-}
-
-const MAX_READ_FILE_SIZE = 5 * 1024 * 1024
-
-async function readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
-  try {
-    const stats = await fs.stat(filePath)
-    if (stats.size > MAX_READ_FILE_SIZE) {
-      return {
-        success: false,
-        error: `File too large (${(stats.size / 1024 / 1024).toFixed(1)} MB). Max allowed is ${(MAX_READ_FILE_SIZE / 1024 / 1024).toFixed(0)} MB.`
-      }
-    }
-    const content = await fs.readFile(filePath, 'utf-8')
-    return { success: true, content }
-  } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : String(e) }
-  }
-}
-
-async function writeFile(
-  filePath: string,
-  content: string,
-  workspacePath?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    if (workspacePath && !isWithinWorkspace(filePath, workspacePath)) {
-      return { success: false, error: 'Path is outside the workspace' }
-    }
-    await fs.writeFile(filePath, content, 'utf-8')
-    return { success: true }
-  } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : String(e) }
-  }
 }
 
 async function extractPptxText(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {
@@ -192,23 +137,25 @@ async function extractPptxText(filePath: string): Promise<{ success: boolean; te
 }
 
 export function registerToolsHandlers(_win: BrowserWindow): void {
-  ipcMain.handle('tools:listDirectory', async (_event, dirPath: string) => {
-    return listDirectory(dirPath)
+  // `workspacePath` (when provided) is the user-selected workspace folder.
+  // file-tools's `isSafePath` rejects any path that escapes the base.
+  ipcMain.handle('tools:listDirectory', async (_event, path: string, workspacePath?: string) => {
+    return safeListDirectory(path, workspacePath)
   })
 
-  ipcMain.handle('tools:readFile', async (_event, filePath: string) => {
-    return readFile(filePath)
+  ipcMain.handle('tools:readFile', async (_event, path: string, workspacePath?: string) => {
+    return safeReadFile(path, undefined, workspacePath)
   })
 
-  ipcMain.handle('tools:writeFile', async (_event, filePath: string, content: string, workspacePath?: string) => {
-    return writeFile(filePath, content, workspacePath)
+  ipcMain.handle('tools:writeFile', async (_event, path: string, content: string, workspacePath?: string) => {
+    return safeWriteFile(path, content, workspacePath)
   })
 
   ipcMain.handle('tools:executeShell', async (_event, command: string, args: string[], options?: { timeout?: number; cwd?: string; env?: Record<string, string> }) => {
-    return executeShell(command, args, options)
+    return executeShellValidated(command, args, options)
   })
 
-  ipcMain.handle('tools:extractPptxText', async (_event, filePath: string) => {
-    return extractPptxText(filePath)
+  ipcMain.handle('tools:extractPptxText', async (_event, path: string) => {
+    return extractPptxText(path)
   })
 }

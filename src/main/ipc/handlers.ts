@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
-import { settings } from '../app-state'
+import { getSettings } from '../app-state'
+
 import { saveSettingsToDisk } from '../persistence'
 import { startHealthChecks } from '../providers/health-checker'
 import type { ProviderConfig } from '../../shared/types'
@@ -21,6 +22,8 @@ import { registerSchedulerHandlers } from './scheduler'
 import { registerChangeLogHandlers } from './changeLog'
 import { registerMarketplaceHandlers } from './marketplace'
 import { registerClawHandlers } from './claw'
+import { registerStocksHandlers } from './stocks'
+import { registerAnalysisHandlers } from './analysis'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   // Register domain-specific handlers
@@ -42,14 +45,16 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   registerChangeLogHandlers()
   registerMarketplaceHandlers()
   registerClawHandlers(win)
+  registerStocksHandlers(win)
+  registerAnalysisHandlers(win)
 
   /* ===== Health Checks ===== */
   startHealthChecks(
-    () => settings,
+    () => getSettings(),
     (providerId, result) => {
-      const idx = settings.providers.findIndex((p: ProviderConfig) => p.id === providerId)
+      const idx = getSettings().providers.findIndex((p: ProviderConfig) => p.id === providerId)
       if (idx !== -1) {
-        settings.providers[idx] = { ...settings.providers[idx], lastTestResult: result, lastTestedAt: Date.now() }
+        getSettings().providers[idx] = { ...getSettings().providers[idx], lastTestResult: result, lastTestedAt: Date.now() }
         saveSettingsToDisk()
         win.webContents.send('provider:healthChanged', { providerId, result })
       }

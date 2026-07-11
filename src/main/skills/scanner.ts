@@ -263,7 +263,26 @@ export function getGlobalSkillsPath(): string {
   return join(homedir(), '.opendesk', 'skills')
 }
 
+// 2-second TTL cache. Skill discovery walks the user's `~/.opendesk/skills`,
+// `~/.codex/skills`, `~/.claude/skills`, and bundled builtins. The chat
+// pipeline calls `scanAllSkills` on every send, and the skills panel calls
+// it on every render — without a cache this is a 200+ entry filesystem walk
+// per click. The TTL is short enough that freshly-dropped skills are picked
+// up promptly, and an explicit `__resetSkillsCache` is exposed for tests
+// and for IPC handlers that need to force a refresh.
+let skillsCache: { workspacePath: string | undefined; skills: Skill[]; expiresAt: number } | null = null
+const SKILLS_TTL_MS = 2_000
+
+export function __resetSkillsCache(): void {
+  skillsCache = null
+}
+
 export function scanAllSkills(workspacePath?: string): Skill[] {
+  const now = Date.now()
+  if (skillsCache && skillsCache.workspacePath === workspacePath && skillsCache.expiresAt > now) {
+    return skillsCache.skills
+  }
+
   const sources: ScanSource[] = [
     { path: getGlobalSkillsPath(), source: 'global', priority: 100 },
     { path: getBuiltinSkillsPath(), source: 'builtin', priority: 90 }

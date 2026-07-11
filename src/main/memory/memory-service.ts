@@ -1,4 +1,4 @@
-import type { MemoryEntry, MemoryStore } from '../../shared/types-memory'
+import type { MemoryEntry, MemoryStore } from '../../shared/types'
 import type { Message } from '../../shared/types'
 import { createMemoryStore } from './store'
 import { extractFromMessages as doExtract } from './extractor'

@@ -2,7 +2,8 @@ import { app, safeStorage } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import type { AppSettings, Message, Thread } from '../shared/types'
-import { settings, setSettings, defaultSettings } from './app-state'
+import { getSettings, setSettings, defaultSettings } from './app-state'
+
 
 export function getConfigDir(): string {
   const dir = app.getPath('userData')
@@ -11,7 +12,7 @@ export function getConfigDir(): string {
 }
 
 export function getSettingsPath(): string {
-  return join(getConfigDir(), 'settings.json')
+  return join(getConfigDir(), 'getSettings().json')
 }
 
 export function getKeysPath(): string {
@@ -53,7 +54,7 @@ export function loadSettingsFromDisk(): AppSettings {
   }
 }
 
-export function saveSettingsToDisk(s: AppSettings = settings): void {
+export function saveSettingsToDisk(s: AppSettings = getSettings()): void {
   writeFileSync(getSettingsPath(), JSON.stringify(s, null, 2), 'utf-8')
 }
 

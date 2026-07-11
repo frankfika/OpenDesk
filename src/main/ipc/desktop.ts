@@ -1,6 +1,12 @@
 import { ipcMain, BrowserWindow, desktopCapturer, screen, shell } from 'electron'
 import { abortAllControllers } from './abort'
-import { settings } from '../app-state'
+import { getSettings } from '../app-state'
+
+// `settings` was previously a mutable module-level `let`; callers used
+// `getSettings().foo` directly. To make the export immutable without changing
+// every call site, we alias the function under a local const below. Note:
+// this captures a reference once at module load — to read fresh state,
+// call `getSettings()` directly.
 
 const channels = ['desktop:openPath', 'desktop:capture', 'desktop:emergencyStop', 'desktop:getWindows']
 
@@ -29,7 +35,7 @@ export function registerDesktopHandlers(win: BrowserWindow): void {
   removeStaleListeners()
 
   ipcMain.handle('desktop:openPath', async (_e, filePath: string) => {
-    if (!settings.desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
+    if (!getSettings().desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
     try {
       const result = await shell.openPath(filePath)
       return { success: result === '', error: result || undefined }
@@ -39,19 +45,19 @@ export function registerDesktopHandlers(win: BrowserWindow): void {
   })
 
   ipcMain.handle('desktop:capture', async () => {
-    if (!settings.desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
+    if (!getSettings().desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
     return captureScreenshot()
   })
 
   ipcMain.handle('desktop:emergencyStop', () => {
-    if (!settings.desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
+    if (!getSettings().desktopEnabled) return { success: false, error: 'Desktop control is disabled' }
     abortAllControllers()
     win.webContents.send('desktop:emergencyStop')
     return true
   })
 
   ipcMain.handle('desktop:getWindows', async () => {
-    if (!settings.desktopEnabled) return []
+    if (!getSettings().desktopEnabled) return []
     try {
       const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 } })
       return sources.map((s) => ({

@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { resolve, sep } from 'path'
+import { realpathSync } from 'fs'
 import type { WorkspaceUpdatePayload } from '../../shared/types'
 import {
   createWorkspace,
@@ -33,10 +34,24 @@ export function getWorkspacePath(workspaceId?: string): string | null {
   return ws?.folderPath ?? null
 }
 
+// Path-containment check. Resolves symlinks on both sides so a symlink
+// inside the workspace pointing outside (e.g. `~/.ssh`) cannot escape.
+// If either side is missing (realpath throws) we fall back to the plain
+// `resolve` so the error is reported by the caller, not by us.
 export function isPathAllowed(filePath: string, workspacePath: string | null): boolean {
   if (!workspacePath) return false
-  const resolvedFile = resolve(filePath)
-  const resolvedWorkspace = resolve(workspacePath)
+  let resolvedFile: string
+  let resolvedWorkspace: string
+  try {
+    resolvedFile = realpathSync(filePath)
+  } catch {
+    resolvedFile = resolve(filePath)
+  }
+  try {
+    resolvedWorkspace = realpathSync(workspacePath)
+  } catch {
+    resolvedWorkspace = resolve(workspacePath)
+  }
   return resolvedFile === resolvedWorkspace || resolvedFile.startsWith(resolvedWorkspace + sep)
 }
 

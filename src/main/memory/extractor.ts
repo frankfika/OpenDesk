@@ -1,4 +1,4 @@
-import type { MemoryEntry } from '../../shared/types-memory'
+import type { MemoryEntry } from '../../shared/types'
 import type { Message } from '../../shared/types'
 
 // Lightweight rule-based extractor for key facts from conversation messages

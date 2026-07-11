@@ -28,8 +28,13 @@ contextBridge.exposeInMainWorld('api', {
     setApiKey: (providerId: string, apiKey: string): Promise<boolean> =>
       ipcRenderer.invoke('settings:setApiKey', providerId, apiKey),
     // NOTE: getApiKey removed to prevent API key exfiltration from renderer
-    testProvider: (providerId: string, type: string, model: string, baseUrl?: string, apiKey?: string): Promise<boolean> =>
-      ipcRenderer.invoke('settings:testProvider', providerId, type, model, baseUrl, apiKey),
+    testProvider: (
+      providerId: string,
+      type: string,
+      model: string,
+      baseUrl?: string,
+      apiKey?: string
+    ): Promise<boolean> => ipcRenderer.invoke('settings:testProvider', providerId, type, model, baseUrl, apiKey),
     fetchModels: (providerId: string, type: string, baseUrl?: string, apiKey?: string): Promise<ModelInfo[]> =>
       ipcRenderer.invoke('settings:fetchModels', providerId, type, baseUrl, apiKey)
   },
@@ -106,12 +111,19 @@ contextBridge.exposeInMainWorld('api', {
     editMessage: (payload: ChatSendPayload & { editIndex: number }): void =>
       ipcRenderer.send('chat:editMessage', payload),
     onToken: (cb: (payload: { token: string; threadId?: string }) => void) => {
-      const listener = (_e: Electron.IpcRendererEvent, payload: { token: string; threadId?: string }): void => cb(payload)
+      const listener = (_e: Electron.IpcRendererEvent, payload: { token: string; threadId?: string }): void =>
+        cb(payload)
       ipcRenderer.on('chat:token', listener)
       return () => ipcRenderer.removeListener('chat:token', listener)
     },
     onDone: (
-      cb: (meta: { regenerate?: boolean; editIndex?: number; workspaceId?: string; threadId?: string; error?: string }) => void
+      cb: (meta: {
+        regenerate?: boolean
+        editIndex?: number
+        workspaceId?: string
+        threadId?: string
+        error?: string
+      }) => void
     ) => {
       const listener = (_e: Electron.IpcRendererEvent, meta: unknown): void =>
         cb(
@@ -269,14 +281,18 @@ contextBridge.exposeInMainWorld('api', {
 
   tools: {
     listDirectory: (
-      path: string
+      path: string,
+      workspacePath?: string
     ): Promise<{
       success: boolean
       entries?: Array<{ name: string; path: string; isDirectory: boolean; size: number; mtime: number }>
       error?: string
-    }> => ipcRenderer.invoke('tools:listDirectory', path),
-    readFile: (path: string): Promise<{ success: boolean; content?: string; error?: string }> =>
-      ipcRenderer.invoke('tools:readFile', path),
+    }> => ipcRenderer.invoke('tools:listDirectory', path, workspacePath),
+    readFile: (
+      path: string,
+      workspacePath?: string
+    ): Promise<{ success: boolean; content?: string; error?: string }> =>
+      ipcRenderer.invoke('tools:readFile', path, workspacePath),
     writeFile: (path: string, content: string, workspacePath?: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('tools:writeFile', path, content, workspacePath),
     executeShell: (
@@ -293,14 +309,20 @@ contextBridge.exposeInMainWorld('api', {
   rag: {
     init: (workspaceId: string): Promise<{ success: boolean; adapterName?: string; status?: string; error?: string }> =>
       ipcRenderer.invoke('rag:init', workspaceId),
-    indexFile: (workspaceId: string, filePath: string): Promise<{ success: boolean; source?: unknown; error?: string }> =>
+    indexFile: (
+      workspaceId: string,
+      filePath: string
+    ): Promise<{ success: boolean; source?: unknown; error?: string }> =>
       ipcRenderer.invoke('rag:indexFile', workspaceId, filePath),
     search: (
       workspaceId: string,
       query: string,
       topK?: number
-    ): Promise<{ success: boolean; results?: Array<{ id: string; content: string; score: number; metadata: unknown }>; error?: string }> =>
-      ipcRenderer.invoke('rag:search', workspaceId, query, topK),
+    ): Promise<{
+      success: boolean
+      results?: Array<{ id: string; content: string; score: number; metadata: unknown }>
+      error?: string
+    }> => ipcRenderer.invoke('rag:search', workspaceId, query, topK),
     listSources: (workspaceId: string): Promise<{ success: boolean; sources?: unknown[]; error?: string }> =>
       ipcRenderer.invoke('rag:listSources', workspaceId),
     deleteSource: (workspaceId: string, sourceId: string): Promise<{ success: boolean; error?: string }> =>
@@ -328,89 +350,361 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   web3: {
-    prepareTx: (
-      payload: { chain: string; from: string; to: string; data?: string; value?: string; description: string }
-    ): Promise<{ txHash?: string; signedTx?: string; error?: string }> =>
+    prepareTx: (payload: {
+      chain: string
+      from: string
+      to: string
+      data?: string
+      value?: string
+      description: string
+    }): Promise<{ txHash?: string; signedTx?: string; error?: string }> =>
       ipcRenderer.invoke('web3:prepareTx', payload),
-    explainCalldata: (payload: { chain: string; data: string }): Promise<{ selector?: string; length?: number; note?: string; error?: string }> =>
+    txResult: (payload: {
+      id: string
+      result?: unknown
+      error?: string
+    }): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke('web3:txResult', payload),
+    explainCalldata: (payload: {
+      chain: string
+      data: string
+    }): Promise<{ selector?: string; length?: number; note?: string; error?: string }> =>
       ipcRenderer.invoke('web3:explainCalldata', payload),
-    onTxRequest: (cb: (req: { id: string; chain: string; chainName: string; from: string; to: string; data?: string; value?: string; description: string }) => void) => {
+    onTxRequest: (
+      cb: (req: {
+        id: string
+        chain: string
+        chainName: string
+        from: string
+        to: string
+        data?: string
+        value?: string
+        description: string
+      }) => void
+    ) => {
       const listener = (_e: Electron.IpcRendererEvent, req: unknown): void =>
-        cb(req as { id: string; chain: string; chainName: string; from: string; to: string; data?: string; value?: string; description: string })
+        cb(
+          req as {
+            id: string
+            chain: string
+            chainName: string
+            from: string
+            to: string
+            data?: string
+            value?: string
+            description: string
+          }
+        )
       ipcRenderer.on('web3:txRequest', listener)
       return () => ipcRenderer.removeListener('web3:txRequest', listener)
     }
   },
 
+  stocks: {
+    quote: (
+      symbol: string
+    ): Promise<{
+      quote?: {
+        symbol: string
+        shortName?: string
+        longName?: string
+        exchange: 'NASDAQ' | 'NYSE' | 'AMEX' | 'OTHER'
+        currency: string
+        regularMarketPrice: number
+        regularMarketChange: number
+        regularMarketChangePercent: number
+        regularMarketTime: number
+        marketState: 'PRE' | 'REGULAR' | 'POST' | 'CLOSED'
+        preMarketPrice?: number
+        postMarketPrice?: number
+        fiftyTwoWeekHigh?: number
+        fiftyTwoWeekLow?: number
+        dayHigh?: number
+        dayLow?: number
+        volume?: number
+      }
+      error?: string
+    }> => ipcRenderer.invoke('stocks:quote', symbol),
+    search: (
+      query: string,
+      limit?: number
+    ): Promise<{
+      results?: Array<{
+        symbol: string
+        shortName: string
+        longName?: string
+        exchange: 'NASDAQ' | 'NYSE' | 'AMEX' | 'OTHER'
+        type: string
+      }>
+      error?: string
+    }> => ipcRenderer.invoke('stocks:search', query, limit),
+    history: (
+      symbol: string,
+      range?: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '5y',
+      interval?: '1m' | '5m' | '15m' | '1h' | '1d' | '1wk' | '1mo'
+    ): Promise<{
+      history?: {
+        symbol: string
+        candles: Array<{ t: number; o: number; h: number; l: number; c: number; v: number }>
+      }
+      error?: string
+    }> => ipcRenderer.invoke('stocks:history', symbol, range, interval),
+    news: (
+      symbol: string
+    ): Promise<{
+      items: Array<{ title: string; link: string; pubDate: string; source?: string }>
+    }> => ipcRenderer.invoke('stocks:news', symbol)
+  },
+
   app: {
+    analysis: {
+      run: (prompt: string): Promise<{ content?: string; error?: string }> =>
+        ipcRenderer.invoke('analysis:run', prompt)
+    },
     onNewChat: (cb: () => void) => {
       const listener = (): void => cb()
       ipcRenderer.on('app:new-chat', listener)
       return () => ipcRenderer.removeListener('app:new-chat', listener)
     },
     artifact: {
-      export: (args: { format: 'docx' | 'xlsx' | 'pptx' | 'md'; title?: string; content: string }): Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }> =>
+      export: (args: {
+        format: 'docx' | 'xlsx' | 'pptx' | 'md'
+        title?: string
+        content: string
+      }): Promise<{ ok: true; path: string } | { ok: false; cancelled?: boolean; error?: string }> =>
         ipcRenderer.invoke('artifact:export', args)
     },
     experts: {
-      list: (): Promise<Array<{ id: string; name: string; domain: string; description: string; icon: string; color: string; skillId: string; systemPrompt: string; starters: string[] }>> =>
-        ipcRenderer.invoke('experts:list'),
-      get: (id: string): Promise<{ id: string; name: string; domain: string; description: string; icon: string; color: string; skillId: string; systemPrompt: string; starters: string[] } | null> =>
-        ipcRenderer.invoke('experts:get', id)
+      list: (): Promise<
+        Array<{
+          id: string
+          name: string
+          domain: string
+          description: string
+          icon: string
+          color: string
+          skillId: string
+          systemPrompt: string
+          starters: string[]
+        }>
+      > => ipcRenderer.invoke('experts:list'),
+      get: (
+        id: string
+      ): Promise<{
+        id: string
+        name: string
+        domain: string
+        description: string
+        icon: string
+        color: string
+        skillId: string
+        systemPrompt: string
+        starters: string[]
+      } | null> => ipcRenderer.invoke('experts:get', id)
     },
     scheduler: {
-      list: (): Promise<Array<{ id: string; name: string; cron: string; enabled: boolean; createdAt: number; lastRunAt?: number; lastRunStatus?: 'success' | 'error'; lastRunError?: string }>> =>
-        ipcRenderer.invoke('scheduler:list'),
-      create: (input: { name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string } }) =>
-        ipcRenderer.invoke('scheduler:create', input),
-      update: (id: string, patch: Partial<{ name: string; cron: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; enabled: boolean }>) =>
-        ipcRenderer.invoke('scheduler:update', id, patch),
+      list: (): Promise<
+        Array<{
+          id: string
+          name: string
+          cron: string
+          enabled: boolean
+          createdAt: number
+          lastRunAt?: number
+          lastRunStatus?: 'success' | 'error'
+          lastRunError?: string
+        }>
+      > => ipcRenderer.invoke('scheduler:list'),
+      create: (input: {
+        name: string
+        cron: string
+        action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+      }) => ipcRenderer.invoke('scheduler:create', input),
+      update: (
+        id: string,
+        patch: Partial<{
+          name: string
+          cron: string
+          action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+          enabled: boolean
+        }>
+      ) => ipcRenderer.invoke('scheduler:update', id, patch),
       delete: (id: string) => ipcRenderer.invoke('scheduler:delete', id),
       run: (id: string) => ipcRenderer.invoke('scheduler:run', id),
       validate: (expr: string) => ipcRenderer.invoke('scheduler:validate', expr),
       reportFinished: (id: string, status: 'success' | 'error', error?: string) =>
         ipcRenderer.invoke('scheduler:reportFinished', id, status, error),
-      onTaskRunning: (cb: (payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }) => void) => {
-        const listener = (_e: unknown, payload: { id: string; action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }; startedAt: number }): void => cb(payload)
+      onTaskRunning: (
+        cb: (payload: {
+          id: string
+          action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+          startedAt: number
+        }) => void
+      ) => {
+        const listener = (
+          _e: unknown,
+          payload: {
+            id: string
+            action: { kind: 'skill'; skillId: string; prompt: string } | { kind: 'prompt'; prompt: string }
+            startedAt: number
+          }
+        ): void => cb(payload)
         ipcRenderer.on('scheduler:taskRunning', listener)
         return () => ipcRenderer.removeListener('scheduler:taskRunning', listener)
       }
     },
     changelog: {
-      record: (entry: { threadId?: string | null; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail?: string; status: 'pending' | 'success' | 'error'; error?: string }) =>
-        ipcRenderer.invoke('changelog:record', entry),
+      record: (entry: {
+        threadId?: string | null
+        kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'
+        title: string
+        detail?: string
+        status: 'pending' | 'success' | 'error'
+        error?: string
+      }) => ipcRenderer.invoke('changelog:record', entry),
       update: (id: string, patch: Partial<{ status: 'pending' | 'success' | 'error'; error: string }>) =>
         ipcRenderer.invoke('changelog:update', id, patch),
       list: (opts?: { threadId?: string | null; limit?: number; sinceTs?: number }) =>
-        ipcRenderer.invoke('changelog:list', opts) as Promise<Array<{ id: string; threadId: string | null; ts: number; kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'; title: string; detail: string | null; status: 'pending' | 'success' | 'error'; error: string | null }>>,
-      clear: (opts?: { threadId?: string }) =>
-        ipcRenderer.invoke('changelog:clear', opts) as Promise<number>
+        ipcRenderer.invoke('changelog:list', opts) as Promise<
+          Array<{
+            id: string
+            threadId: string | null
+            ts: number
+            kind: 'file.write' | 'file.read' | 'file.delete' | 'shell' | 'web3.send' | 'skill' | 'ensemble'
+            title: string
+            detail: string | null
+            status: 'pending' | 'success' | 'error'
+            error: string | null
+          }>
+        >,
+      clear: (opts?: { threadId?: string }) => ipcRenderer.invoke('changelog:clear', opts) as Promise<number>
     },
     marketplace: {
-      list: (): Promise<Array<{ id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }>> =>
-        ipcRenderer.invoke('marketplace:list'),
-      install: (entry: { id: string; name: string; description: string; category: string; tags: string[]; author: string; githubPath: string; skillSubpath: string; stars?: number; installs?: number; version?: string; verified?: boolean }) =>
-        ipcRenderer.invoke('marketplace:install', entry) as Promise<{ ok: boolean; skillId?: string; error?: string; traceId: string; record?: { id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } }>,
-      installed: () => ipcRenderer.invoke('marketplace:installed') as Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>,
+      list: (): Promise<
+        Array<{
+          id: string
+          name: string
+          description: string
+          category: string
+          tags: string[]
+          author: string
+          githubPath: string
+          skillSubpath: string
+          stars?: number
+          installs?: number
+          version?: string
+          verified?: boolean
+        }>
+      > => ipcRenderer.invoke('marketplace:list'),
+      install: (entry: {
+        id: string
+        name: string
+        description: string
+        category: string
+        tags: string[]
+        author: string
+        githubPath: string
+        skillSubpath: string
+        stars?: number
+        installs?: number
+        version?: string
+        verified?: boolean
+      }) =>
+        ipcRenderer.invoke('marketplace:install', entry) as Promise<{
+          ok: boolean
+          skillId?: string
+          error?: string
+          traceId: string
+          record?: {
+            id: string
+            name: string
+            version: string
+            installedAt: number
+            lastCheckedAt: number
+            latestVersion?: string
+            updateAvailable?: boolean
+            path: string
+          }
+        }>,
+      installed: () =>
+        ipcRenderer.invoke('marketplace:installed') as Promise<
+          Array<{
+            id: string
+            name: string
+            version: string
+            installedAt: number
+            lastCheckedAt: number
+            latestVersion?: string
+            updateAvailable?: boolean
+            path: string
+          }>
+        >,
       uninstall: (id: string) => ipcRenderer.invoke('marketplace:uninstall', id) as Promise<boolean>,
-      checkUpdates: () => ipcRenderer.invoke('marketplace:checkUpdates') as Promise<Array<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string }>>,
-      findInstalled: (id: string) => ipcRenderer.invoke('marketplace:findInstalled', id) as Promise<{ id: string; name: string; version: string; installedAt: number; lastCheckedAt: number; latestVersion?: string; updateAvailable?: boolean; path: string } | null>
+      checkUpdates: () =>
+        ipcRenderer.invoke('marketplace:checkUpdates') as Promise<
+          Array<{
+            id: string
+            name: string
+            version: string
+            installedAt: number
+            lastCheckedAt: number
+            latestVersion?: string
+            updateAvailable?: boolean
+            path: string
+          }>
+        >,
+      findInstalled: (id: string) =>
+        ipcRenderer.invoke('marketplace:findInstalled', id) as Promise<{
+          id: string
+          name: string
+          version: string
+          installedAt: number
+          lastCheckedAt: number
+          latestVersion?: string
+          updateAvailable?: boolean
+          path: string
+        } | null>
     },
     claw: {
-      getConfig: () => ipcRenderer.invoke('claw:getConfig') as Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>,
-      updateConfig: (patch: { telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }) =>
-        ipcRenderer.invoke('claw:updateConfig', patch) as Promise<{ telegramToken?: string; allowedChatIds?: number[]; pollingTimeout?: number; bindings?: Array<{ chatId: number; label?: string; threadId?: string }>; enabled?: boolean }>,
+      getConfig: () =>
+        ipcRenderer.invoke('claw:getConfig') as Promise<{
+          telegramToken?: string
+          allowedChatIds?: number[]
+          pollingTimeout?: number
+          bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+          enabled?: boolean
+        }>,
+      updateConfig: (patch: {
+        telegramToken?: string
+        allowedChatIds?: number[]
+        pollingTimeout?: number
+        bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+        enabled?: boolean
+      }) =>
+        ipcRenderer.invoke('claw:updateConfig', patch) as Promise<{
+          telegramToken?: string
+          allowedChatIds?: number[]
+          pollingTimeout?: number
+          bindings?: Array<{ chatId: number; label?: string; threadId?: string }>
+          enabled?: boolean
+        }>,
       start: () => ipcRenderer.invoke('claw:start') as Promise<void>,
       stop: () => ipcRenderer.invoke('claw:stop') as Promise<void>,
-      sendMessage: (chatId: number, text: string) => ipcRenderer.invoke('claw:sendMessage', chatId, text) as Promise<void>,
+      sendMessage: (chatId: number, text: string) =>
+        ipcRenderer.invoke('claw:sendMessage', chatId, text) as Promise<void>,
       isRunning: () => ipcRenderer.invoke('claw:isRunning') as Promise<boolean>,
       onMessage: (cb: (m: { chatId: number; text: string; from: string; messageId: number }) => void) => {
-        const listener = (_e: Electron.IpcRendererEvent, m: { chatId: number; text: string; from: string; messageId: number }): void => cb(m)
+        const listener = (
+          _e: Electron.IpcRendererEvent,
+          m: { chatId: number; text: string; from: string; messageId: number }
+        ): void => cb(m)
         ipcRenderer.on('claw:message', listener)
         return () => ipcRenderer.removeListener('claw:message', listener)
       },
       onStatus: (cb: (s: { running: boolean; hasToken: boolean; bindingCount: number }) => void) => {
-        const listener = (_e: Electron.IpcRendererEvent, s: { running: boolean; hasToken: boolean; bindingCount: number }): void => cb(s)
+        const listener = (
+          _e: Electron.IpcRendererEvent,
+          s: { running: boolean; hasToken: boolean; bindingCount: number }
+        ): void => cb(s)
         ipcRenderer.on('claw:status', listener)
         return () => ipcRenderer.removeListener('claw:status', listener)
       },

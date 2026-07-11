@@ -306,7 +306,10 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     return null
   }
 
-  // Build AgentRun objects for arbitration
+  // Build AgentRun objects for arbitration. Use the actual per-agent
+  // start/finish timestamps captured during the run; the previous code
+  // stamped both with `Date.now()`, which made the arbitration log
+  // report every agent as starting and finishing in the same instant.
   const agentRuns: AgentRun[] = agentContexts.map((ctx) => ({
     runId,
     agentId: ctx.agentId,
@@ -318,8 +321,8 @@ export async function runEnsemble(context: EnsembleContext): Promise<Arbitration
     content: ctx.content,
     toolCalls: ctx.toolCalls,
     error: ctx.error,
-    startedAt: Date.now(),
-    finishedAt: Date.now()
+    startedAt: ctx.startedAt,
+    finishedAt: ctx.finishedAt ?? Date.now()
   }))
 
   // Determine arbitrator provider

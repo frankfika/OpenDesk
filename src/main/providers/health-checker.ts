@@ -1,7 +1,5 @@
-import { app, safeStorage } from 'electron'
-import { join } from 'path'
-import { readFileSync, existsSync, mkdirSync } from 'fs'
 import type { AppSettings } from '../../shared/types'
+import { loadKeys } from '../persistence'
 import { buildProviderById } from './builder'
 
 interface HealthRecord {
@@ -11,28 +9,6 @@ interface HealthRecord {
 
 const healthRecords = new Map<string, HealthRecord>()
 let intervalId: NodeJS.Timeout | null = null
-
-function getConfigDir(): string {
-  const dir = app.getPath('userData')
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  return dir
-}
-
-function getKeysPath(): string {
-  return join(getConfigDir(), 'keys.bin')
-}
-
-function loadKeys(): Record<string, string> {
-  const p = getKeysPath()
-  if (!existsSync(p)) return {}
-  try {
-    const buf = readFileSync(p)
-    const decrypted = safeStorage.decryptString(buf)
-    return JSON.parse(decrypted) as Record<string, string>
-  } catch {
-    return {}
-  }
-}
 
 async function testProvider(providerId: string, settings: AppSettings): Promise<boolean> {
   const keys = loadKeys()

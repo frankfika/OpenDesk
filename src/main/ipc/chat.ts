@@ -13,7 +13,8 @@ import { memoryService } from './memory'
 import { abortControllers } from './abort'
 import { loadKeys, loadThreads } from '../persistence'
 import { getWorkspacePath } from './workspace'
-import { settings } from '../app-state'
+import { getSettings } from '../app-state'
+
 import { normalizeToolMessages } from '../orchestration/message-utils'
 
 const channels = ['chat:send', 'chat:abort', 'chat:regenerate', 'chat:editMessage']
@@ -25,7 +26,7 @@ function removeStaleListeners(): void {
 }
 
 function buildProvider(providerId: string, apiKey: string): Provider | null {
-  return buildProviderById(settings.providers, providerId, apiKey)
+  return buildProviderById(getSettings().providers, providerId, apiKey)
 }
 
 async function doChatStream(
@@ -156,8 +157,8 @@ async function doChatStream(
 
       for (const tc of pendingToolCalls) {
         const result: ToolResult = await executeTool(tc, workspaceId, {
-          desktopEnabled: settings.desktopEnabled,
-          approvalMode: settings.approvalMode
+          desktopEnabled: getSettings().desktopEnabled,
+          approvalMode: getSettings().approvalMode
         })
         win.webContents.send('chat:tool_result', {
           toolCallId: result.toolCallId,
@@ -179,7 +180,7 @@ async function doChatStream(
 
     win.webContents.send('chat:done', { regenerate, editIndex, workspaceId, threadId })
 
-    try {
+      try {
       const recentMessages = normalizedMessages.slice(-10)
       const entries = memoryService.extractFromMessages(recentMessages)
       if (entries.length > 0) {
@@ -187,18 +188,29 @@ async function doChatStream(
         const categories = new Set<string>()
         for (const e of entries) {
           const lower = e.content.toLowerCase()
-          if (lower.includes('user preference') || lower.includes('user mentioned')) categories.add('user')
-          else if (
+          if (lower.includes('user preference') || lower.includes('user mentioned')) {
+            categories.add('user')
+          } else if (
             lower.includes('ai role') ||
             lower.includes('tone') ||
             lower.includes('convention') ||
             lower.includes('project convention') ||
             lower.includes('workspace identity')
-          )
+          ) {
             categories.add('identity')
-          else if (lower.includes('lesson learned') || lower.includes('best practice') || lower.includes('pattern'))
+          } else if (
+            lower.includes('lesson learned') ||
+            lower.includes('best practice') ||
+            lower.includes('pattern')
+          ) {
             categories.add('soul')
-          else categories.add('soul')
+          } else {
+            // Don't file uncategorised entries — the previous catch-all that
+            // dumped everything into `soul` caused unbounded growth of the
+            // cross-project file with low-signal noise. Log so the
+            // categoriser can be improved without silently losing entries.
+            console.debug('[Memory] Uncategorised entry:', e.content)
+          }
         }
         win.webContents.send('memory:updated', { count: entries.length, categories: Array.from(categories) })
       }
@@ -247,10 +259,10 @@ async function doEnsembleChat(win: BrowserWindow, payload: ChatSendPayload): Pro
     await runEnsemble({
       runId,
       payload,
-      providers: settings.providers,
+      providers: getSettings().providers,
       apiKeys,
-      desktopEnabled: settings.desktopEnabled,
-      approvalMode: settings.approvalMode,
+      desktopEnabled: getSettings().desktopEnabled,
+      approvalMode: getSettings().approvalMode,
       agentRoleAssignments: payload.agentRoleAssignments,
       rolePrompts: Object.fromEntries(AGENT_ROLES.map((r) => [r.id, getRolePrompt(r.id)])) as Record<AgentRole, string>,
       callbacks: {

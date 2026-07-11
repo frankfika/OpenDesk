@@ -2,7 +2,8 @@ import { ipcMain, BrowserWindow } from 'electron'
 import { randomUUID } from 'crypto'
 import { existsSync, rmSync } from 'fs'
 import type { Thread, ThreadCreatePayload, ThreadUpdatePayload, Message } from '../../shared/types'
-import { settings } from '../app-state'
+import { getSettings } from '../app-state'
+
 import { loadThreads, saveThreads, getMessagesPath, loadMessages, saveMessages } from '../persistence'
 
 const channels = [
@@ -36,7 +37,7 @@ export function registerThreadHandlers(_win: BrowserWindow): void {
       title: payload.title || 'New Chat',
       createdAt: now,
       updatedAt: now,
-      providerId: payload.providerId || settings.activeProviderId || '',
+      providerId: payload.providerId || getSettings().activeProviderId || '',
       model: payload.model || '',
       totalInputTokens: 0,
       totalOutputTokens: 0,
