@@ -1,12 +1,12 @@
+# Runtime / Build
 node_modules
 out
-.playwright-mcp
-*.tsbuildinfo
-resources/logo.iconset
-
-# Build artifacts
 dist
 build
+*.tsbuildinfo
+resources/logo.iconset
+.playwright-mcp
+.uploads
 
 # Environment variables
 .env
