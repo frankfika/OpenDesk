@@ -114,19 +114,22 @@ export default function TxConfirmCard(): JSX.Element | null {
   return (
     <AnimatePresence>
       <motion.div
-        key="tx-overlay"
+        key="tx-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}
+        className="fixed left-0 top-0 bottom-0 right-[420px] bg-black/60"
         onClick={handleClose}
+      />
+      <motion.div
+        key="tx-overlay"
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        className="fixed right-0 top-0 bottom-0 z-50 w-[420px]"
+        style={{ background: 'linear-gradient(180deg, #0a0a0a 0%, #050505 100%)', borderLeft: '1px solid #1f1f23' }}
       >
-        <motion.div
-          initial={{ scale: 0.95, y: 20, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1.0] }}
+        <div
           className="relative w-full max-w-md rounded-2xl border border-[#2a2a2e] overflow-hidden"
           style={{
             background: 'linear-gradient(180deg, #0a0a0a 0%, #050505 100%)',
@@ -293,7 +296,7 @@ export default function TxConfirmCard(): JSX.Element | null {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   )

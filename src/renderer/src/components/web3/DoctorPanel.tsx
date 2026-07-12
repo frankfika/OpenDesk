@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ShieldCheck, ShieldAlert, AlertTriangle, Search, Loader2, Lock } from 'lucide-react'
+import { useAccount } from 'wagmi'
 import { CHAINS, ChainKey, useTokenList, useApprovals, Approval, fmtNumber } from '../../hooks/useWeb3Data'
 
 const ACCENT = 'var(--web3-doctor)'
@@ -11,6 +12,14 @@ export default function DoctorPanel(): JSX.Element {
   const [input, setInput] = useState('')
   const [chain, setChain] = useState<ChainKey>('ethereum')
   const [resolving, setResolving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { isConnected, address } = useAccount()
+
+  useEffect(() => {
+    if (isConnected && address && !viewAddress) {
+      setViewAddress(address)
+    }
+  }, [isConnected, address, viewAddress])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -26,6 +35,7 @@ export default function DoctorPanel(): JSX.Element {
   const handleSearch = async () => {
     const v = input.trim()
     if (!v) return
+    setError(null)
     setResolving(true)
     try {
       let resolved = v
@@ -33,8 +43,14 @@ export default function DoctorPanel(): JSX.Element {
         const ens = await fetch(`/api/ens/ens/resolve/${v}`)
           .then((r) => r.json())
           .catch(() => null)
-        if (ens?.address) resolved = ens.address
+        if (ens?.address) {
+          resolved = ens.address
+        } else {
+          setError('ENS resolution failed')
+          return
+        }
       } else if (!/^0x[a-fA-F0-9]{40}$/.test(v)) {
+        setError('Invalid address format')
         return
       }
       setViewAddress(resolved)
@@ -78,9 +94,24 @@ export default function DoctorPanel(): JSX.Element {
             disabled={resolving}
             className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors"
           >
-            {resolving ? '...' : 'Scan'}
+            {resolving ? <Loader2 size={12} className='animate-spin' /> : 'Scan'}
           </button>
         </div>
+        {error && (
+          <div className="mt-2 flex items-center gap-2">
+            <div className="text-[11px] text-red-400 font-mono flex-1">{error}</div>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null)
+                handleSearch()
+              }}
+              className="rounded-md px-2 py-1 text-[10px] font-bold web3-text-body bg-[var(--web3-card-hover)] hover:bg-[var(--web3-border-strong)] transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <div className="mt-2 web3-label web3-text-muted break-all">{viewAddress}</div>
         <div className="flex items-center gap-1.5 mt-3 flex-wrap">
           {(['ethereum', 'base', 'arbitrum', 'optimism', 'polygon', 'bsc'] as ChainKey[]).map((k) => {

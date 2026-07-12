@@ -879,3 +879,42 @@ export async function fetchTokenMeta(chain: ChainKey, address: string): Promise<
   ])
   return { symbol, name, decimals: Number(decimals) }
 }
+
+/* ------------------------------------------------------------------ */
+/* 12. Multi-chain native balances                                       */
+/* ------------------------------------------------------------------ */
+
+export interface MultiChainNativeBalance {
+  chain: ChainKey
+  balance: string
+  balanceUsd: number | null
+}
+
+export function useMultiChainNativeBalances(address: string | null): AsyncState<MultiChainNativeBalance[]> {
+  const fetcher = useCallback(async () => {
+    if (!address || !isLikelyAddress(address)) return []
+    const results = await Promise.all(
+      MAINNET_KEYS.map(async (chainKey) => {
+        try {
+          const client = clientFor(chainKey)
+          const bal = await client.getBalance({ address: address as `0x${string}` })
+          const formatted = formatEther(bal)
+          let balanceUsd: number | null = null
+          try {
+            const symbol = CHAINS[chainKey].symbol
+            const prices = await fetchPrices([symbol])
+            const usd = prices[symbol]?.usd
+            if (typeof usd === 'number') balanceUsd = parseFloat(formatted) * usd
+          } catch {
+            // ignore — keep balanceUsd null
+          }
+          return { chain: chainKey, balance: formatted, balanceUsd }
+        } catch {
+          return { chain: chainKey, balance: '0', balanceUsd: null }
+        }
+      })
+    )
+    return results
+  }, [address])
+  return useAsync(fetcher, [address])
+}

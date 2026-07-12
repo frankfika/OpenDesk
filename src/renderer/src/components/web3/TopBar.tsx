@@ -2,7 +2,7 @@
 import { useAccount } from 'wagmi'
 import { useAppKit } from '@reown/appkit/react'
 import { ChevronDown, Fuel, Settings } from 'lucide-react'
-import { CHAINS, useTokenPrices, useGas, fmtUsd, fmtPct } from '../../hooks/useWeb3Data'
+import { CHAINS, useTokenPrices, useGas, fmtUsd, fmtPct, type ChainKey } from '../../hooks/useWeb3Data'
 import BrandLockup from '../ui/BrandLockup'
 import WalletConnectButton from './WalletConnectButton'
 
@@ -11,7 +11,9 @@ export default function TopBar(): JSX.Element {
   const { open } = useAppKit()
 
   const ethPrices = useTokenPrices(['ETH'])
-  const gas = useGas('ethereum')
+  const currentChain: ChainKey =
+    Object.values(CHAINS).find((c) => c.chain.id === chainId)?.key ?? 'ethereum'
+  const gas = useGas(currentChain)
 
   const ethUsd = ethPrices.data?.ETH?.usd ?? null
   const ethChange = ethPrices.data?.ETH?.usd_24h_change ?? null

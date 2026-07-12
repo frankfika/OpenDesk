@@ -1,6 +1,6 @@
 // LeftSidebar — primary nav. Scenarios are top-level entries (not tabs).
 import { motion } from 'framer-motion'
-import { Activity, ScanLine, Zap, ShieldCheck, Plus, Layers, History, type LucideIcon } from 'lucide-react'
+import { Activity, Zap, ShieldCheck, Plus, Layers, History, type LucideIcon } from 'lucide-react'
 import { useWeb3Store, type Web3ScenarioId } from '../../store/web3'
 import { useWorkspaceStore } from '../../store/workspace'
 import { useChatStore } from '../../store/chat'
@@ -16,7 +16,6 @@ interface NavItem {
 
 const SCENARIOS: NavItem[] = [
   { id: 'chat', label: 'Portfolio Watch', short: 'WATCH', icon: Activity, color: '#1D8C80', skill: '' },
-  { id: 'intel', label: 'Chain Intel', short: 'INTEL', icon: ScanLine, color: '#627eea', skill: 'web3-intel' },
   { id: 'trade', label: 'One-Liner Trade', short: 'TRADE', icon: Zap, color: '#1D8C80', skill: 'web3-trader' },
   { id: 'doctor', label: 'Wallet Doctor', short: 'DOCTOR', icon: ShieldCheck, color: '#ffb250', skill: 'web3-intel' }
 ]

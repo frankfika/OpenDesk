@@ -6,7 +6,6 @@ import TopBar from './TopBar'
 import LeftSidebar from './LeftSidebar'
 import RightRail from './RightRail'
 import PortfolioView from './PortfolioView'
-import IntelPanel from './IntelPanel'
 import TradePanel from './TradePanel'
 import DoctorPanel from './DoctorPanel'
 import TxConfirmCard from './TxConfirmCard'
@@ -15,7 +14,7 @@ export default function Web3Workbench(): JSX.Element {
   const activeScenario = useWeb3Store((s) => s.activeScenario)
 
   useEffect(() => {
-    if (!activeScenario) {
+    if (!activeScenario || activeScenario === 'intel') {
       useWeb3Store.getState().setActiveScenario('chat')
     }
   }, [activeScenario])
@@ -54,7 +53,6 @@ export default function Web3Workbench(): JSX.Element {
               transition={{ duration: 0.2 }}
               className="flex-1 min-h-0 flex flex-col overflow-hidden"
             >
-              {activeScenario === 'intel' && <IntelPanel />}
               {activeScenario === 'trade' && <TradePanel />}
               {activeScenario === 'doctor' && <DoctorPanel />}
               {activeScenario === 'chat' && <PortfolioView />}

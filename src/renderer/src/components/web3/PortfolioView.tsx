@@ -27,6 +27,7 @@ import {
   useTokenPrices,
   useActivity,
   useTokenTransfers,
+  useMultiChainNativeBalances,
   fmtUsd,
   fmtNumber,
   fmtPct,
@@ -76,12 +77,21 @@ function PortfolioContent({
   onSetAddress: (address: string) => void
 }): JSX.Element {
   const [activeChain, setActiveChain] = useState<ChainKey>('ethereum')
+  const { chainId } = useAccount()
+  useEffect(() => {
+    if (chainId) {
+      const key = Object.values(CHAINS).find(c => c.chain.id === chainId)?.key
+      if (key) setActiveChain(key as ChainKey)
+    }
+  }, [chainId])
   const [taskInput, setTaskInput] = useState('')
   const [resolving, setResolving] = useState(false)
+  const [searchError, setSearchError] = useState('')
   const native = useNativeBalance(address, activeChain)
   const tokens = useTokenList(address, activeChain)
   const activity = useActivity(address, activeChain, 8)
   const transfers = useTokenTransfers(address, activeChain, 8)
+  const multiChain = useMultiChainNativeBalances(address)
   const setActiveScenario = useWeb3Store((s) => s.setActiveScenario)
   const setPendingTxRequest = useWeb3Store((s) => s.setPendingTxRequest)
   const { open } = useAppKit()
@@ -109,6 +119,11 @@ function PortfolioContent({
     }
     return total
   }, [native.data, tokens.data, prices.data, activeChain])
+
+  const totalMultiChainUsd = useMemo(() => {
+    if (!multiChain.data) return 0
+    return multiChain.data.reduce((sum, b) => sum + (b.balanceUsd ?? 0), 0)
+  }, [multiChain.data])
 
   const ethChange = prices.data?.ETH?.usd_24h_change ?? null
   const totalChange = ethChange ?? 0
@@ -172,6 +187,14 @@ function PortfolioContent({
     if (!value) return
     setResolving(true)
     try {
+      if (/^0x[a-fA-F0-9]{64}$/.test(value)) {
+        setSearchError('暂不支持 tx hash，试试地址或 token')
+        return
+      }
+      if (/^[a-zA-Z]+$/.test(value)) {
+        setSearchError('暂不支持 token 分析，试试地址或 ENS')
+        return
+      }
       const resolved = await resolveAddress(value)
       if (resolved) {
         onSetAddress(resolved)
@@ -185,6 +208,13 @@ function PortfolioContent({
       setResolving(false)
     }
   }
+
+  useEffect(() => {
+    if (searchError) {
+      const timer = setTimeout(() => setSearchError(''), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [searchError])
 
   const missions = [
     {
@@ -274,6 +304,27 @@ function PortfolioContent({
               <ArrowRight size={11} />
             </button>
           </div>
+          {searchError && <div className='mt-2 text-[11px] text-red-400'>{searchError}</div>}
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <span className="text-[10.5px] font-mono web3-text-muted">Quick intel:</span>
+            {[
+              { label: 'vitalik.eth', value: 'vitalik.eth' },
+              { label: 'ens.eth', value: 'ens.eth' },
+              { label: 'brantly.eth', value: 'brantly.eth' }
+            ].map((q) => (
+              <button
+                key={q.value}
+                type="button"
+                onClick={() => {
+                  setTaskInput(q.value)
+                  void submitTask()
+                }}
+                className="text-[10.5px] font-mono web3-text-muted hover:text-white px-2 py-0.5 rounded-md border border-[#1f1f23] hover:border-[#1D8C80]/30 bg-transparent hover:bg-[#141416] transition-colors"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
         </div>
       </motion.div>
 
@@ -291,12 +342,81 @@ function PortfolioContent({
         ))}
       </div>
 
+      {/* Multi-chain total */}
+      <div className="web3-card web3-card-pad overflow-hidden">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 web3-label web3-text-muted mb-1.5">
+              <Layers size={10} />
+              Total across all chains
+            </div>
+            <div className="flex items-end gap-3">
+              <div className="text-[32px] font-bold text-white tracking-tight font-mono leading-none">
+                {multiChain.loading ? (
+                  <span className="inline-block w-28 h-8 rounded-md bg-white/5 animate-pulse" />
+                ) : (
+                  fmtUsd(totalMultiChainUsd)
+                )}
+              </div>
+              {ethChange != null && (
+                <div className={`flex items-center gap-1 pb-1 text-[12px] font-mono font-bold ${ethChange >= 0 ? 'web3-status-live' : 'web3-status-error'}`}>
+                  {ethChange >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                  {fmtPct(ethChange, 2)}
+                  <span className="web3-text-muted font-normal text-[10px] ml-0.5">24h</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-[11px] web3-text-muted font-mono">
+              <span className="truncate" title={address}>{shortAddr(address)}</span>
+              <span className="opacity-50">·</span>
+              <span>{multiChain.data?.filter(b => b.balanceUsd && b.balanceUsd > 0).length ?? 0} chains</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 链分布条 */}
+        <div className="mt-3 flex h-1.5 rounded-full overflow-hidden">
+          {multiChain.loading ? (
+            <div className="h-full w-full bg-white/5 animate-pulse" />
+          ) : (
+            multiChain.data?.filter(b => b.balanceUsd && b.balanceUsd > 0).map(b => {
+              const pct = totalMultiChainUsd > 0 ? (b.balanceUsd! / totalMultiChainUsd) * 100 : 0
+              return (
+                <div
+                  key={b.chain}
+                  className="h-full"
+                  style={{ width: `${pct}%`, background: CHAINS[b.chain].color }}
+                  title={`${CHAINS[b.chain].name}: ${fmtUsd(b.balanceUsd!)}`}
+                />
+              )
+            })
+          )}
+        </div>
+
+        {/* 图例 */}
+        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+          {multiChain.loading ? (
+            <span className="text-[10px] font-mono web3-text-muted">Loading…</span>
+          ) : (
+            multiChain.data?.filter(b => b.balanceUsd && b.balanceUsd > 0).map(b => {
+              const pct = totalMultiChainUsd > 0 ? (b.balanceUsd! / totalMultiChainUsd) * 100 : 0
+              return (
+                <span key={b.chain} className="flex items-center gap-1 text-[10px] font-mono web3-text-muted">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: CHAINS[b.chain].color, boxShadow: `0 0 4px ${CHAINS[b.chain].color}` }} />
+                  {CHAINS[b.chain].shortName} {fmtPct(pct, 0)}
+                </span>
+              )
+            })
+          )}
+        </div>
+      </div>
+
       <div className="web3-card web3-card-pad overflow-hidden">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2 web3-label web3-text-muted mb-1.5">
               <ActivityIcon size={10} />
-              Current wallet snapshot · {CHAINS[activeChain].name}
+              {CHAINS[activeChain].name}
             </div>
             <div className="flex items-end gap-3">
               <div className="text-[32px] font-bold text-white tracking-tight font-mono leading-none">
@@ -511,6 +631,7 @@ function PortfolioContent({
                     symbol={item.data.tokenSymbol}
                     value={item.data.valueFormatted}
                     time={item.data.timestamp}
+                    from={item.data.from}
                     to={item.data.to}
                     chain={activeChain}
                     address={address}
@@ -622,6 +743,7 @@ function TransferRow({
   symbol,
   value,
   time,
+  from,
   to,
   chain,
   address
@@ -630,6 +752,7 @@ function TransferRow({
   symbol: string
   value: string
   time: number
+  from: string
   to: string
   chain: ChainKey
   address: string
@@ -648,6 +771,7 @@ function TransferRow({
         <div className="web3-label web3-text-muted">
           {timeAgo(time)} · {shortAddr(hash)}
         </div>
+        <div className="web3-label web3-text-muted">From {shortAddr(from)} · To {shortAddr(to)}</div>
       </div>
       <div className="text-right">
         <div className={`text-[11.5px] font-mono font-semibold ${incoming ? 'web3-status-live' : 'web3-text-strong'}`}>

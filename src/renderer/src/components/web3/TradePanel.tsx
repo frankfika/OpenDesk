@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Zap, Send, ArrowRight, ChevronRight, AlertCircle } from 'lucide-react'
 import { useAccount } from 'wagmi'
-import { CHAINS } from '../../hooks/useWeb3Data'
+import { parseEther } from 'viem'
+import { useWeb3Store } from '../../store/web3'
+import { CHAINS, shortAddr, type ChainKey } from '../../hooks/useWeb3Data'
 
 const EXAMPLES = [
   { text: 'Send 0 ETH to myself on Ethereum', intent: 'Open a real Ethereum signature card' },
@@ -16,11 +18,51 @@ const ACCENT = 'var(--web3-trade)'
 
 export default function TradePanel(): JSX.Element {
   const [input, setInput] = useState('')
-  const { isConnected } = useAccount()
+  const [prepHint, setPrepHint] = useState('')
+  const { isConnected, address } = useAccount()
+  const setPendingTxRequest = useWeb3Store((s) => s.setPendingTxRequest)
 
-  const handleExample = (text: string) => {
+  const handleExample = async (text: string) => {
     setInput(text)
-    window.dispatchEvent(new CustomEvent('opendesk:fill-input', { detail: { text } }))
+    setPrepHint('')
+
+    if (!isConnected || !address) {
+      setPrepHint('Connect wallet to prepare transaction')
+      return
+    }
+
+    const chainMatch = text.match(/on (Ethereum|Base|Arbitrum)/i)
+    const chainName = chainMatch ? chainMatch[1] : 'Ethereum'
+    const chainKey = chainName.toLowerCase() as ChainKey
+
+    const amountMatch = text.match(/(\d+\.?\d*)\s*ETH/)
+    const amount = amountMatch ? amountMatch[1] : '0'
+
+    let recipient = ''
+    if (text.includes('myself')) {
+      recipient = address
+    } else if (text.includes('vitalik.eth')) {
+      try {
+        const res = await fetch('/api/ens/ens/resolve/vitalik.eth')
+        const data = await res.json()
+        recipient = data.address || data
+      } catch {
+        recipient = ''
+      }
+    }
+
+    const pendingTxRequest = {
+      id: `tx-${Date.now()}`,
+      chain: chainKey,
+      chainName: CHAINS[chainKey]?.name || chainName,
+      from: address,
+      to: recipient,
+      value: parseEther(amount).toString(),
+      data: '0x',
+      description: text
+    }
+
+    setPendingTxRequest(pendingTxRequest)
   }
 
   return (
@@ -63,6 +105,11 @@ export default function TradePanel(): JSX.Element {
             </button>
           ))}
         </div>
+        {prepHint && (
+          <div className="mt-2 text-[11px]" style={{ color: ACCENT }}>
+            {prepHint}
+          </div>
+        )}
       </div>
 
       <div className="web3-card web3-card-pad">
